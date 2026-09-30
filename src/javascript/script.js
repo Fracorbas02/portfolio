@@ -18,6 +18,7 @@
   const COMMAND_INPUT       = document.getElementById('commandInput');
   const CURSOR              = document.querySelector('.cursor');
   const DEFAULT_BEGIN_SHELL = document.getElementById('defaultBeginShellLine');
+  const SEARCH_LABEL         = document.getElementById('searchLabel');
   const SHELL_CONTAINER     = document.getElementById('shellContainer');
   const SHELL_CHROME        = document.getElementById('shellChrome');
   const SHELL_OUTPUT        = document.getElementById('shellOutput');
@@ -40,6 +41,14 @@
     shaCache: new Map(),
     history: [],
     historyIndex: -1
+  };
+
+  // État de la recherche inversée (Ctrl+R)
+  const search = {
+    active: false,
+    query: '',
+    matches: [],
+    cursor: 0
   };
 
   const BOOT_LINES_FAST = [
@@ -656,6 +665,48 @@
   }
 
   // ──────────────────────────────────────────────────────────────
+  // Recherche inversée dans l'historique (Ctrl+R)
+  // ──────────────────────────────────────────────────────────────
+  /** Recalcule les correspondances (plus récentes d'abord). */
+  function refreshSearchMatches() {
+    const needle = search.query.toLowerCase();
+    search.matches = [...state.history]
+      .reverse()
+      .filter((cmd) => cmd.toLowerCase().includes(needle));
+    search.cursor = 0;
+  }
+
+  /** Met à jour l'étiquette et la commande affichée dans l'input. */
+  function updateSearchDisplay() {
+    SEARCH_LABEL.textContent = `(reverse-i-search)${search.query}: `;
+    COMMAND_INPUT.value = search.matches[search.cursor] ?? '';
+    resizeInput();
+  }
+
+  function enterSearchMode(initialQuery = '') {
+    search.active = true;
+    search.query = initialQuery;
+    refreshSearchMatches();
+    DEFAULT_BEGIN_SHELL.hidden = true;
+    SEARCH_LABEL.hidden = false;
+    updateSearchDisplay();
+  }
+
+  /** Passe à la correspondance suivante (Ctrl+R répété). */
+  function cycleSearch() {
+    if (search.matches.length === 0) return;
+    search.cursor = (search.cursor + 1) % search.matches.length;
+    updateSearchDisplay();
+  }
+
+  /** Quitte le mode recherche et restaure le prompt. */
+  function exitSearchMode() {
+    search.active = false;
+    SEARCH_LABEL.hidden = true;
+    DEFAULT_BEGIN_SHELL.hidden = false;
+  }
+
+  // ──────────────────────────────────────────────────────────────
   // Saisie clavier dans l'input
   // ──────────────────────────────────────────────────────────────
   function setupInput() {
@@ -669,6 +720,44 @@
     COMMAND_INPUT.addEventListener('input', resizeInput);
 
     COMMAND_INPUT.addEventListener('keydown', async (event) => {
+      // Ctrl+R : entre en recherche inversée, ou passe à la correspondance suivante
+      if (event.ctrlKey && event.key.toLowerCase() === 'r') {
+        event.preventDefault();
+        if (search.active) cycleSearch();
+        else enterSearchMode(COMMAND_INPUT.value);
+        return;
+      }
+
+      // Touches capturées par le mode recherche
+      if (search.active) {
+        if (['Enter', 'Escape', 'ArrowUp', 'ArrowDown'].includes(event.key)) {
+          // Quitte le mode, puis laisse la touche suivre son traitement normal
+          exitSearchMode();
+        } else if (event.ctrlKey && event.key.toLowerCase() === 'c') {
+          // Interruption : abandonne la recherche et la ligne
+          event.preventDefault();
+          exitSearchMode();
+          COMMAND_INPUT.value = '';
+          resizeInput();
+          return;
+        } else if (event.key === 'Backspace') {
+          event.preventDefault();
+          search.query = search.query.slice(0, -1);
+          refreshSearchMatches();
+          updateSearchDisplay();
+          return;
+        } else if (event.key.length === 1 && !event.ctrlKey && !event.metaKey && !event.altKey) {
+          event.preventDefault();
+          search.query += event.key;
+          refreshSearchMatches();
+          updateSearchDisplay();
+          return;
+        } else {
+          event.preventDefault();
+          return;
+        }
+      }
+
       // Ctrl+L : efface l'écran, sans passer par l'historique
       if (event.ctrlKey && event.key.toLowerCase() === 'l') {
         event.preventDefault();
