@@ -172,6 +172,33 @@
   };
 
   // ──────────────────────────────────────────────────────────────
+  // Persistance de l'historique (localStorage)
+  // ──────────────────────────────────────────────────────────────
+  const HISTORY_KEY   = 'portfolioShellHistory';
+  const HISTORY_LIMIT = 100;
+
+  function persistHistory() {
+    try {
+      localStorage.setItem(HISTORY_KEY, JSON.stringify(state.history.slice(-HISTORY_LIMIT)));
+    } catch {
+      // Stockage indisponible (mode privé, etc.) : l'historique
+      // reste en mémoire pour la session en cours.
+    }
+  }
+
+  function loadHistory() {
+    try {
+      const saved = JSON.parse(localStorage.getItem(HISTORY_KEY) ?? '[]');
+      if (Array.isArray(saved)) {
+        state.history = saved.filter((cmd) => typeof cmd === 'string');
+        state.historyIndex = state.history.length;
+      }
+    } catch {
+      // Données corrompues ou stockage indisponible : on repart à zéro
+    }
+  }
+
+  // ──────────────────────────────────────────────────────────────
   // Dispatcher de commandes
   // ──────────────────────────────────────────────────────────────
   const handlers = {
@@ -206,6 +233,7 @@
 
     state.history.push(trimmed);
     state.historyIndex = state.history.length;
+    persistHistory();
 
     const [name, ...args] = trimmed.split(/\s+/);
     const handler = handlers[name.toLowerCase()];
@@ -868,6 +896,7 @@
     setupInput();
     setupMenu();
     setupEasterEgg();
+    loadHistory();
 
     // Active drag/resize sur la fenêtre du terminal (si le module est chargé)
     if (typeof window.initWindowManager === 'function' && SHELL_CHROME) {
