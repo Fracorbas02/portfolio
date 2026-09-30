@@ -399,26 +399,87 @@
     return escapeHTML(node);
   }
 
+  /**
+   * Permissions façon ls -l : dossier, lien symbolique ou fichier.
+   */
+  function lsMode(key, node) {
+    if (key === '.' || key === '..' || isDirectory(node)) return 'drwxr-xr-x';
+    if (node?.type === 'link') return 'lrwxrwxrwx';
+    return '-rw-r--r--';
+  }
+
+  /**
+   * Taille en octets : réelle pour les fichiers texte, 4096 pour un
+   * dossier, valeur stable dérivée du nom pour les fichiers distants.
+   */
+  function lsSize(key, node) {
+    if (key === '.' || key === '..' || isDirectory(node)) return 4096;
+    if (typeof node === 'string') return new TextEncoder().encode(node).length;
+    return 1024 + [...key].reduce((acc, ch) => (acc * 31 + ch.charCodeAt(0)) % 900000, 7);
+  }
+
+  /**
+   * Rendu ls -l : total, puis une ligne par entrée avec droits,
+   * liens, propriétaire, groupe, taille, date et nom.
+   */
+  function lsLong(dir, keys) {
+    const MONTHS = ['janv.', 'févr.', 'mars', 'avr.', 'mai', 'juin',
+      'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.'];
+    const now = new Date();
+    const date = `${MONTHS[now.getMonth()]} ${String(now.getDate()).padStart(2, ' ')} `
+      + `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+
+    const rows = keys.map((key) => {
+      const node = dir[key];
+      const isDir = key === '.' || key === '..' || isDirectory(node);
+      const name = isDir
+        ? `<span class="lsDir">${escapeHTML(key)}</span>`
+        : node?.type === 'link'
+          ? `<span class="lsLink">${escapeHTML(key)}</span> -> <span class="lsTarget">${escapeHTML(node.url)}</span>`
+          : escapeHTML(key);
+      return {
+        mode: lsMode(key, node),
+        links: isDir ? 2 : 1,
+        size: lsSize(key, node),
+        name
+      };
+    });
+
+    const total = rows.reduce((sum, row) => sum + Math.ceil(row.size / 1024), 0);
+    const wSize = Math.max(...rows.map((row) => String(row.size).length));
+    const lines = rows.map((row) =>
+      `${row.mode} ${row.links} bastien bastien ${String(row.size).padStart(wSize)} ${date} ${row.name}`);
+
+    return `total ${total}\n${lines.join('\n')}`;
+  }
+
   function cmdLs(args) {
     const option = args[0] ?? null;
     const dir = navigateTree(state.currentDir);
     if (!dir) return `ls : impossible d'accéder à ${escapeHTML(state.currentDir)}`;
 
-    if (option && option !== '-a') {
-      return `ls : option « ${escapeHTML(option)} » inconnue. Voir : man ls`;
+    // Options combinables : -a, -l, -la, -al...
+    let flags = '';
+    if (option) {
+      if (!/^-[al]+$/.test(option)) {
+        return `ls : option « ${escapeHTML(option)} » inconnue. Voir : man ls`;
+      }
+      flags = option.slice(1);
     }
+    const showAll = flags.includes('a');
 
-    // Rendu ls --color : colonnes alignées, dossiers en couleur
     let keys = Object.keys(dir).filter((key) => {
       if (key === 'type') return false; // champ de métadonnées, pas une entrée
-      if (option === '-a') return true;
-      return !key.startsWith('.');
+      return showAll || !key.startsWith('.');
     });
     keys = keys.sort((a, b) => a.localeCompare(b, 'fr', { sensitivity: 'base' }));
-    if (option === '-a') keys = ['.', '..', ...keys];
+    if (showAll) keys = ['.', '..', ...keys];
 
     if (keys.length === 0) return '';
 
+    if (flags.includes('l')) return lsLong(dir, keys);
+
+    // Rendu court ls --color : colonnes alignées, dossiers en couleur
     const width = Math.max(...keys.map((key) => key.length)) + 2;
     return keys
       .map((key) => {
@@ -865,7 +926,7 @@
       case 'man':  pool = Object.keys(state.manCommands ?? {}); break;
       case 'set':  pool = ['username']; break;
       case 'get':  pool = ['sha']; break;
-      case 'ls':   pool = ['-a']; break;
+      case 'ls':   pool = ['-a', '-l', '-la']; break;
       case 'rm':   pool = ['*']; break;
       case 'cd': {
         const dir = navigateTree(state.currentDir);
