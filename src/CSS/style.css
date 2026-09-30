@@ -355,7 +355,7 @@ body.is-window-dragging * {
 .cursor {
   position: absolute;
   left: 0;
-  top: 50%;
+  top: 0;
   display: inline-block;
   width: 0.55em;
   height: 1.1em;
