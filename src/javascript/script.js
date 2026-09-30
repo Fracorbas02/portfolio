@@ -289,6 +289,11 @@
     const [name, ...args] = trimmed.split(/\s+/);
     const handler = handlers[name.toLowerCase()];
 
+    // Le prompt doit être capturé AVANT l'exécution : une commande
+    // comme cd le modifie, et l'écho doit montrer la ligne telle
+    // qu'elle était au moment de la saisie (comportement bash).
+    const promptBefore = DEFAULT_BEGIN_SHELL.textContent;
+
     let output;
     try {
       output = handler ? await handler(args) : unknownCommandMessage(name);
@@ -297,7 +302,7 @@
       output = `<span style="color:#f87171;">Une erreur est survenue lors de l'exécution.</span>`;
     }
 
-    const promptHTML = `${escapeHTML(DEFAULT_BEGIN_SHELL.textContent)}${escapeHTML(trimmed)}`;
+    const promptHTML = `${escapeHTML(promptBefore)}${escapeHTML(trimmed)}`;
     printOutput(output ? `${promptHTML}<br>${output}` : promptHTML);
   };
 
@@ -354,6 +359,11 @@
     const parentPath = path.slice(0, path.lastIndexOf('/')) || '/';
     const name = path.slice(path.lastIndexOf('/') + 1);
 
+    // Le champ "type" est une métadonnée de l'arbre, pas un fichier
+    if (name === 'type') {
+      return `cat : ${escapeHTML(target)} : fichier introuvable`;
+    }
+
     // Le nœud cible : soit un enfant du dossier parent, soit la racine
     const parent = navigateTree(parentPath);
     const node = name ? parent?.[name] : parent;
@@ -376,6 +386,7 @@
     if (!dir) return `ls : impossible d'accéder à ${escapeHTML(state.currentDir)}`;
 
     const entries = Object.keys(dir).filter((key) => {
+      if (key === 'type') return false; // champ de métadonnées, pas une entrée
       if (option === '-a') return true;
       if (option === null) return !key.startsWith('.');
       return false;
@@ -816,12 +827,16 @@
       case 'rm':   pool = ['*']; break;
       case 'cd': {
         const dir = navigateTree(state.currentDir);
-        pool = Object.keys(dir ?? {}).filter((key) => isDirectory(dir[key]));
+        pool = Object.keys(dir ?? {})
+          .filter((key) => key !== 'type')
+          .filter((key) => isDirectory(dir[key]));
         break;
       }
       case 'cat': {
         const dir = navigateTree(state.currentDir);
-        pool = Object.keys(dir ?? {}).filter((key) => !isDirectory(dir[key]));
+        pool = Object.keys(dir ?? {})
+          .filter((key) => key !== 'type')
+          .filter((key) => !isDirectory(dir[key]));
         break;
       }
       default: return [];
