@@ -623,7 +623,7 @@
       `<div><span class="neofetchKey">Uptime</span> ${uptime}</div>`,
       `<div><span class="neofetchKey">Shell</span> portfolio-sh</div>`,
       `<div><span class="neofetchKey">Terminal</span> ${browserName()}</div>`,
-      `<div><span class="neofetchKey">Compétences</span> Réseaux • Cybersécurité • Python • JS</div>`,
+      `<div><span class="neofetchKey">Compétences</span> Réseaux • Cybersécurité • Admin Sys • Linux</div>`,
       `<div><span class="neofetchKey">GitHub</span> github.com/Fracorbas02</div>`,
       `<div class="neofetchPalette">${palette}</div>`
     ].join('');
