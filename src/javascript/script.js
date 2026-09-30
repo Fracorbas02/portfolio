@@ -145,15 +145,24 @@
   const startPortfolio = async () => {
     const defaultText = document.getElementById('defaultText');
 
-    // Log de services : rapide, une ligne entière par tick
+    // Log de services : rapide, avec un temps aléatoire entre chaque
+    // ligne pour un défilement non linéaire, comme un vrai boot
     for (const line of BOOT_SEQUENCE) {
       if (state.bootInterrupted) break;
       defaultText.innerHTML += `${bootLineHTML(line)}\n`;
-      await delay(50);
+      await delay(30 + Math.random() * 90);
+    }
+
+    // Pause, puis l'écran est nettoyé d'un coup comme en fin de boot
+    // Debian : seul le message de bienvenue reste, écran net
+    if (!state.bootInterrupted) {
+      await delay(1200);
+      if (state.bootInterrupted) return;
+      defaultText.innerHTML = '';
+      await delay(300);
     }
 
     // Message d'accueil : effet machine à écrire rapide
-    await delay(300);
     for (const line of BOOT_LINES_NORMAL) {
       if (state.bootInterrupted) break;
       await typewrite(defaultText, line, 8);
