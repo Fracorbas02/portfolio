@@ -348,18 +348,32 @@ body.is-window-dragging * {
   caret-color: transparent; /* on dessine notre propre curseur */
 }
 
-/* Curseur clignotant — en flow flex, juste après l'input.
-   Pas de position absolue, pas de calcul JS : il suit l'input
-   naturellement quel que soit son contenu. */
+/* Curseur clignotant — positionné en absolu par JS : il suit le
+   caret réel, y compris au milieu de la ligne (Home, flèches, clic).
+   La position horizontale est la largeur mesurée du texte avant
+   le caret ; le calage vertical se fait au centre de la ligne. */
 .cursor {
+  position: absolute;
+  left: 0;
+  top: 50%;
   display: inline-block;
   width: 0.55em;
   height: 1.1em;
   background: var(--accent);
   box-shadow: 0 0 8px var(--accent-glow);
   animation: blink 1.1s steps(2, start) infinite;
-  flex-shrink: 0;
-  align-self: center;
+  pointer-events: none;
+  will-change: transform;
+}
+
+/* Span fantôme de mesure : même police que l'input, invisible, sert
+   à calculer la position du curseur. */
+.cursorMeasure {
+  position: absolute;
+  top: 0;
+  left: 0;
+  visibility: hidden;
+  white-space: pre;
   pointer-events: none;
 }
 

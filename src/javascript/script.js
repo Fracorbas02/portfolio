@@ -64,6 +64,10 @@
     clone.querySelectorAll('[id]').forEach((el) => el.removeAttribute('id'));
     clone.classList.remove('minimized', 'maximized');
     clone.querySelectorAll('.shell__resize').forEach((el) => el.remove());
+    // La factory instancie ses propres éléments de mesure/curseur
+    clone.querySelectorAll('.cursorMeasure').forEach((el) => el.remove());
+    const clonedCursor = clone.querySelector('.cursor');
+    if (clonedCursor) clonedCursor.style.transform = '';
 
     // Sortie vierge : le clone a capturé l'état de la fenêtre source
     const output = clone.querySelector('.shellOutput');
@@ -274,6 +278,16 @@
   const CURRENT_SHELL_LINE  = root.querySelector('.currentShellLine');
   const DEFAULT_TEXT        = root.querySelector('.defaultText');
 
+  // Span fantôme : mesure la largeur du texte avant le caret pour
+  // positionner le curseur clignotant au bon endroit de la ligne
+  const MEASURE = document.createElement('span');
+  MEASURE.className = 'cursorMeasure';
+  {
+    const cs = getComputedStyle(COMMAND_INPUT);
+    MEASURE.style.font = `${cs.fontStyle} ${cs.fontWeight} ${cs.fontSize} ${cs.fontFamily}`;
+  }
+  CURRENT_SHELL_LINE.appendChild(MEASURE);
+
   // ──────────────────────────────────────────────────────────────
   // État global
   // ──────────────────────────────────────────────────────────────
@@ -436,9 +450,22 @@
 
   const resizeInput = () => {
     // Largeur en `ch` (caractère monospace).
-    // Le curseur, en flow flex juste après, suit naturellement.
     const len = COMMAND_INPUT.value.length;
     COMMAND_INPUT.style.width = `${Math.max(0, len)}ch`;
+    updateCursor();
+  };
+
+  /**
+   * Place le curseur clignotant sur la position réelle du caret :
+   * on mesure la largeur du texte situé avant le caret et on
+   * translate le curseur d'autant. Gère les déplacements au milieu
+   * de la ligne (Home, flèches, clic).
+   */
+  const updateCursor = () => {
+    const caret = COMMAND_INPUT.selectionStart ?? COMMAND_INPUT.value.length;
+    MEASURE.textContent = COMMAND_INPUT.value.slice(0, caret);
+    const x = COMMAND_INPUT.offsetLeft + MEASURE.offsetWidth;
+    CURSOR.style.transform = `translate(${x}px, -50%)`;
   };
 
   const printOutput = (html) => {
@@ -1351,6 +1378,19 @@
     });
 
     COMMAND_INPUT.addEventListener('input', resizeInput);
+
+    // Déplacements du caret sans changement de texte (flèches, Home,
+    // End, clic) : le curseur clignotant doit suivre. Le keydown est
+    // différé d'un tick pour laisser le caret bouger d'abord.
+    for (const key of ['keydown', 'keyup']) {
+      COMMAND_INPUT.addEventListener(key, (event) => {
+        if (['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) {
+          setTimeout(updateCursor, 0);
+        }
+      });
+    }
+    COMMAND_INPUT.addEventListener('mouseup', updateCursor);
+    COMMAND_INPUT.addEventListener('focus', updateCursor);
 
     COMMAND_INPUT.addEventListener('keydown', async (event) => {
       // Ctrl+R : entre en recherche inversée, ou passe à la correspondance suivante
