@@ -64,19 +64,6 @@
     "tapez 'help' pour afficher les commandes utilisables"
   ];
 
-  // Cibles acceptées par la commande open (voir cmdOpen)
-  const OPEN_LINKS = {
-    cv:        './root/presentation/CV/CV_Bastien_BONORA_2025.pdf',
-    nastruire: 'https://nastruire.fr',
-    linkedin:  'https://www.linkedin.com/in/bastien-bonora/',
-    github:    'https://github.com/Fracorbas02',
-    tryhackme: 'https://tryhackme.com/p/Fracorbas',
-    thm:       'https://tryhackme.com/p/Fracorbas',
-    pgp:       './root/presentation/pubkey',
-    docs:      'https://docs.bastienbonora.fr',
-    bastodoc:  'https://docs.bastienbonora.fr'
-  };
-
   // ──────────────────────────────────────────────────────────────
   // Utilitaires d'échappement (XSS)
   // ──────────────────────────────────────────────────────────────
@@ -355,29 +342,18 @@
     if (args.length === 0) return 'cat : veuillez donner un argument';
 
     const target = args[0];
-    const path = resolvePath(target);
-    const parentPath = path.slice(0, path.lastIndexOf('/')) || '/';
-    const name = path.slice(path.lastIndexOf('/') + 1);
+    const node = lookUpTree(target);
 
-    // Le champ "type" est une métadonnée de l'arbre, pas un fichier
-    if (name === 'type') {
-      return `cat : ${escapeHTML(target)} : fichier introuvable`;
-    }
-
-    // Le nœud cible : soit un enfant du dossier parent, soit la racine
-    const parent = navigateTree(parentPath);
-    const node = name ? parent?.[name] : parent;
-
-    if (node === undefined || node === null) {
+    if (node === null) {
       return `cat : ${escapeHTML(target)} : fichier introuvable`;
     }
     if (isDirectory(node)) {
       return `cat : ${escapeHTML(target)} : est un dossier`;
     }
-    if (Array.isArray(node)) {
+    if (typeof node !== 'string') {
       return `cat : ${escapeHTML(target)} : fichier binaire (non affichable). Essayez : open`;
     }
-    return escapeHTML(String(node));
+    return escapeHTML(node);
   }
 
   function cmdLs(args) {
@@ -397,13 +373,29 @@
     }
 
     let rows = '';
+    if (option === '-a') {
+      for (const key of ['.', '..']) {
+        rows += `
+        <tr>
+          <td class="helpCommand">${key}</td>
+          <td>dossier</td>
+        </tr>`;
+      }
+    }
+    const TYPE_LABELS = {
+      directory: 'dossier',
+      file: 'fichier',
+      link: 'lien',
+      string: 'texte',
+      array: 'binaire'
+    };
     for (const key of entries) {
       const entry = dir[key];
-      const type = entry?.type ?? (Array.isArray(entry) ? 'array' : typeof entry);
+      const rawType = entry?.type ?? (Array.isArray(entry) ? 'array' : typeof entry);
       rows += `
         <tr>
           <td class="helpCommand">${escapeHTML(key)}</td>
-          <td>${escapeHTML(type)}</td>
+          <td>${TYPE_LABELS[rawType] ?? escapeHTML(rawType)}</td>
         </tr>`;
     }
 
@@ -460,12 +452,24 @@
   function cmdOpen(args) {
     if (args.length === 0) return 'open : veuillez donner au moins un argument';
 
-    const target = args[0].toLowerCase();
-    const url = OPEN_LINKS[target];
-    if (!url) return `open : argument inconnu « ${escapeHTML(target)} »`;
+    const target = args[0];
+    const node = lookUpTree(target);
 
-    window.open(url, '_blank', 'noopener,noreferrer');
-    return 'ouverture en cours...';
+    if (node === null) {
+      return `open : ${escapeHTML(target)} : fichier introuvable`;
+    }
+    if (isDirectory(node)) {
+      return `open : ${escapeHTML(target)} : est un dossier`;
+    }
+    if (typeof node === 'string') {
+      return `open : ${escapeHTML(target)} : fichier texte. Essayez : cat`;
+    }
+    if (!isOpenable(node)) {
+      return `open : ${escapeHTML(target)} : n'est pas ouvrable`;
+    }
+
+    window.open(node.url, '_blank', 'noopener,noreferrer');
+    return `ouverture de ${escapeHTML(target)} dans un nouvel onglet...`;
   }
 
   async function cmdRm(args) {
@@ -657,11 +661,37 @@
   }
 
   /**
-   * Un dossier est un objet non tableau dans l'arbre (avec ou sans
-   * champ "type" — la racine n'en a pas).
+   * Un dossier est un objet de l'arbre sans champ "type" (la racine)
+   * ou avec type "directory". Les fichiers ({ type: "file" }) et les
+   * liens ({ type: "link" }) ne sont pas des dossiers.
    */
   function isDirectory(node) {
-    return node !== null && typeof node === 'object' && !Array.isArray(node);
+    return node !== null && typeof node === 'object'
+      && !Array.isArray(node)
+      && (!node.type || node.type === 'directory');
+  }
+
+  /**
+   * Un élément ouvrable par open : fichier local ou lien externe.
+   */
+  function isOpenable(node) {
+    return node?.type === 'file' || node?.type === 'link';
+  }
+
+  /**
+   * Résout un chemin dans l'arbre et renvoie le nœud cible, ou null
+   * s'il n'existe pas. Le champ "type" est une métadonnée, pas un
+   * fichier : il n'est jamais résolu.
+   */
+  function lookUpTree(target) {
+    const path = resolvePath(target);
+    const name = path.slice(path.lastIndexOf('/') + 1);
+    if (name === 'type') return null;
+
+    const parentPath = path.slice(0, path.lastIndexOf('/')) || '/';
+    const parent = navigateTree(parentPath);
+    const node = name ? parent?.[name] : parent;
+    return node === undefined || node === null ? null : node;
   }
 
   /**
@@ -819,7 +849,13 @@
   function argumentCandidates(command, prefix) {
     let pool = [];
     switch (command) {
-      case 'open': pool = Object.keys(OPEN_LINKS); break;
+      case 'open': {
+        const dir = navigateTree(state.currentDir);
+        pool = Object.keys(dir ?? {})
+          .filter((key) => key !== 'type')
+          .filter((key) => isOpenable(dir[key]));
+        break;
+      }
       case 'man':  pool = Object.keys(state.manCommands ?? {}); break;
       case 'set':  pool = ['username']; break;
       case 'get':  pool = ['sha']; break;
@@ -836,7 +872,7 @@
         const dir = navigateTree(state.currentDir);
         pool = Object.keys(dir ?? {})
           .filter((key) => key !== 'type')
-          .filter((key) => !isDirectory(dir[key]));
+          .filter((key) => typeof dir[key] === 'string');
         break;
       }
       default: return [];
