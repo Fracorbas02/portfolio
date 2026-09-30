@@ -52,10 +52,26 @@
     cursor: 0
   };
 
-  const BOOT_LINES_FAST = [
-    'portfolio initialisation ............................................',
-    'please wait a moment, I have to figure out something..........',
-    'portfolio created, ready to display informations........'
+  // Log de démarrage façon systemd/Debian : les lignes défilent
+  // entières et à toute vitesse, comme un vrai boot.
+  const BOOT_SEQUENCE = [
+    { kind: 'kernel', t: 0.000000, msg: 'Linux portfolio-os 6.1.0-web (bastien@bastienbonora.fr)' },
+    { kind: 'kernel', t: 0.042317, msg: 'Command line: init=/bin/portfolio ro quiet splash' },
+    { kind: 'kernel', t: 0.139820, msg: 'Initializing cgroup subsys: competences' },
+    { kind: 'kernel', t: 0.310475, msg: 'Memory: JS heap calibrated for visitors' },
+    { kind: 'ok',     msg: 'Mounted /root filesystem.' },
+    { kind: 'ok',     msg: 'Started Shell Emulation Service.' },
+    { kind: 'ok',     msg: 'Started Tab-Completion Service.' },
+    { kind: 'ok',     msg: 'Started Command History Service.' },
+    { kind: 'ok',     msg: 'Started Levenshtein Suggestion Engine.' },
+    { kind: 'ok',     msg: 'Mounted /root/certifications.' },
+    { kind: 'ok',     msg: 'Mounted /root/competences.' },
+    { kind: 'ok',     msg: 'Started TryHackMe Write-up Archive.' },
+    { kind: 'ok',     msg: 'Started Neofetch Display Service.' },
+    { kind: 'ok',     msg: 'Started Easter Egg Detection Daemon.' },
+    { kind: 'fail',   msg: 'Failed to start Coffee.service.' },
+    { kind: 'fail',   msg: "See 'systemctl status coffee' for details.", indent: true },
+    { kind: 'ok',     msg: 'Reached target Portfolio Shell.' }
   ];
 
   const BOOT_LINES_NORMAL = [
@@ -107,20 +123,38 @@
   // ──────────────────────────────────────────────────────────────
   // Séquence de boot
   // ──────────────────────────────────────────────────────────────
+  /**
+   * Rend une ligne du log de boot à la manière de systemd :
+   * horodatage gris pour le noyau, [ OK ] vert, [FAILED] rouge.
+   */
+  const bootLineHTML = (line) => {
+    if (line.kind === 'kernel') {
+      const ts = line.t.toFixed(6).padStart(11, ' ');
+      return `<span class="bootTime">[${ts}]</span> ${escapeHTML(line.msg)}`;
+    }
+    if (line.kind === 'fail') {
+      const pad = line.indent ? '         ' : '';
+      return `${pad}<span class="bootFail">[FAILED]</span> ${escapeHTML(line.msg)}`;
+    }
+    return `<span class="bootOk">[  OK  ]</span> ${escapeHTML(line.msg)}`;
+  };
+
   const startPortfolio = async () => {
     const defaultText = document.getElementById('defaultText');
 
-    for (const line of BOOT_LINES_FAST) {
+    // Log de services : rapide, une ligne entière par tick
+    for (const line of BOOT_SEQUENCE) {
       if (state.bootInterrupted) break;
-      await typewrite(defaultText, line, 10);
-      await delay(800);
-      defaultText.innerHTML = '';
+      defaultText.innerHTML += `${bootLineHTML(line)}\n`;
+      await delay(50);
     }
 
+    // Message d'accueil : effet machine à écrire rapide
+    await delay(300);
     for (const line of BOOT_LINES_NORMAL) {
       if (state.bootInterrupted) break;
-      await typewrite(defaultText, line, 20);
-      await delay(800);
+      await typewrite(defaultText, line, 8);
+      await delay(150);
     }
 
     // Comme un shell fraîchement ouvert : neofetch au-dessus du prompt

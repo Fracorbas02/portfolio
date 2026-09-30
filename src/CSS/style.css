@@ -225,6 +225,20 @@ body.is-window-dragging * {
   word-break: break-word;
 }
 
+/* Log de boot façon systemd : [ OK ] vert, [FAILED] rouge,
+   horodatage du noyau atténué */
+.bootOk {
+  color: var(--success);
+  font-weight: 600;
+}
+.bootFail {
+  color: var(--error);
+  font-weight: 600;
+}
+.bootTime {
+  color: var(--text-muted);
+}
+
 /* Ligne courante de saisie */
 .currentShellLine {
   display: flex;
