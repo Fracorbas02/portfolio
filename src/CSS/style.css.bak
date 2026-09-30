@@ -1,0 +1,221 @@
+@font-face {
+    font-family: "kodeMono";
+    src: url("../asset/fonts/kode_mono/KodeMono-VariableFont_wght.ttf");
+}
+
+body {
+    background-color: black;
+}
+
+/* Style of the shell */
+
+.shellContainer {
+    width: 80vw;
+    display: flex;
+    margin : 10vh 10vw;
+    height: 80vh;
+    background-color: black;
+    align-content: flex-start;
+    flex-direction: column; /* Modification de la direction en colonne */
+    font-family: "kodeMono", sans-serif;
+    color: #00ff35;
+    overflow-y: auto;
+}
+
+.currentShellLine {
+    display: flex;
+    align-items: flex-start;
+    position: relative;
+}
+/* taking off the cursor of the input */
+.currentShellLine input[type="text"] {
+    caret-color: black; /* Couleur du pipe */
+}
+
+.commandInput {
+    background-color: rgba(0, 0, 0, 1); /* making it invisible */
+    color: #00ff35;
+    font-family: "kodeMono", sans-serif;
+    width: 1vw;
+    transition: width 0s; /* Animation de transition */
+}
+
+.cursor {
+    position: absolute;
+    bottom: 0;
+    width: 0.8em; /* Largeur du curseur */
+    height: 2px; /* Hauteur du curseur */
+    margin-left: 0.5em;
+    background-color: #00ff35; /* Couleur du curseur */
+    animation: blink 0.8s infinite; /* Animation pour le clignotement */
+    opacity: 0; /* Définir l'opacité initiale à 0 */
+}
+
+@keyframes blink {
+    0% {
+        opacity: 0;
+    }
+    50% {
+        opacity: 1;
+    }
+    100% {
+        opacity: 0;
+    }
+}
+
+
+/* personalizing the scrollbar */
+::-webkit-scrollbar {
+    background-color: black;
+}
+
+::-webkit-scrollbar-thumb {
+    background-color: black;
+}
+
+/* style of the different commands */
+
+/* STYLE OF COMMAND 'HELP' */
+th {
+    color: rgb(16, 64, 196);
+}
+.helpCommand {
+    color: rgb(219, 0, 0);
+}
+tr{
+    margin-top: 2vh;
+}
+table {
+    display: flex;
+    flex-direction: column;
+}
+.helpCommandName {
+    width: 30vw;
+}
+.helpCommand{
+    width: 30vw;
+}
+
+
+/* for the hamburger menu */
+.hamburgerMenu {
+    display: inline-block;
+    cursor: pointer;
+    position: absolute;
+    z-index: 3;
+    top: 1.5em;
+    left: 1.5em;
+}
+
+.bar1,
+.bar2,
+.bar3 {
+    width: 35px;
+    height: 5px;
+    background-color: #00ff35;
+    margin: 6px 0;
+    transition: 0.4s;
+}
+
+.change .bar1 {
+    transform: translate(0, 11px) rotate(-45deg);
+}
+
+.change .bar2 {
+    opacity: 0;
+}
+
+.change .bar3 {
+    transform: translate(0, -11px) rotate(45deg);
+}
+
+/* Content of the menu */
+
+.menuContent {
+    position: fixed;
+    top: 0;
+    left: -40%;
+    /* Initial position */
+    width: 40%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.8);
+    transition: left 0.4s ease-in-out;
+    z-index: 2; /* Assure que le menu soit au-dessus du reste du contenu */
+}
+
+.accordion {
+    background-color: rgba(0, 0, 0, 0);
+    ;
+    color: #999;
+    cursor: pointer;
+    padding: 18px;
+    width: 100%;
+    border: none;
+    text-align: left;
+    align-items: flex-start;
+    outline: none;
+    font-size: 20px;
+    transition: 0.4s;
+    font-family: "kodeMono", sans-serif;
+}
+
+.active,
+.accordion:hover {
+    background-color: #ccc;
+}
+
+.accordion:after {
+    content: '\02795';
+    /* Unicode character for "plus" sign (+) */
+    color: red;
+    font-size: 13px;
+    float: right;
+    margin-left: 5px;
+
+}
+
+.active:after {
+    content: "\2796";
+    /* Unicode character for "minus" sign (-) */
+}
+
+button.accordion.active {
+    box-shadow: 0 5px 10px #333;
+}
+
+.insideMenu {
+    margin-top: 10vh;
+    font-family: "kodeMono", sans-serif;
+}
+
+
+.panel {
+    padding: 0 18px;
+    max-height: 0;
+    background-color: #777;
+    overflow: hidden;
+    transition: max-height 0.2s ease-out;
+    align-items: start;
+}
+
+.panelButton {
+    padding: 0.5em;
+    width: 100%;
+    background-color: #777;
+    border: none;
+    border-radius: 5px;
+    font-family: "kodeMono", sans-serif;
+}
+
+.panelButton:first-child {
+    margin-top: 0.8em;
+}
+
+.panelButton:last-child {
+    margin-bottom: 0.8em;
+}
+
+.panelButton:hover {
+    background-color: #333;
+    color: #ccc;
+}

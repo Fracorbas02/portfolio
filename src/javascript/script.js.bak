@@ -1,0 +1,648 @@
+
+// #######################################################################
+// DECLARATION OF CONSTANTS
+// #######################################################################
+
+// these varuiables will contain the json data for each categories
+let COMMANDS = null;
+let MAN_COMMANDS = null;
+let FILES_TO_OPEN = null;
+let PORTFOLIO_DATA = null;
+let TreeArchitechture = null;
+let CurrentDir = null;
+// Initialisation of the sessionStorage
+fetch("./src/JSON/elements.json")
+.then(response => response.json())
+.then(data => {
+    // Stocker le contenu du fichier JSON dans le sessionStorage
+    sessionStorage.setItem('portfolioData', JSON.stringify(data));
+
+    // Vous pouvez effectuer d'autres actions avec les données ici
+    initializePortfolioVariables();
+    startPortfolio();
+})
+.catch(error => console.error("Une erreur s'est produite lors du chargement du fichier JSON :", error));
+
+
+
+const COMMAND_INPUT = document.getElementById("commandInput");
+const CURSOR = document.querySelector(".cursor");
+let   DEFAULT_TEXT_EL = document.getElementById("defaultText");
+const DEFAULT_INITALISATION_TEXT = ["portfolio initialisation ............................................","please wait a moment, I have to figure out something..........","portfolio created, ready to display informations........"]
+const DEFAULT_TEXT = ["Bienvenue sur le portfolio de BONORA Bastien$","Vous trouverez dans ce terminal toutes les informations me concernant$","tapez 'help' pour afficher les commandes utilisables"];
+const DEFAULT_BEGIN_SHELL_LINE = document.getElementById("defaultBeginShellLine");
+const SHELL_CONTAINER = document.getElementById("shellContainer");
+const ACCORDION = document.getElementsByClassName("accordion");
+const SIDE_MENU_BUTTONS = document.getElementsByClassName("panelButton");
+const CURRENT_SHELL_LINE = document.querySelector(".currentShellLine");
+let SHA_VARIABLES = [];
+
+// #######################################################################
+// ADDING GLOBAL VARIABLES
+// #######################################################################
+let keySequence = ""; // used to bypass the intro
+let normalStarting = true;
+
+// focusing the input anytime
+COMMAND_INPUT.focus(); // focusing directly to the input command
+document.addEventListener('click', function() {COMMAND_INPUT.focus();});
+
+
+// changing some style 
+let beginShelllength = DEFAULT_BEGIN_SHELL_LINE.offsetWidth;
+CURSOR.style.left=beginShelllength+'px';
+CURRENT_SHELL_LINE.style.display = "none";
+
+// #######################################################################
+// INITIALISATION OF VARIABLES
+// #######################################################################
+let completeUsername = DEFAULT_BEGIN_SHELL_LINE.innerHTML; // the name we have in the prompt by dafault
+let username = ""; // the variable that will conrtain the username
+let machineName = ""; // will contain the name of the machine
+let tempName = "";
+for (let letters of completeUsername) {
+    // taking every letters do see who is the username, the name of the machine and the current dir
+    if (letters == "@") {
+        username = tempName;
+        tempName = "";
+    } 
+    if (letters == ":") {
+        machineName = tempName;
+        tempName = "";
+    }
+    tempName += letters;
+}
+tempName = "";
+// #######################################################################
+// DECLARATION OF EVENT LISTENERS
+// #######################################################################
+COMMAND_INPUT.addEventListener("keypress", function(event) {
+    if (event.key === "Enter") {
+        const command = COMMAND_INPUT.value.trim(); // Trim to remove leading/trailing whitespace
+        executeCommand(command);
+        scrollToBottom(); // scrolling to the last element that has beed displayed
+        COMMAND_INPUT.value = ""; // Clear input after execution
+        // taking the nexest value of the shell
+        beginShelllength = DEFAULT_BEGIN_SHELL_LINE.offsetWidth; 
+
+        CURSOR.style.left = beginShelllength+'px'; // resetting the position of the CURSOR
+    }
+});
+COMMAND_INPUT.addEventListener("input", function() {
+    // Calculer la largeur nécessaire pour contenir le texte entré
+    const COMMAND_INPUTLength = this.value.length * 9.65;
+    // Appliquer la nouvelle largeur avec une transition fluide
+    this.style.width = COMMAND_INPUTLength + 'px';
+    CURSOR.style.left = COMMAND_INPUTLength + beginShelllength +'px'; // Placer le curseur sous la dernière lettre de l'input
+});
+
+document.getElementById("hamburgerMenu").addEventListener("click", function () {rotateHamburger(this)}); 
+
+// the listeners for the sub menu
+let i;
+for (i = 0; i < ACCORDION.length; i++) {
+    // allow the different sub menu to be opened
+    ACCORDION[i].addEventListener("click", function() {
+        this.classList.toggle("active");
+        let panel = this.nextElementSibling;
+        if (panel.style.maxHeight) {
+            panel.style.maxHeight = null;
+        } 
+        else {
+            panel.style.maxHeight = panel.scrollHeight + "px";
+        }
+    });
+}
+
+// adding the event listeners to the side buttons
+for (i=0; i < SIDE_MENU_BUTTONS.length; i++) {
+    SIDE_MENU_BUTTONS[i].addEventListener ("click", function(){redirectToDesireURL(this.dataset.url)});
+}
+
+document.addEventListener('click', function (event) {
+    const MENU_CONTENT = document.getElementById("menuContent");
+    const MENU_HAMBURGER = document.getElementById("hamburgerMenu");
+
+    // Check if the click is outside of the menu
+    if (!MENU_CONTENT.contains(event.target) && !MENU_HAMBURGER.contains(event.target) && MENU_CONTENT.classList.contains("open")) {
+        rotateHamburger(MENU_HAMBURGER); // Call function to close the menu and change icon
+    }
+});
+
+document.addEventListener('keydown', function(event) {
+    // check if the key us "4" or "2"
+    if (event.key === "4" || event.key === "2") {
+        // adding the key to the sequence
+        keySequence += event.key;
+
+        // check if the sequence is "42"
+        if (keySequence === "42") {                       
+            getClearCommand();
+            DEFAULT_TEXT_EL = document.getElementById("defaultText");
+            normalStarting = false;                       
+            setTimeout(function(){ 
+                writeNormalText(DEFAULT_TEXT_EL, "THE HOLY VALUE OF 42", 70);
+                CURRENT_SHELL_LINE.style.display="flex"; 
+            },4000);
+           // making the shell appear 
+            COMMAND_INPUT.focus(); 
+            commandInput.value = "";
+            // reinit the sequence after finding the one
+            keySequence = "";
+        }
+    } else {
+        // reinit if another key is pressed
+        keySequence = "";
+    }
+});
+
+// #######################################################################
+// DECLARATION OF FUNCTIONS
+// #######################################################################
+
+function initializePortfolioVariables() {
+    PORTFOLIO_DATA = JSON.parse(sessionStorage.getItem('portfolioData')); // loading it in the variables.
+
+    //Loading the different elements in some constants.
+    COMMANDS = PORTFOLIO_DATA.commands;
+    MAN_COMMANDS = PORTFOLIO_DATA.manCommands;
+    FILES_TO_OPEN = PORTFOLIO_DATA.filesToOpen;
+    TreeArchitechture = PORTFOLIO_DATA.tree.tree // contain the tree architecture of the website
+    CurrentDir = PORTFOLIO_DATA.tree.currentDir // contains the current dir, the /root
+}
+
+function writeText(textElement, text, speed, index = 0) {    
+    return new Promise((resolve) => {
+        const intervalId = setInterval(() => {
+            if (index < text.length) {
+                if (text.charAt(index) == '$') {
+                    textElement.innerHTML+='<br><br>';
+                    index++;
+                }
+                if (text.charAt(index) == '_') {
+                    textElement.innerHTML+='<br>';
+                    index ++;
+                }
+                else {
+                    textElement.innerHTML += text.charAt(index);
+                    index++;
+                }
+            } 
+            else {
+                clearInterval(intervalId);
+                resolve(); // Résoudre la promesse une fois que le texte a été entièrement écrit
+            }
+        }, speed); // Délai entre l'ajout de chaque caractère (en millisecondes)
+    });
+}
+
+function writeNormalText (textElement, text, speed, index = 0) {
+    const intervalId = setInterval(() => {
+        if (index < text.length) {
+            if (text.charAt(index) == '$') {
+                textElement.innerHTML+='<br><br>';
+                index++;
+            }
+            if (text.charAt(index) == '_') {
+                textElement.innerHTML+='<br>';
+                index ++;
+            }
+            else {
+                textElement.innerHTML += text.charAt(index);
+                index++;
+            }
+        } 
+        else {
+            clearInterval(intervalId);
+        }
+    }, speed);
+}
+
+async function startPortfolio() {
+        // function that make the text appear at different speed at the begining
+        
+        for (const TEXT of DEFAULT_INITALISATION_TEXT) {
+            if (normalStarting === true){
+                await writeText(DEFAULT_TEXT_EL, TEXT, 10);
+                await new Promise(resolve => setTimeout(resolve, 1000));
+                defaultText.innerHTML = "";
+            }
+
+        }   
+        
+        for (const text of DEFAULT_TEXT) {
+            if (normalStarting === true) {
+                await writeText(DEFAULT_TEXT_EL, text, 20); // Attendre que le texte soit écrit avant de passer au suivant
+                await new Promise(resolve => setTimeout(resolve, 1000)); // Attendre 2 secondes avant de passer au texte suivant        
+                //DEFAULT_TEXT_EL.innerHTML = '';
+            }
+     
+        }
+        CURRENT_SHELL_LINE.style.display = "flex";
+        COMMAND_INPUT.focus();
+        //DEFAULT_TEXT_EL.innerHTML = DEFAULT_TEXT[DEFAULT_TEXT.length - 1];
+}
+function executeCommand(command) {
+    command = command.toLowerCase();
+    let output = "";
+    let commandSplit = command.split(' '); // creating a list with all the arguments
+    if (commandSplit.length > 1) {
+        switch (commandSplit[0]) {
+            case 'man' :
+                commandSplit.splice(0, 1); // taking of the first element of the list
+                output = getManCommand(commandSplit);
+                break;
+            case 'set' :
+                commandSplit.splice(0,1);
+                output = getSetCommand(commandSplit);
+                break;
+            case 'open' :
+                commandSplit.splice(0,1);
+                output = getOpenCommand(commandSplit);
+                break;
+            case 'rm' :
+                commandSplit.splice(0,1);
+                output = getRmCommand(commandSplit);
+                break;
+            case 'get' :
+                commandSplit.splice(0,1);
+                output=getGetCommand(commandSplit);
+                break;
+            case 'ls' :
+                commandSplit.splice(0,1);
+                output=getLsCommand(commandSplit);
+                break;
+            default :
+                output = "bash: \""+commandSplit[0]+"\" commande introuvable ";
+                break;
+        }
+    }
+    else {
+        switch (command) {
+            case "show" :
+                // Simulate fetching projects from a database or API
+                const projects = ["Project 1", "Project 2", "Project 3"];
+                output = "List of projects:\n";
+                projects.forEach(project => {
+                output += "- " + project + "\n";
+                })
+                break;
+            case "help" :
+                output = getHelpCommand();
+                break;
+            case "" :
+                output = "";
+                break;
+            case "clear" :
+                output = "";
+                getClearCommand();
+                return 0; // stoping here to have a clear like command (bc of the output at the end of the function)
+                break;
+            case 'man' :
+                output = "man : aucun argument fourni";
+                break;
+            case 'reboot' :
+                getRebootCommand();
+                break;
+            case 'get' :
+                output = "get : Veuillez donner au moins un argument";
+                break;
+            case 'pwd' :
+                output=getPwdCommand();
+                break;
+            case 'ls' :
+                output=getLsCommand();
+                break;
+            default :
+                output = "Command not found: " + command;
+                break;
+        }
+    }
+    output =DEFAULT_BEGIN_SHELL_LINE.innerHTML + command + "<br>" + output;
+    displayOutput(output);
+}
+function displayOutput(output) {
+    const outputLine = document.createElement("div");
+    outputLine.innerHTML = output;
+    shellOutput.appendChild(outputLine);
+}
+
+function getLsCommand(option=null) {
+    // This function is used to display the directories we have in our current directory
+    let output = `
+            <table class="helpOutput">
+                <thead>
+                    <tr>
+                        <th class="helpCommandName">element</th>
+                        <th>type</th>
+                    </tr>
+                </thead>
+                <tbody>`;
+    let CurrentDirTab = CurrentDir.split("/");
+    let tabLength = CurrentDirTab.length;
+    let tempDir = "";
+    let indice = 1; // we dont want the 1st element of the tab to be used (it's "")
+    while (indice < tabLength) {
+        tempDir = TreeArchitechture[CurrentDirTab[indice]];
+        indice += 1;
+        CurrentDirTab = tempDir;
+    }
+    // we now have the current directories in JSON format
+    let JsonDirectories = getKeysFromJSON(CurrentDirTab); // geting the keys of the current directory
+    if (option == "-a") {
+        for (element of JsonDirectories) {
+            output += `
+                <tr>
+                    <td class="helpCommand">${element}</td>
+                    <td>${CurrentDirTab[element].type}</td>
+                </tr>
+            `;            
+        }
+    }
+    else if (option == null) {
+        for (element of JsonDirectories) {
+            if (element[0] != ".") {
+            output += `
+                <tr>
+                    <td class="helpCommand">${element}</td>
+                    <td>${CurrentDirTab[element].type}</td>
+                </tr>
+            `;
+            }
+        }
+    }
+    else {
+        output = `l'option ${option} n'existe pas, veuillez utiliser la commande man ls pour plus d'information sur l'utilisation de cette commande.`
+    }
+    
+    return output;
+}
+
+function getKeysFromJSON (JSON_Data) {
+    // function used to return the key of the current JSON Data
+    return Object.keys(JSON_Data);
+}
+
+function getPwdCommand() {
+    // This function is used to display the current dir we're in
+    return CurrentDir;
+}
+
+function getManCommand (command) {
+    if (command.length == 0) {
+        return "veuillez donner au moins un argument";
+    }
+    let output = "";
+    if (command[0] in MAN_COMMANDS) {
+        let commandData = MAN_COMMANDS[command[0]];
+        output = `
+            ${commandData.description}<br>
+            <table class="helpOutput">
+                        <thead>
+                            <tr>
+                                <th class="helpCommandName">variable</th>
+                                <th>utilisation</th>
+                            </tr>
+                        </thead>
+                        <tbody>`;
+        for (element of commandData.options) {
+            output += `
+                <tr>
+                    <td class="helpCommand">${element.name}</td>
+                    <td>${element.usage}</td>
+                </tr>
+            `;
+        }
+        output += `
+        </tbody>
+        </table>
+        `;            
+    }
+    else {
+        output = `man : aucun élément pour la commande ${command[0]}`;
+    }
+    return output;
+}
+
+function changeUsername (username) {
+    return "hello";
+}
+
+function getSetCommand(command) {
+    if (command.length == 0 ) {
+        return "veuillez donner au moins un argument";
+    }
+    switch (command[0]) {
+        case "username" :
+            let username = "";
+            command.splice(0,1);
+            if (command.length > 1) {
+                for (element of command) {
+                    username += '_' + element;
+                }  
+                DEFAULT_BEGIN_SHELL_LINE.innerHTML = username.slice(1, username.length) + ">";
+            }
+            else {
+                for (element of command) {
+                    username += element
+                }
+                DEFAULT_BEGIN_SHELL_LINE.innerHTML = username + ">";
+            }
+            
+            return "modification effectuée dans le terminal";
+            break;
+        
+        default :
+            return `unknown argument "${command[0]}"`;
+            break;
+
+    }
+}
+
+function getOpenCommand (command) {
+    // function used to open a specific file or website
+    let output = ""
+    if (command.length == 0 ) {
+        return "veuillez donner au moins un argument";
+    }
+    switch (command[0]) {
+        case "cv" :
+            window.open("./root/presentation/CV/CV_Bastien_BONORA_2025.pdf");
+            break;
+        case "nastruire" :
+            window.open("https://nastruire.fr");
+            break;
+        case "linkedin" :
+            window.open("https://www.linkedin.com/in/bastien-bonora/");
+            break;
+        case "tryhackme" :
+            window.open("https://tryhackme.com/p/Fracorbas");
+            break;
+        case "thm" :
+            window.open("https://tryhackme.com/p/Fracorbas");
+            break;
+        case "pgp" :
+            window.open("./root/presentation/pubkey");
+            break;
+        default :
+            return "open : unknown argument '" + command[0]+"'";
+            break;
+    }
+    output = "ouverture en cours...";
+    return output;
+}
+function scrollToBottom () {
+    SHELL_CONTAINER.scrollTop = SHELL_CONTAINER.scrollHeight;
+}
+
+function getClearCommand() {
+    let username = DEFAULT_BEGIN_SHELL_LINE.innerHTML;
+    let output = `
+    <p id="defaultText"></p>
+    `;
+    shellOutput.innerHTML = output;
+}
+
+function getHelpCommand() {
+    output = `
+    <table class="helpOutput">
+                        <thead>
+                            <tr>
+                                <th class="helpCommandName">Nom de la commande</th>
+                                <th>Description</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        
+    `;
+    for (element of COMMANDS) {
+        output += `
+        <tr>
+            <td class="helpCommand">${element.name}</td>
+            <td>${element.description}</td>
+        </tr>
+
+        <tr>
+            <td>_______________</td>
+            <td>_______________</td>
+
+        </tr>
+        `;
+    }
+    output += `</tbody>`;
+    return output;
+}
+
+
+function rotateHamburger (x) {
+    // allow the hamburger menu to rotate between "X" and its normal form
+    x.classList.toggle("change"); // setting the hamburger menu to X
+    const MENU_CONTENT = document.getElementById("menuContent");
+    const MENU_HAMBURGER = document.getElementById("hamburgerMenu");
+
+    if (MENU_CONTENT.classList.contains("close")) {
+        MENU_CONTENT.style.left = "0";
+        MENU_CONTENT.classList.remove("close");
+        MENU_CONTENT.classList.add("open");
+
+        MENU_HAMBURGER.style.zIndex = "3"; // making the hamburger above the menu
+    }
+    else {
+        MENU_CONTENT.style.left = "-40%";
+        MENU_CONTENT.classList.remove("open");
+        MENU_CONTENT.classList.add("close");
+        MENU_HAMBURGER.style.zIndex = "1"; // setting the hamburger at its original place
+    }
+}
+
+function getRmCommand(command) {
+    let output = "";
+    switch (command[0]) {
+        case "*" :
+            let elementToWrite = "Je ne vous permet pas de supprimer mon travail_ Pourquoi faites-vous ça ???_  ..................................................................................";
+            DEFAULT_TEXT_EL.innerHTML = "";
+            writeNormalText(DEFAULT_TEXT_EL, elementToWrite, 70);
+            setTimeout(() => {
+                DEFAULT_TEXT_EL.innerHTML = "";
+                SHELL_CONTAINER.innerHTML = "";
+            }, 10000);
+            setTimeout(() => {
+                getRebootCommand();
+            }, 15000);
+            break;
+        default :
+            output = `Je ne connais pas cet élément : ${command[0]}`;
+            break;
+    }
+    return output;
+}
+
+function redirectToDesireURL(url) {
+    window.open(url);
+}
+
+function getRebootCommand() {
+    window.location.reload();
+}
+
+function getGetCommand (command) {
+    let output = "";
+    switch (command[0]) {
+        case "sha" :
+            if (command.length > 1) {
+                // getting the sha of the value we asked, and print it in the CLI
+                const digestHex = sha256(command[1]).then((digestHex) => sessionStorage.setItem(command[1], digestHex))
+                SHA_VARIABLES.push(command[1]);    
+                let hash = sessionStorage.getItem(command[1]);
+                output = "la valeur sha256 de " + command[1] + " est : " + hash;
+            }          
+            else {
+                output = `
+                        <table class="helpOutput">
+                            <thead>
+                                <tr>
+                                    <th class="helpCommandName">mot en clair</th>
+                                    <th>hash correspondant</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                            
+                `;
+            for (element of SHA_VARIABLES) {
+                
+
+            output += `
+                <tr>
+                    <td class="helpCommand">${element}</td>
+                    <td>${sessionStorage.getItem(element)}</td>
+                </tr>
+
+                <tr>
+                    <td>_______________</td>
+                    <td>_______________</td>
+
+                </tr>
+                `;
+            }
+            }       
+    }
+    return output;
+}
+
+
+// sha function found here : 
+//https://stackoverflow.com/questions/18338890/are-there-any-sha-256-javascript-implementations-that-are-generally-considered-t
+async function sha256(message) {
+    // encode as UTF-8
+    const msgBuffer = new TextEncoder().encode(message);                    
+
+    // hash the message
+    const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
+
+    // convert ArrayBuffer to Array
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+
+    // convert bytes to hex string                  
+    const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+    return hashHex;
+}

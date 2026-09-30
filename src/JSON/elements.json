@@ -1,0 +1,160 @@
+{
+    "commands": [
+      {
+        "name": "show",
+        "description": "Affiche la liste des projets disponibles."
+      },
+      {
+        "name": "help",
+        "description": "Affiche la liste des commandes disponibles."
+      },
+      {
+        "name": "set",
+        "description": "Permet de définir un élément dans le shell. Exemple : set username bastien."
+      },
+      {
+        "name": "man",
+        "description": "Permet d'afficher les détails d'utilisation d'une commande. Exemple : man set."
+      },
+      {
+        "name": "open",
+        "description": "Permet d'ouvrir un fichier dans un nouvel onglet. Exemple : open CV."
+      },
+      {
+        "name": "clear",
+        "description": "Permet d'effacer le contenu du terminal."
+      },
+      {
+        "name": "rm",
+        "description": "permet de supprimer un élément"
+      },
+      {
+        "name": "get",
+        "description": "permet de récupérer un élément généré depuis le shell"
+      },
+      {
+        "name": "ls",
+        "description": "permet d'afficher les éléments qui sont présent dans notre dossier actuel"
+      },
+      {
+        "name": "pwd",
+        "description": "permet d'afficher le dossier dans lequel nous sommes actuellement (abréviation de Print Working Directory)"
+      }
+    ],
+    "manCommands": {
+      "set": {
+        "description": "Cette commande est utilisée afin de définir des variables dans le terminal. Vous pouvez utiliser la commande avec les éléments suivants :",
+        "options":[
+          {
+            "name": "username",
+            "usage": "utilisée pour définir le nom de l'utilisateur. Exemple : set username <nom de l'utilisateur>"
+          }
+        ]
+        
+      },
+      "open": {
+        "description": "Cette commande est utilisée pour ouvrir des fichiers dans un nouvel onglet. Voici les variables que vous pouvez utiliser avec cette commande :",
+        "options" :[
+            {
+                "name": "cv",
+                "usage": "utilisée pour ouvrir mon CV : exemple : open cv"
+            },
+            {
+                "name": "linkedin",
+                "usage": "utilisé pour ouvrir mon compte linkedin."
+            },
+            {
+                "name": "tryhackme",
+                "usage": "permet de visualiser mon compte tryhackme, vous pouvez utiliser : open tryhackme ou open thm"
+            },
+            {
+                "name" : "pgp",
+                "usage": "permet d'ouvrir l'onglet de la clé PGP de mon portfolio. Cette clé peut être utilisée pour me contacter via mon mail personnel : bastien.bonora@gmail.com"
+            }
+        ]   
+      },
+      "pwd": {
+        "description": "Cette commande permet d'afficher le dossier dans lequel nous sommes",
+        "options" :[
+          {
+            "name": "none",
+            "usage": "Cette commande ne possède pas d'argument"
+          }
+        ]
+      },
+      "ls": {
+        "description": "Cette commande permet de lister les éléments présent dans le dossier dans lequel on se trouve",
+        "options" :[
+          {
+            "name": "-a",
+            "usage": "Permet d'afficher également les éléments masqués dans le dossier actuel"
+          }
+        ]
+      },
+      "rm": {
+        "description": "Cette commande est utilisée pour supprimer des éléments dans le shell",
+        "options" :[
+          {
+            "name": "*",
+            "usage": "suprpime tout ce qu'il y a dans le shell, NE FAITES PAS CA"
+          }
+        ]
+      },
+      "get": {
+        "description": "Cette commande permet de récupérer des éléments qui peuvent être générés dans le shell",
+        "options" :[
+          {
+            "name": "sha",
+            "usage": "permet de récupérer le hashage en sha256 d'une entrée. Exemple : get sha MyPassword"
+          }
+        ]
+      }
+    },
+    "filesToOpen": [
+      {
+        "name": "CV",
+        "url": "./root/presentation/CV/CV_Bastien_BONORA_2024.pdf"
+      },
+      {
+        "name": "nastruire",
+        "url": "https://nastruire.fr"
+      },
+      {
+          "name": "tryhackme",
+          "url": "https://tryhackme.com/p/Fracorbas"
+      },
+      {
+          "name": "thm",
+          "url": "https://tryhackme.com/p/Fracorbas"
+      }
+    ],
+    "tree" : {
+        "currentDir": "/root",
+        "tree": {
+            "root": {
+              ".": {
+                "type": "directory"
+              },
+              "..": {
+                "type": "directory"
+              },
+              "presentation": {
+                "type": "directory",
+                "CV": [
+                    "CV_Bastien_BONORA_2024.pdf"
+                ]
+              },
+              "projets": {
+                  "type": "directory",
+                  "nastruire": [
+                      "nastruire.html",
+                      "presentation_nastruire.pdf"
+                  ]
+              }
+            }
+            
+        }
+    }
+
+  }
+  

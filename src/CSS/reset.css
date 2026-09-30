@@ -1,0 +1,104 @@
+/* ─────────────────────────────────────────────────────────────
+   Modern minimal reset
+   Inspiré d'Andy Bell + sensible defaults
+   ───────────────────────────────────────────────────────────── */
+
+/* Box sizing cohérent partout */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+/* Reset des marges */
+* {
+  margin: 0;
+  padding: 0;
+}
+
+/* Améliorations html / body */
+html {
+  -webkit-text-size-adjust: 100%;
+  tab-size: 4;
+  scroll-behavior: smooth;
+}
+
+body {
+  min-height: 100vh;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* Médias par défaut bien comportés */
+img,
+picture,
+video,
+canvas,
+svg {
+  display: block;
+  max-width: 100%;
+}
+
+/* Hériter les fontes pour les form controls */
+input,
+button,
+textarea,
+select {
+  font: inherit;
+  color: inherit;
+}
+
+/* Reset des boutons */
+button {
+  background: none;
+  border: 0;
+  cursor: pointer;
+}
+
+/* Wrap des textes longs */
+p,
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  overflow-wrap: break-word;
+}
+
+/* Listes dénuées par défaut */
+ul,
+ol {
+  list-style: none;
+}
+
+/* Liens héritent de la couleur */
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+/* Tableaux */
+table {
+  border-collapse: collapse;
+  border-spacing: 0;
+}
+
+/* Focus accessible et visible (clavier uniquement) */
+:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 2px;
+}
+
+/* Réduction des animations si l'utilisateur le demande */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
