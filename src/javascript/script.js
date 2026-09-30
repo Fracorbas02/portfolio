@@ -459,13 +459,16 @@
    * Place le curseur clignotant sur la position réelle du caret :
    * on mesure la largeur du texte situé avant le caret et on
    * translate le curseur d'autant. Gère les déplacements au milieu
-   * de la ligne (Home, flèches, clic).
+   * de la ligne (Home, flèches, clic). Le calage vertical se fait
+   * sur la boîte de l'input — pas du conteneur, qui a du padding.
    */
   const updateCursor = () => {
     const caret = COMMAND_INPUT.selectionStart ?? COMMAND_INPUT.value.length;
     MEASURE.textContent = COMMAND_INPUT.value.slice(0, caret);
     const x = COMMAND_INPUT.offsetLeft + MEASURE.offsetWidth;
-    CURSOR.style.transform = `translate(${x}px, -50%)`;
+    const y = COMMAND_INPUT.offsetTop
+            + (COMMAND_INPUT.offsetHeight - CURSOR.offsetHeight) / 2;
+    CURSOR.style.transform = `translate(${x}px, ${y}px)`;
   };
 
   const printOutput = (html) => {
