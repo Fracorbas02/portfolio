@@ -72,6 +72,10 @@
           {
             "name": "username",
             "usage": "utilisée pour définir le nom de l'utilisateur. Exemple : set username <nom de l'utilisateur>. Attention : seuls bastien (propriétaire) et anonymous (accès invité, comme en FTP) peuvent lire les fichiers"
+          },
+          {
+            "name": "theme",
+            "usage": "change la couleur de tout le terminal. Couleurs prédéfinies : cyan, vert, rouge, violet, jaune, orange, bleu, rose, blanc — ou une couleur manuelle en hexadécimal, dont les nuances claires et sombres sont déduites automatiquement. Exemple : set theme vert ou set theme #ec34f3. Réinitialiser avec : set theme default"
           }
         ]
         
