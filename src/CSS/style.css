@@ -242,6 +242,15 @@ body.is-window-dragging * {
   user-select: none;
 }
 
+/* Étiquette de recherche inversée (Ctrl+R) — remplace le prompt
+   le temps de la recherche */
+.searchLabel {
+  color: var(--text-secondary);
+  white-space: nowrap;
+  margin-right: 0.5em;
+  user-select: none;
+}
+
 /* Input invisible mais fonctionnel — grandit en `ch` avec son contenu */
 .commandInput {
   background: transparent;
