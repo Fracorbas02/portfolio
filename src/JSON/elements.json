@@ -43,6 +43,14 @@
       {
         "name": "history",
         "description": "Affiche l'historique des commandes saisies dans le shell."
+      },
+      {
+        "name": "cd",
+        "description": "Permet de changer de dossier courant. Exemple : cd presentation, cd .., cd /root."
+      },
+      {
+        "name": "cat",
+        "description": "Permet d'afficher le contenu d'un fichier. Exemple : cat README.md."
       }
     ],
     "manCommands": {
@@ -142,6 +150,7 @@
               "..": {
                 "type": "directory"
               },
+              "README.md": "Bienvenue sur le portfolio de Bastien BONORA !\n\nCe terminal simule un shell bash : tapez 'help' pour la liste des commandes,\n'cd' pour naviguer dans l'arborescence, 'cat' pour lire un fichier.\n\nBonne visite !",
               "presentation": {
                 "type": "directory",
                 "CV": [

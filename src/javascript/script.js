@@ -166,7 +166,9 @@
     reboot: cmdReboot,
     whoami: cmdWhoami,
     date:   cmdDate,
-    history: cmdHistory
+    history: cmdHistory,
+    cd:     cmdCd,
+    cat:    cmdCat
   };
 
   /**
@@ -227,6 +229,44 @@
 
   function cmdPwd() {
     return escapeHTML(state.currentDir);
+  }
+
+  function cmdCd(args) {
+    // Sans argument : retour au dossier personnel (/root)
+    const target = args[0] ?? '';
+    const newPath = target === '' ? '/root' : resolvePath(target);
+
+    const node = navigateTree(newPath);
+    if (!node) return `cd : ${escapeHTML(target)} : fichier ou dossier introuvable`;
+    if (!isDirectory(node)) return `cd : ${escapeHTML(target)} : n'est pas un dossier`;
+
+    state.currentDir = newPath;
+    updatePrompt();
+    return null;
+  }
+
+  function cmdCat(args) {
+    if (args.length === 0) return 'cat : veuillez donner un argument';
+
+    const target = args[0];
+    const path = resolvePath(target);
+    const parentPath = path.slice(0, path.lastIndexOf('/')) || '/';
+    const name = path.slice(path.lastIndexOf('/') + 1);
+
+    // Le nœud cible : soit un enfant du dossier parent, soit la racine
+    const parent = navigateTree(parentPath);
+    const node = name ? parent?.[name] : parent;
+
+    if (node === undefined || node === null) {
+      return `cat : ${escapeHTML(target)} : fichier introuvable`;
+    }
+    if (isDirectory(node)) {
+      return `cat : ${escapeHTML(target)} : est un dossier`;
+    }
+    if (Array.isArray(node)) {
+      return `cat : ${escapeHTML(target)} : fichier binaire (non affichable). Essayez : open`;
+    }
+    return escapeHTML(String(node));
   }
 
   function cmdLs(args) {
@@ -424,6 +464,40 @@
       if (!node) return null;
     }
     return node;
+  }
+
+  /**
+   * Résout un chemin (absolu ou relatif au dossier courant) en
+   * chemin absolu normalisé : gère ".", ".." et les segments vides.
+   */
+  function resolvePath(path) {
+    const base = path.startsWith('/') ? path : `${state.currentDir}/${path}`;
+    const stack = [];
+    for (const segment of base.split('/')) {
+      if (!segment || segment === '.') continue;
+      if (segment === '..') {
+        stack.pop();
+        continue;
+      }
+      stack.push(segment);
+    }
+    return `/${stack.join('/')}`;
+  }
+
+  /**
+   * Un dossier est un objet non tableau dans l'arbre (avec ou sans
+   * champ "type" — la racine n'en a pas).
+   */
+  function isDirectory(node) {
+    return node !== null && typeof node === 'object' && !Array.isArray(node);
+  }
+
+  /**
+   * Reconstruit la ligne de prompt avec le dossier courant.
+   */
+  function updatePrompt() {
+    const username = DEFAULT_BEGIN_SHELL.textContent.split('@')[0];
+    DEFAULT_BEGIN_SHELL.textContent = `${username}@portfolio:${state.currentDir}> `;
   }
 
   // ──────────────────────────────────────────────────────────────
