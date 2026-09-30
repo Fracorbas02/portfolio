@@ -669,6 +669,31 @@
     COMMAND_INPUT.addEventListener('input', resizeInput);
 
     COMMAND_INPUT.addEventListener('keydown', async (event) => {
+      // Ctrl+L : efface l'écran, sans passer par l'historique
+      if (event.ctrlKey && event.key.toLowerCase() === 'l') {
+        event.preventDefault();
+        cmdClear();
+        return;
+      }
+
+      // Ctrl+C : annule la ligne en cours, affiche ^C comme bash
+      if (event.ctrlKey && event.key.toLowerCase() === 'c') {
+        event.preventDefault();
+        printOutput(`${escapeHTML(DEFAULT_BEGIN_SHELL.textContent)}${escapeHTML(COMMAND_INPUT.value)}^C`);
+        COMMAND_INPUT.value = '';
+        resizeInput();
+        scrollToBottom();
+        return;
+      }
+
+      // Ctrl+U : vide la ligne en cours
+      if (event.ctrlKey && event.key.toLowerCase() === 'u') {
+        event.preventDefault();
+        COMMAND_INPUT.value = '';
+        resizeInput();
+        return;
+      }
+
       if (event.key === 'Enter') {
         event.preventDefault();
         const command = COMMAND_INPUT.value;
