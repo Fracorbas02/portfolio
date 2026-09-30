@@ -123,8 +123,14 @@
       await delay(800);
     }
 
+    // Comme un shell fraîchement ouvert : neofetch au-dessus du prompt
+    if (!state.bootInterrupted) {
+      printOutput(cmdNeofetch());
+    }
+
     showPrompt();
     COMMAND_INPUT.focus();
+    scrollToBottom();
   };
 
   const delay = (ms) => new Promise((r) => setTimeout(r, ms));
