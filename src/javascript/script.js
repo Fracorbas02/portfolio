@@ -63,6 +63,19 @@
     "tapez 'help' pour afficher les commandes utilisables"
   ];
 
+  // Cibles acceptées par la commande open (voir cmdOpen)
+  const OPEN_LINKS = {
+    cv:        './root/presentation/CV/CV_Bastien_BONORA_2025.pdf',
+    nastruire: 'https://nastruire.fr',
+    linkedin:  'https://www.linkedin.com/in/bastien-bonora/',
+    github:    'https://github.com/Fracorbas02',
+    tryhackme: 'https://tryhackme.com/p/Fracorbas',
+    thm:       'https://tryhackme.com/p/Fracorbas',
+    pgp:       './root/presentation/pubkey',
+    docs:      'https://docs.bastienbonora.fr',
+    bastodoc:  'https://docs.bastienbonora.fr'
+  };
+
   // ──────────────────────────────────────────────────────────────
   // Utilitaires d'échappement (XSS)
   // ──────────────────────────────────────────────────────────────
@@ -358,19 +371,7 @@
     if (args.length === 0) return 'open : veuillez donner au moins un argument';
 
     const target = args[0].toLowerCase();
-    const links = {
-      cv:        './root/presentation/CV/CV_Bastien_BONORA_2025.pdf',
-      nastruire: 'https://nastruire.fr',
-      linkedin:  'https://www.linkedin.com/in/bastien-bonora/',
-      github:    'https://github.com/Fracorbas02',
-      tryhackme: 'https://tryhackme.com/p/Fracorbas',
-      thm:       'https://tryhackme.com/p/Fracorbas',
-      pgp:       './root/presentation/pubkey',
-      docs:      'https://docs.bastienbonora.fr',
-      bastodoc:  'https://docs.bastienbonora.fr'
-    };
-
-    const url = links[target];
+    const url = OPEN_LINKS[target];
     if (!url) return `open : argument inconnu « ${escapeHTML(target)} »`;
 
     window.open(url, '_blank', 'noopener,noreferrer');
@@ -626,42 +627,77 @@
   // Complétion automatique (Tab)
   // ──────────────────────────────────────────────────────────────
   /**
-   * Complète le nom de la commande en cours de saisie, à la manière
-   * de bash :
-   *   - une seule correspondance : complète directement (+ espace)
-   *   - plusieurs : étend au préfixe commun le plus long et affiche
-   *     la liste des possibilités au-dessus du prompt
-   *   - aucune : ne fait rien
-   * Ne s'applique qu'au premier mot, pas aux arguments.
+   * Complète `lastWord` parmi `candidates` ; `before` est le texte à
+   * conserver devant le mot complété. Comportement bash :
+   *   - une seule correspondance : complète (+ espace)
+   *   - plusieurs : étend au préfixe commun et affiche la liste
    */
-  function tabComplete() {
-    const value = COMMAND_INPUT.value;
-
-    // Pas de complétion au milieu d'une commande avec arguments
-    if (/\s/.test(value)) return;
-
-    const candidates = Object.keys(handlers)
-      .filter((name) => name.startsWith(value.toLowerCase()));
-
+  function applyCompletion(candidates, lastWord, before) {
     if (candidates.length === 0) return;
 
     if (candidates.length === 1) {
-      COMMAND_INPUT.value = `${candidates[0]} `;
+      COMMAND_INPUT.value = `${before}${candidates[0]} `;
     } else {
-      // Étend au préfixe commun le plus long
       let prefix = candidates[0];
       for (const name of candidates) {
         while (!name.startsWith(prefix)) prefix = prefix.slice(0, -1);
       }
-      if (prefix.length > value.length) {
-        COMMAND_INPUT.value = prefix;
-      }
+      COMMAND_INPUT.value = `${before}${prefix.length > lastWord.length ? prefix : lastWord}`;
       printOutput(candidates
-        .map((name) => `<span class="helpCommand">${name}</span>`)
+        .map((name) => `<span class="helpCommand">${escapeHTML(name)}</span>`)
         .join('&nbsp;&nbsp;'));
       scrollToBottom();
     }
     resizeInput();
+  }
+
+  /**
+   * Candidats de complétion pour le dernier argument d'une commande.
+   */
+  function argumentCandidates(command, prefix) {
+    let pool = [];
+    switch (command) {
+      case 'open': pool = Object.keys(OPEN_LINKS); break;
+      case 'man':  pool = Object.keys(state.manCommands ?? {}); break;
+      case 'set':  pool = ['username']; break;
+      case 'get':  pool = ['sha']; break;
+      case 'ls':   pool = ['-a']; break;
+      case 'rm':   pool = ['*']; break;
+      case 'cd': {
+        const dir = navigateTree(state.currentDir);
+        pool = Object.keys(dir ?? {}).filter((key) => isDirectory(dir[key]));
+        break;
+      }
+      case 'cat': {
+        const dir = navigateTree(state.currentDir);
+        pool = Object.keys(dir ?? {}).filter((key) => !isDirectory(dir[key]));
+        break;
+      }
+      default: return [];
+    }
+    return pool.filter((name) => name.startsWith(prefix));
+  }
+
+  /**
+   * Complétion au Tab : le nom de commande s'il n'y a pas encore
+   * d'argument, sinon le dernier argument de la commande.
+   */
+  function tabComplete() {
+    const value = COMMAND_INPUT.value;
+
+    // Premier mot : complétion du nom de commande
+    if (!/\s/.test(value)) {
+      const candidates = Object.keys(handlers)
+        .filter((name) => name.startsWith(value.toLowerCase()));
+      applyCompletion(candidates, value, '');
+      return;
+    }
+
+    // Sinon : complétion du dernier argument
+    const [command, ...rest] = value.split(/\s+/);
+    const lastWord = rest[rest.length - 1] ?? '';
+    const before = value.slice(0, value.length - lastWord.length);
+    applyCompletion(argumentCandidates(command.toLowerCase(), lastWord), lastWord, before);
   }
 
   // ──────────────────────────────────────────────────────────────
