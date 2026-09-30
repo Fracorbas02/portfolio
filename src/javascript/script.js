@@ -752,17 +752,40 @@
     const entry = state.manCommands[target];
     if (!entry) return `man : aucune entrée pour la commande « ${escapeHTML(target)} »`;
 
-    // Rendu façon page de man : en-tête, description, section OPTIONS
-    const width = Math.max(...entry.options.map((opt) => opt.name.length)) + 2;
-    const options = entry.options
-      .map((opt) =>
-        `  <span class="helpCommand">${escapeHTML(opt.name.padEnd(width))}</span>${escapeHTML(opt.usage)}`)
-      .join('\n');
+    // Rendu façon page de man : NOM, DESCRIPTION, OPTIONS, EXEMPLES,
+    // avec l'indentation canonique des pages groff
+    const INDENT  = '       ';   // marge gauche des sections
+    const HANGING = '              '; // retrait des textes sous option/exemple
 
-    return `<span class="cliSection">${escapeHTML(target)}(1)</span>\n`
-         + `${escapeHTML(entry.description)}\n\n`
-         + '<span class="cliSection">OPTIONS :</span>\n'
-         + options;
+    const helpEntry = state.commands.find((c) => c.name === target);
+
+    let out = `<span class="cliSection">${escapeHTML(target.toUpperCase())}(1)</span>\n\n`;
+
+    out += '<span class="cliSection">NOM</span>\n'
+         + `${INDENT}<span class="helpCommand">${escapeHTML(target)}</span>`
+         + ` — ${escapeHTML(helpEntry?.description ?? '')}\n\n`;
+
+    out += '<span class="cliSection">DESCRIPTION</span>\n'
+         + `${INDENT}${escapeHTML(entry.description)}\n\n`;
+
+    if (Array.isArray(entry.options) && entry.options.length > 0) {
+      out += '<span class="cliSection">OPTIONS</span>\n';
+      for (const opt of entry.options) {
+        out += `${INDENT}<span class="helpCommand">${escapeHTML(opt.name)}</span>\n`
+             + `${HANGING}${escapeHTML(opt.usage)}\n`;
+      }
+      out += '\n';
+    }
+
+    if (Array.isArray(entry.examples) && entry.examples.length > 0) {
+      out += '<span class="cliSection">EXEMPLES</span>\n';
+      for (const ex of entry.examples) {
+        out += `${INDENT}<span class="helpCommand">$ ${escapeHTML(ex.cmd)}</span>\n`;
+        if (ex.desc) out += `${HANGING}${escapeHTML(ex.desc)}\n`;
+      }
+    }
+
+    return out;
   }
 
   function cmdSet(args) {

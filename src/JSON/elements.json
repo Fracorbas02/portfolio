@@ -67,7 +67,7 @@
     ],
     "manCommands": {
       "set": {
-        "description": "Cette commande est utilisée afin de définir des variables dans le terminal. Vous pouvez utiliser la commande avec les éléments suivants :",
+        "description": "Définit des variables dans le terminal : le nom d'utilisateur affiché dans le prompt, ou le thème de couleurs de toute l'interface.",
         "options":[
           {
             "name": "username",
@@ -77,11 +77,16 @@
             "name": "theme",
             "usage": "change la couleur de tout le terminal. Couleurs prédéfinies : cyan, vert, rouge, violet, jaune, orange, bleu, rose, blanc — ou une couleur manuelle en hexadécimal, dont les nuances claires et sombres sont déduites automatiquement. Exemple : set theme vert ou set theme #ec34f3. Réinitialiser avec : set theme default"
           }
+        ],
+        "examples": [
+          { "cmd": "set username bastien", "desc": "change le nom d'utilisateur affiché dans le prompt" },
+          { "cmd": "set theme vert", "desc": "passe le terminal en vert" },
+          { "cmd": "set theme #ec34f3", "desc": "applique une couleur personnalisée, dont les nuances sont déduites automatiquement" }
         ]
         
       },
       "open": {
-        "description": "Cette commande ouvre un fichier ou un lien du dossier courant dans un nouvel onglet. Les éléments ouvrables sont indiqués par la commande ls :",
+        "description": "Ouvre un fichier local ou un lien externe du dossier courant dans un nouvel onglet du navigateur. Seuls les éléments ouvrables — indiqués par la commande ls — peuvent l'être.",
         "options" :[
             {
                 "name": "fichier local",
@@ -95,18 +100,25 @@
                 "name": "Tab",
                 "usage": "la complétion automatique liste uniquement les éléments ouvrables du dossier courant"
             }
+        ],
+        "examples": [
+          { "cmd": "open CV", "desc": "ouvre le CV au format PDF dans un nouvel onglet" },
+          { "cmd": "open github", "desc": "ouvre le lien externe vers GitHub" }
         ]
       },      "pwd": {
-        "description": "Cette commande permet d'afficher le dossier dans lequel nous sommes",
+        "description": "Affiche le chemin absolu du dossier courant (abréviation de Print Working Directory).",
         "options" :[
           {
             "name": "none",
             "usage": "Cette commande ne possède pas d'argument"
           }
+        ],
+        "examples": [
+          { "cmd": "pwd", "desc": "affiche par exemple /root/presentation après un cd presentation" }
         ]
       },
       "ls": {
-        "description": "Cette commande permet de lister les éléments présent dans le dossier dans lequel on se trouve",
+        "description": "Liste les éléments présents dans le dossier courant. Les fichiers ouvrables avec la commande open sont mis en évidence.",
         "options" :[
           {
             "name": "-a",
@@ -116,42 +128,59 @@
             "name": "-l",
             "usage": "Affiche le format long : droits, liens, propriétaire, groupe, taille, date et nom. Combinable avec -a : ls -la"
           }
+        ],
+        "examples": [
+          { "cmd": "ls", "desc": "liste simple des éléments du dossier courant" },
+          { "cmd": "ls -l", "desc": "format long : droits, propriétaire, taille et date de modification" },
+          { "cmd": "ls -la", "desc": "combine les deux options" }
         ]
       },
       "rm": {
-        "description": "Cette commande est utilisée pour supprimer des éléments dans le shell",
+        "description": "Utilisée pour supprimer des éléments du terminal.",
         "options" :[
           {
             "name": "*",
             "usage": "suprpime tout ce qu'il y a dans le shell, NE FAITES PAS CA"
           }
+        ],
+        "examples": [
+          { "cmd": "rm *", "desc": "tente de tout supprimer (spoiler : cela ne se passera pas comme prévu)" }
         ]
       },
       "get": {
-        "description": "Cette commande permet de récupérer des éléments qui peuvent être générés dans le shell",
+        "description": "Permet de récupérer des éléments générés depuis le shell.",
         "options" :[
           {
             "name": "sha",
             "usage": "permet de récupérer le hashage en sha256 d'une entrée. Exemple : get sha MyPassword"
           }
+        ],
+        "examples": [
+          { "cmd": "get sha MyPassword", "desc": "retourne l'empreinte SHA-256 de la chaîne donnée" }
         ]
       },
       "bash": {
-        "description": "Cette commande ouvre une nouvelle fenêtre de shell interactive, avec son propre historique et son propre dossier courant.",
+        "description": "Ouvre une nouvelle fenêtre de shell interactive, avec son propre historique, son propre dossier courant et ses propres variables. Tout ce que vous tapez y reste.",
         "options": [
           {
             "name": "sans argument",
             "usage": "ouvre une nouvelle fenêtre de shell. Exemple : bash"
           }
+        ],
+        "examples": [
+          { "cmd": "bash", "desc": "ouvre une seconde fenêtre de terminal, comme un bash dans un terminal" }
         ]
       },
       "exit": {
-        "description": "Cette commande ferme la fenêtre de shell dans laquelle elle est saisie.",
+        "description": "Ferme la fenêtre de shell dans laquelle la commande est saisie. La fenêtre principale ne peut pas être fermée ainsi : elle est le portfolio lui-même.",
         "options": [
           {
             "name": "sans argument",
             "usage": "ferme la fenêtre courante. La fenêtre principale ne peut pas être fermée avec cette commande : utilisez la pastille rouge."
           }
+        ],
+        "examples": [
+          { "cmd": "exit", "desc": "ferme la fenêtre courante ; la principale renvoie vers la pastille rouge" }
         ]
       }
     },
