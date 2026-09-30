@@ -1280,8 +1280,26 @@
     const minimizeBtn = root.querySelector('.shell__chrome__dot--yellow');
     const maximizeBtn = root.querySelector('.shell__chrome__dot--green');
 
-    // Jaune : replie la fenêtre sur sa barre de titre
-    minimizeBtn.addEventListener('click', () => root.classList.toggle('minimized'));
+    // Jaune : replie la fenêtre sur sa barre de titre. La taille est
+    // mémorisée car le drag d'une fenêtre réduite fige sa hauteur
+    // (39px) en style inline via le window manager.
+    let savedSize = null;
+    minimizeBtn.addEventListener('click', () => {
+      if (root.classList.contains('minimized')) {
+        root.classList.remove('minimized');
+        // Si la fenêtre a été déplacée pendant la réduction, le style
+        // inline contient height:39px : on rend sa vraie taille
+        // (position conservée).
+        if (savedSize && root.style.height) {
+          root.style.height = `${savedSize.height}px`;
+        }
+        savedSize = null;
+        return;
+      }
+      const rect = root.getBoundingClientRect();
+      savedSize = { height: rect.height };
+      root.classList.add('minimized');
+    });
 
     // Vert : bascule plein écran, en mémorisant la géométrie
     let savedGeometry = null;
