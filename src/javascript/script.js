@@ -350,21 +350,12 @@
   // ──────────────────────────────────────────────────────────────
 
   function cmdHelp() {
-    let rows = '';
-    for (const cmd of state.commands) {
-      rows += `
-        <tr>
-          <td class="helpCommand">${escapeHTML(cmd.name)}</td>
-          <td>${escapeHTML(cmd.description)}</td>
-        </tr>`;
-    }
-    return `
-      <table class="helpOutput">
-        <thead>
-          <tr><th>Commande</th><th>Description</th></tr>
-        </thead>
-        <tbody>${rows}</tbody>
-      </table>`;
+    // Rendu CLI : nom aligné sur le plus long, description à droite
+    const width = Math.max(...state.commands.map((cmd) => cmd.name.length)) + 2;
+    return state.commands
+      .map((cmd) =>
+        `<span class="helpCommand">${escapeHTML(cmd.name.padEnd(width))}</span>${escapeHTML(cmd.description)}`)
+      .join('\n');
   }
 
   function cmdClear() {
@@ -413,51 +404,29 @@
     const dir = navigateTree(state.currentDir);
     if (!dir) return `ls : impossible d'accéder à ${escapeHTML(state.currentDir)}`;
 
-    const entries = Object.keys(dir).filter((key) => {
-      if (key === 'type') return false; // champ de métadonnées, pas une entrée
-      if (option === '-a') return true;
-      if (option === null) return !key.startsWith('.');
-      return false;
-    });
-
     if (option && option !== '-a') {
       return `ls : option « ${escapeHTML(option)} » inconnue. Voir : man ls`;
     }
 
-    let rows = '';
-    if (option === '-a') {
-      for (const key of ['.', '..']) {
-        rows += `
-        <tr>
-          <td class="helpCommand">${key}</td>
-          <td>dossier</td>
-        </tr>`;
-      }
-    }
-    const TYPE_LABELS = {
-      directory: 'dossier',
-      file: 'fichier',
-      link: 'lien',
-      string: 'texte',
-      array: 'binaire'
-    };
-    for (const key of entries) {
-      const entry = dir[key];
-      const rawType = entry?.type ?? (Array.isArray(entry) ? 'array' : typeof entry);
-      rows += `
-        <tr>
-          <td class="helpCommand">${escapeHTML(key)}</td>
-          <td>${TYPE_LABELS[rawType] ?? escapeHTML(rawType)}</td>
-        </tr>`;
-    }
+    // Rendu ls --color : colonnes alignées, dossiers en couleur
+    let keys = Object.keys(dir).filter((key) => {
+      if (key === 'type') return false; // champ de métadonnées, pas une entrée
+      if (option === '-a') return true;
+      return !key.startsWith('.');
+    });
+    keys = keys.sort((a, b) => a.localeCompare(b, 'fr', { sensitivity: 'base' }));
+    if (option === '-a') keys = ['.', '..', ...keys];
 
-    return `
-      <table class="helpOutput">
-        <thead>
-          <tr><th>Élément</th><th>Type</th></tr>
-        </thead>
-        <tbody>${rows}</tbody>
-      </table>`;
+    if (keys.length === 0) return '';
+
+    const width = Math.max(...keys.map((key) => key.length)) + 2;
+    return keys
+      .map((key) => {
+        const isDir = key === '.' || key === '..' || isDirectory(dir[key]);
+        const cell = escapeHTML(key.padEnd(width));
+        return isDir ? `<span class="lsDir">${cell}</span>` : cell;
+      })
+      .join('');
   }
 
   function cmdMan(args) {
@@ -467,23 +436,17 @@
     const entry = state.manCommands[target];
     if (!entry) return `man : aucune entrée pour la commande « ${escapeHTML(target)} »`;
 
-    let rows = '';
-    for (const opt of entry.options) {
-      rows += `
-        <tr>
-          <td class="helpCommand">${escapeHTML(opt.name)}</td>
-          <td>${escapeHTML(opt.usage)}</td>
-        </tr>`;
-    }
+    // Rendu façon page de man : en-tête, description, section OPTIONS
+    const width = Math.max(...entry.options.map((opt) => opt.name.length)) + 2;
+    const options = entry.options
+      .map((opt) =>
+        `  <span class="helpCommand">${escapeHTML(opt.name.padEnd(width))}</span>${escapeHTML(opt.usage)}`)
+      .join('\n');
 
-    return `
-      ${escapeHTML(entry.description)}
-      <table class="helpOutput">
-        <thead>
-          <tr><th>Variable</th><th>Utilisation</th></tr>
-        </thead>
-        <tbody>${rows}</tbody>
-      </table>`;
+    return `<span class="cliSection">${escapeHTML(target)}(1)</span>\n`
+         + `${escapeHTML(entry.description)}\n\n`
+         + '<span class="cliSection">OPTIONS :</span>\n'
+         + options;
   }
 
   function cmdSet(args) {
@@ -559,21 +522,12 @@
         return 'get sha : aucun hash calculé. Exemple : get sha MyPassword';
       }
 
-      let rows = '';
-      for (const [value, hash] of state.shaCache) {
-        rows += `
-          <tr>
-            <td class="helpCommand">${escapeHTML(value)}</td>
-            <td>${hash}</td>
-          </tr>`;
-      }
-      return `
-        <table class="helpOutput">
-          <thead>
-            <tr><th>Mot en clair</th><th>Hash SHA-256</th></tr>
-          </thead>
-          <tbody>${rows}</tbody>
-        </table>`;
+      const entries = [...state.shaCache];
+      const width = Math.max(...entries.map(([value]) => value.length)) + 2;
+      return entries
+        .map(([value, hash]) =>
+          `  <span class="helpCommand">${escapeHTML(value.padEnd(width))}</span>${hash}`)
+        .join('\n');
     }
 
     return `get : argument inconnu « ${escapeHTML(args[0])} »`;

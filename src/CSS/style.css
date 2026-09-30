@@ -319,56 +319,26 @@ body.is-window-dragging * {
   scrollbar-color: rgba(34, 211, 238, 0.25) transparent;
 }
 
-/* ─── Tableaux des commandes (help, man, ls, get) ───────────── */
-.helpOutput {
-  display: table;
-  width: 100%;
-  margin: 0.5rem 0 1rem;
-  font-size: 0.88rem;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  overflow: hidden;
-}
-
-.helpOutput thead th {
-  background: rgba(34, 211, 238, 0.08);
-  color: var(--accent);
-  text-align: left;
-  padding: 0.6rem 0.9rem;
-  font-weight: 700;
-  font-size: 0.78rem;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  border-bottom: 1px solid var(--border);
-}
-
-.helpOutput tbody tr {
-  border-bottom: 1px solid rgba(34, 211, 238, 0.06);
-  margin-top: 0;
-}
-
-.helpOutput tbody tr:last-child {
-  border-bottom: 0;
-}
-
-.helpOutput tbody tr:hover {
-  background: rgba(34, 211, 238, 0.04);
-}
-
-.helpOutput td {
-  padding: 0.55rem 0.9rem;
-  vertical-align: top;
-}
-
-.helpCommandName,
-.helpCommand {
-  width: auto;
-}
-
+/* ─── Rendu CLI des commandes (help, man, ls, get) ─────────── */
+/* Les noms et options en couleur d'accent, padding en espaces
+   préservé par white-space: pre-wrap du conteneur */
 .helpCommand {
   color: var(--accent-strong);
   font-weight: 500;
-  white-space: nowrap;
+  white-space: pre;
+}
+
+/* Dossiers dans ls : gras et accentués, comme ls --color */
+.lsDir {
+  color: var(--accent);
+  font-weight: 700;
+  white-space: pre;
+}
+
+.cliSection {
+  color: var(--text-muted);
+  font-weight: 700;
+  letter-spacing: 0.04em;
 }
 
 /* ─── neofetch ──────────────────────────────────────────────── */
