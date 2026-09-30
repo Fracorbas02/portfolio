@@ -51,6 +51,10 @@
       {
         "name": "cat",
         "description": "Permet d'afficher le contenu d'un fichier. Exemple : cat README.md."
+      },
+      {
+        "name": "neofetch",
+        "description": "Affiche les informations du portfolio et ses compétences, à la manière de la commande neofetch."
       }
     ],
     "manCommands": {

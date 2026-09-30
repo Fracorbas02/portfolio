@@ -357,6 +357,59 @@ body.is-window-dragging * {
   white-space: nowrap;
 }
 
+/* ─── neofetch ──────────────────────────────────────────────── */
+.neofetchOutput {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 1.75rem;
+  margin: 0.5rem 0 1rem;
+}
+
+.neofetchArt {
+  margin: 0;
+  white-space: pre;
+  font-family: inherit;
+  font-size: 0.92rem;
+  line-height: 1.3;
+  color: var(--accent);
+  text-shadow: 0 0 8px var(--accent-glow);
+}
+
+.neofetchInfo {
+  line-height: 1.7;
+  min-width: 260px;
+}
+
+.neofetchTitle {
+  color: var(--accent-strong);
+  font-weight: 700;
+}
+
+.neofetchSep {
+  color: var(--text-muted);
+}
+
+.neofetchKey {
+  display: inline-block;
+  min-width: 11ch;
+  color: var(--accent-strong);
+  font-weight: 500;
+}
+
+.neofetchPalette {
+  margin-top: 0.5rem;
+}
+
+.paletteBlock {
+  display: inline-block;
+  width: 2ch;
+  height: 1em;
+  margin-right: 3px;
+  border-radius: 2px;
+  vertical-align: middle;
+}
+
 /* ─── Hamburger menu ─────────────────────────────────────────── */
 .menuContainer {
   position: fixed;
