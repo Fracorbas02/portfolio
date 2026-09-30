@@ -1,0 +1,518 @@
+/* ─────────────────────────────────────────────────────────────
+   Bastien BONORA — Portfolio CLI
+   Thème aligné sur Bastodoc (Docusaurus)
+   Palette : cyan/slate · Font : JetBrains Mono + Syne
+   ───────────────────────────────────────────────────────────── */
+
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Syne:wght@600;700;800&display=swap');
+
+/* ─── Variables ──────────────────────────────────────────────── */
+:root {
+  /* Backgrounds */
+  --bg-base:       #0f172a;     /* slate-900 — fond global */
+  --bg-surface:    #1e293b;     /* slate-800 — terminal */
+  --bg-chrome:     #0a1120;     /* header du terminal */
+  --bg-hover:      #334155;     /* slate-700 */
+
+  /* Bordures et overlays */
+  --border:        rgba(34, 211, 238, 0.15);
+  --border-strong: rgba(34, 211, 238, 0.30);
+  --overlay:       rgba(15, 23, 42, 0.92);
+
+  /* Texte */
+  --text-primary:   #e2e8f0;    /* slate-200 */
+  --text-secondary: #94a3b8;    /* slate-400 */
+  --text-muted:     #64748b;    /* slate-500 */
+
+  /* Accents (palette cyan Docusaurus) */
+  --accent:         #22d3ee;    /* cyan-400 */
+  --accent-strong:  #67e8f9;    /* cyan-300 */
+  --accent-dim:     #0891b2;    /* cyan-600 */
+  --accent-glow:    rgba(34, 211, 238, 0.45);
+
+  /* États */
+  --error:   #f87171;
+  --warning: #fbbf24;
+  --success: #34d399;
+
+  /* Typo */
+  --font-mono: 'JetBrains Mono', ui-monospace, 'Cascadia Code', 'SF Mono', Menlo, Consolas, monospace;
+  --font-sans: 'Syne', system-ui, -apple-system, sans-serif;
+
+  /* Rythme */
+  --radius:       12px;
+  --radius-sm:    6px;
+  --shadow-lg:    0 25px 50px -12px rgba(0, 0, 0, 0.6);
+  --shadow-glow:  0 0 0 1px rgba(34, 211, 238, 0.06), 0 0 30px -8px var(--accent-glow);
+}
+
+/* ─── Base ───────────────────────────────────────────────────── */
+body {
+  background: var(--bg-base);
+  background-image:
+    radial-gradient(circle at 20% 0%, rgba(34, 211, 238, 0.08), transparent 50%),
+    radial-gradient(circle at 80% 100%, rgba(8, 145, 178, 0.06), transparent 50%);
+  font-family: var(--font-mono);
+  color: var(--text-primary);
+  min-height: 100vh;
+  overflow: hidden;
+}
+
+/* ─── Conteneur Terminal ─────────────────────────────────────── */
+.shellContainer {
+  position: fixed;
+  top: 8vh;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(80vw, 1100px);
+  height: min(80vh, 800px);
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-lg), var(--shadow-glow);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* Chrome / titlebar — sert de poignée de drag */
+.shell__chrome {
+  display: flex;
+  align-items: center;
+  position: relative;
+  height: 38px;
+  padding: 0 16px;
+  background: var(--bg-chrome);
+  border-bottom: 1px solid var(--border);
+  cursor: grab;
+  user-select: none;
+  -webkit-user-select: none;
+  flex-shrink: 0;
+  z-index: 6;  /* au-dessus des poignées de resize sur les coins */
+}
+
+.shell__chrome:active {
+  cursor: grabbing;
+}
+
+.shell__chrome__dots {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.shell__chrome__dot {
+  display: block;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+}
+
+.shell__chrome__dot--red    { background: #ef4444; }
+.shell__chrome__dot--yellow { background: #f59e0b; }
+.shell__chrome__dot--green  { background: #10b981; }
+
+.shell__chrome__title {
+  position: absolute;
+  left: 0;
+  right: 0;
+  text-align: center;
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  letter-spacing: 0.02em;
+  pointer-events: none;  /* le clic passe au chrome pour le drag */
+}
+
+/* ─── Poignées de redimensionnement (8 zones) ──────────────── */
+/* Position absolue qui dépasse légèrement de la fenêtre,
+   chacune avec son propre cursor pour le feedback visuel. */
+.shell__resize {
+  position: absolute;
+  z-index: 5;
+  background: transparent;
+  transition: background 0.2s ease;
+}
+
+.shell__resize:hover {
+  background: rgba(34, 211, 238, 0.18);
+}
+
+/* Bords */
+.shell__resize--n { top: -4px;    left: 16px;  right: 16px; height: 8px;  cursor: ns-resize; }
+.shell__resize--s { bottom: -4px; left: 16px;  right: 16px; height: 8px;  cursor: ns-resize; }
+.shell__resize--e { right: -4px;  top: 16px;   bottom: 16px; width: 8px;  cursor: ew-resize; }
+.shell__resize--w { left: -4px;   top: 16px;   bottom: 16px; width: 8px;  cursor: ew-resize; }
+
+/* Coins (zone plus large pour faciliter la prise) */
+.shell__resize--nw { top: -4px;    left: -4px;   width: 18px; height: 18px; cursor: nwse-resize; }
+.shell__resize--ne { top: -4px;    right: -4px;  width: 18px; height: 18px; cursor: nesw-resize; }
+.shell__resize--sw { bottom: -4px; left: -4px;   width: 18px; height: 18px; cursor: nesw-resize; }
+.shell__resize--se { bottom: -4px; right: -4px;  width: 18px; height: 18px; cursor: nwse-resize; }
+
+/* Petit indicateur visuel sur le coin bas-droit pour suggérer
+   à l'utilisateur que la fenêtre est redimensionnable */
+.shell__resize--se::after {
+  content: '';
+  position: absolute;
+  bottom: 5px;
+  right: 5px;
+  width: 9px;
+  height: 9px;
+  background-image:
+    linear-gradient(135deg,
+      transparent 0% 30%,
+      var(--text-muted) 30% 42%,
+      transparent 42% 58%,
+      var(--text-muted) 58% 70%,
+      transparent 70% 100%);
+  opacity: 0.55;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+}
+
+.shell__resize--se:hover::after {
+  opacity: 1;
+}
+
+/* États globaux pendant l'interaction */
+body.is-window-dragging,
+body.is-window-resizing {
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+body.is-window-dragging,
+body.is-window-dragging * {
+  cursor: grabbing !important;
+}
+
+/* Zone de sortie scrollable */
+.shellOutput {
+  flex: 1;
+  padding: 1.25rem 1.5rem;
+  overflow-y: auto;
+  overflow-x: hidden;
+  font-size: 0.92rem;
+  line-height: 1.6;
+  color: var(--text-primary);
+}
+
+.shellOutput > div,
+.shellOutput > p {
+  margin-bottom: 0.4rem;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+/* Ligne courante de saisie */
+.currentShellLine {
+  display: flex;
+  align-items: center;
+  padding: 0 1.5rem 1.25rem;
+  position: relative;
+  font-size: 0.92rem;
+}
+
+.defaultBeginShellLine {
+  color: var(--accent);
+  text-shadow: 0 0 8px var(--accent-glow);
+  white-space: nowrap;
+  margin-right: 0.5em;
+  user-select: none;
+}
+
+/* Input invisible mais fonctionnel — grandit en `ch` avec son contenu */
+.commandInput {
+  background: transparent;
+  color: var(--text-primary);
+  font-family: var(--font-mono);
+  font-size: inherit;
+  border: 0;
+  outline: 0;
+  padding: 0;
+  width: 0;
+  caret-color: transparent; /* on dessine notre propre curseur */
+}
+
+/* Curseur clignotant — en flow flex, juste après l'input.
+   Pas de position absolue, pas de calcul JS : il suit l'input
+   naturellement quel que soit son contenu. */
+.cursor {
+  display: inline-block;
+  width: 0.55em;
+  height: 1.1em;
+  background: var(--accent);
+  box-shadow: 0 0 8px var(--accent-glow);
+  animation: blink 1.1s steps(2, start) infinite;
+  flex-shrink: 0;
+  align-self: center;
+  pointer-events: none;
+}
+
+@keyframes blink {
+  0%, 49%   { opacity: 1; }
+  50%, 100% { opacity: 0; }
+}
+
+/* ─── Scrollbar ──────────────────────────────────────────────── */
+.shellOutput::-webkit-scrollbar {
+  width: 8px;
+}
+.shellOutput::-webkit-scrollbar-track {
+  background: transparent;
+}
+.shellOutput::-webkit-scrollbar-thumb {
+  background: rgba(34, 211, 238, 0.25);
+  border-radius: 4px;
+}
+.shellOutput::-webkit-scrollbar-thumb:hover {
+  background: rgba(34, 211, 238, 0.45);
+}
+
+/* Firefox */
+.shellOutput {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(34, 211, 238, 0.25) transparent;
+}
+
+/* ─── Tableaux des commandes (help, man, ls, get) ───────────── */
+.helpOutput {
+  display: table;
+  width: 100%;
+  margin: 0.5rem 0 1rem;
+  font-size: 0.88rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+
+.helpOutput thead th {
+  background: rgba(34, 211, 238, 0.08);
+  color: var(--accent);
+  text-align: left;
+  padding: 0.6rem 0.9rem;
+  font-weight: 700;
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  border-bottom: 1px solid var(--border);
+}
+
+.helpOutput tbody tr {
+  border-bottom: 1px solid rgba(34, 211, 238, 0.06);
+  margin-top: 0;
+}
+
+.helpOutput tbody tr:last-child {
+  border-bottom: 0;
+}
+
+.helpOutput tbody tr:hover {
+  background: rgba(34, 211, 238, 0.04);
+}
+
+.helpOutput td {
+  padding: 0.55rem 0.9rem;
+  vertical-align: top;
+}
+
+.helpCommandName,
+.helpCommand {
+  width: auto;
+}
+
+.helpCommand {
+  color: var(--accent-strong);
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+/* ─── Hamburger menu ─────────────────────────────────────────── */
+.menuContainer {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 10;
+}
+
+.hamburgerMenu {
+  display: inline-block;
+  cursor: pointer;
+  position: fixed;
+  top: 1.5rem;
+  left: 1.5rem;
+  z-index: 12;
+  padding: 0.4rem;
+  border-radius: var(--radius-sm);
+  transition: background 0.2s ease;
+}
+
+.hamburgerMenu:hover {
+  background: rgba(34, 211, 238, 0.08);
+}
+
+.bar1,
+.bar2,
+.bar3 {
+  display: block; /* indispensable : les <span> sont inline par défaut */
+  width: 28px;
+  height: 3px;
+  background: var(--accent);
+  margin: 6px 0;
+  border-radius: 2px;
+  transition: transform 0.4s ease, opacity 0.3s ease, background 0.2s ease;
+  box-shadow: 0 0 4px var(--accent-glow);
+}
+
+.change .bar1 { transform: translate(0, 9px) rotate(-45deg); }
+.change .bar2 { opacity: 0; }
+.change .bar3 { transform: translate(0, -9px) rotate(45deg); }
+
+/* Panneau du menu */
+.menuContent {
+  position: fixed;
+  top: 0;
+  left: -100%;
+  width: min(360px, 85vw);
+  height: 100%;
+  background: var(--overlay);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border-right: 1px solid var(--border);
+  transition: left 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: 11;
+  overflow-y: auto;
+}
+
+.menuContent.open {
+  left: 0;
+}
+
+.insideMenu {
+  margin-top: 5rem;
+  padding-bottom: 2rem;
+}
+
+/* Accordion */
+.accordion {
+  background: transparent;
+  color: var(--text-primary);
+  cursor: pointer;
+  padding: 0.9rem 1.25rem;
+  width: 100%;
+  border: 0;
+  border-bottom: 1px solid rgba(34, 211, 238, 0.06);
+  text-align: left;
+  font-family: var(--font-mono);
+  font-size: 0.95rem;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  transition: background 0.2s ease, color 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.accordion::after {
+  content: '+';
+  color: var(--accent);
+  font-size: 1.1rem;
+  font-weight: 700;
+  transition: transform 0.3s ease;
+  margin-left: 0.5rem;
+}
+
+.accordion.active::after {
+  content: '−';
+  transform: rotate(180deg);
+}
+
+.accordion:hover,
+.accordion.active {
+  background: rgba(34, 211, 238, 0.08);
+  color: var(--accent);
+}
+
+/* Panel interne */
+.panel {
+  max-height: 0;
+  overflow: hidden;
+  background: rgba(10, 17, 32, 0.6);
+  transition: max-height 0.3s ease-out;
+  padding: 0 1.25rem;
+}
+
+.accordion.active + .panel {
+  padding: 0.5rem 1.25rem;
+}
+
+.panelButton {
+  display: block;
+  width: 100%;
+  padding: 0.6rem 0.9rem;
+  margin: 0.25rem 0;
+  background: transparent;
+  color: var(--text-secondary);
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  text-align: left;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.panelButton:hover,
+.panelButton:focus-visible {
+  background: rgba(34, 211, 238, 0.08);
+  border-color: var(--border);
+  color: var(--accent);
+  transform: translateX(2px);
+}
+
+/* ─── Responsive ─────────────────────────────────────────────── */
+@media (max-width: 768px) {
+  body {
+    overflow-y: auto;
+  }
+
+  .shellContainer {
+    /* Le windowManager est désactivé en mobile : on rend la main
+       au CSS pour un layout plein-écran simple */
+    top: 1rem;
+    left: 1rem;
+    transform: none;
+    width: calc(100vw - 2rem);
+    height: calc(100vh - 2rem);
+    border-radius: 8px;
+  }
+
+  .shell__chrome {
+    cursor: default;
+  }
+
+  .shell__chrome__title {
+    font-size: 0.7rem;
+  }
+
+  /* Poignées de resize masquées sur mobile */
+  .shell__resize {
+    display: none;
+  }
+
+  .shellOutput,
+  .currentShellLine {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+
+  .currentShellLine {
+    flex-wrap: wrap;
+  }
+
+  .hamburgerMenu {
+    top: 1rem;
+    left: 1rem;
+  }
+}

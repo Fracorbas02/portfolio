@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>À propos — Bastien BONORA</title>
+  <meta name="description" content="Parcours et présentation de Bastien BONORA, passionné de cybersécurité et de réseaux, étudiant en alternance à l'IUT d'Annecy.">
+  <meta name="author" content="Bastien BONORA">
+  <meta name="robots" content="index, follow">
+  <meta name="theme-color" content="#0f172a">
+
+  <!-- Open Graph -->
+  <meta property="og:title" content="À propos — Bastien BONORA">
+  <meta property="og:description" content="Parcours de Bastien BONORA, cybersécurité et réseaux.">
+  <meta property="og:type" content="profile">
+  <meta property="og:url" content="https://bastienbonora.fr/src/HTML/presentation.html">
+  <meta property="og:locale" content="fr_FR">
+
+  <meta http-equiv="Content-Security-Policy"
+        content="default-src 'self';
+                 script-src 'self';
+                 style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
+                 font-src 'self' https://fonts.gstatic.com;
+                 img-src 'self' data:;
+                 connect-src 'self';
+                 base-uri 'self';
+                 form-action 'self';">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+  <link rel="icon" href="../asset/favicon.ico" type="image/x-icon">
+  <link rel="stylesheet" href="../CSS/reset.css">
+  <link rel="stylesheet" href="../CSS/presentation.css">
+</head>
+<body>
+
+  <!-- Menu latéral -->
+  <nav class="menuContainer" aria-label="Navigation principale">
+    <button
+      type="button"
+      class="hamburgerMenu"
+      id="hamburgerMenu"
+      aria-label="Ouvrir le menu de navigation"
+      aria-expanded="false"
+      aria-controls="menuContent"
+    >
+      <span class="bar1"></span>
+      <span class="bar2"></span>
+      <span class="bar3"></span>
+    </button>
+
+    <div class="menuContent" id="menuContent" hidden>
+      <div class="insideMenu">
+
+        <button type="button" class="accordion" aria-expanded="false">Présentation</button>
+        <div class="panel">
+          <button type="button" class="panelButton" data-url="./presentation.html">À propos de moi</button>
+          <button type="button" class="panelButton" data-url="../../root/presentation/CV/CV_Bastien_BONORA_2025.pdf">Afficher mon CV</button>
+          <button type="button" class="panelButton" data-url="../../root/presentation/Projet_Orientation.png">Mon projet d'orientation</button>
+          <button type="button" class="panelButton" data-url="../../root/presentation/Releve_Note_Bac.pdf">Mon relevé de notes du Bac</button>
+          <button type="button" class="panelButton" data-url="../../root/certif">Mes certifications</button>
+        </div>
+
+        <button type="button" class="accordion" aria-expanded="false">Projets</button>
+        <div class="panel">
+          <button type="button" class="panelButton" data-url="https://nastruire.fr">Nastruire</button>
+          <button type="button" class="panelButton" data-url="https://docs.bastienbonora.fr">Documentation (Bastodoc)</button>
+          <button type="button" class="panelButton" data-url="../../index.html">Portfolio (Terminal)</button>
+        </div>
+
+        <button type="button" class="accordion" aria-expanded="false">Contact</button>
+        <div class="panel">
+          <button type="button" class="panelButton" data-url="https://www.linkedin.com/in/bastien-bonora">Mon profil LinkedIn</button>
+          <button type="button" class="panelButton" data-url="https://github.com/Fracorbas02">Mon GitHub</button>
+          <button type="button" class="panelButton" data-url="../../root/presentation/pubkey">Clé PGP</button>
+        </div>
+
+      </div>
+    </div>
+  </nav>
+
+  <!-- Lien retour discret -->
+  <a href="../../index.html" class="back-link" aria-label="Retour au portfolio">
+    <span aria-hidden="true">←</span> retour au terminal
+  </a>
+
+  <main class="page">
+
+    <!-- Hero -->
+    <header class="hero">
+      <span class="hero__tag">À propos</span>
+      <h1 class="hero__title">
+        Bastien <span class="hero__title-accent">BONORA</span>
+      </h1>
+      <p class="hero__subtitle">
+        Passionné par l'informatique et la cybersécurité, j'ai entrepris un parcours pour devenir un expert dans le domaine.
+        Voici mon histoire et mon parcours professionnel.
+      </p>
+      <div class="hero__chips">
+        <span class="chip">Cybersécurité</span>
+        <span class="chip">Réseaux</span>
+        <span class="chip">Linux</span>
+        <span class="chip">Open Source</span>
+      </div>
+    </header>
+
+    <!-- Timeline -->
+    <section class="timeline" aria-label="Parcours chronologique">
+      <h2 class="section-heading">Mon parcours</h2>
+
+      <div class="timeline__track">
+        <article class="timeline__item">
+          <span class="timeline__year">2010</span>
+          <h3 class="timeline__title">Premier contact</h3>
+          <p class="timeline__content">
+            Je suis pris de passion par tout ce qui touche à l'informatique. Je commence à m'informer sur le fonctionnement et l'utilisation de la plupart des outils informatiques.
+          </p>
+        </article>
+
+        <article class="timeline__item">
+          <span class="timeline__year">2015</span>
+          <h3 class="timeline__title">Le déclic</h3>
+          <p class="timeline__content">
+            J'ai regardé le film « Hacker ». Il m'a donné envie de comprendre ce qu'était un hacker et tout ce que cela impliquait. C'est ce film qui m'a fait me lancer dans cette voie.
+          </p>
+        </article>
+
+        <article class="timeline__item">
+          <span class="timeline__year">2019 — 2022</span>
+          <h3 class="timeline__title">Spécialité NSI au lycée</h3>
+          <p class="timeline__content">
+            La spécialité NSI durant mes années de lycée m'a permis de voir un aspect plus scolaire de ce qu'est l'informatique.
+          </p>
+        </article>
+
+        <article class="timeline__item">
+          <span class="timeline__year">2022</span>
+          <h3 class="timeline__title">Projet Nastruire</h3>
+          <p class="timeline__content">
+            Réalisation du projet Nastruire. Projet ayant permis de découvrir l'organisation et la collaboration sur un projet de groupe.
+          </p>
+        </article>
+
+        <article class="timeline__item">
+          <span class="timeline__year">2022 — 2025</span>
+          <h3 class="timeline__title">IUT R&amp;T à Annecy</h3>
+          <p class="timeline__content">
+            Intégration dans la formation Réseaux et Télécoms en alternance, parcours cybersécurité au sein de l'IUT d'Annecy.
+          </p>
+        </article>
+        
+        <article class="timeline__item">
+          <span class="timeline__year">Septembre 2025 - Aujourd'hui</span>
+          <h3 class="timeline__title">Administrateur systèmes et réseaux à Alpes Networks</h3>
+          <p class="timeline__content">
+            Premier emploi en tant qu'administrateur systèmes et réseaux au sein de l'opérateur local Alpes Networks.
+          </p>
+        </article>
+      </div>
+    </section>
+
+    <!-- Sections finales -->
+    <section class="cards" aria-label="En détail">
+      <h2 class="section-heading">En détail</h2>
+
+      <div class="cards__grid">
+        <article class="card">
+          <span class="card__icon" aria-hidden="true">🎓</span>
+          <h3>Mon parcours académique</h3>
+          <p>
+            J'ai commencé par suivre des cours en informatique au lycée avec la spécialité NSI, puis j'ai poursuivi avec une formation en Réseaux et Télécoms à l'IUT d'Annecy, spécialisée en cybersécurité.
+          </p>
+        </article>
+
+        <article class="card">
+          <span class="card__icon" aria-hidden="true">⚙️</span>
+          <h3>Projets réalisés</h3>
+          <p>
+            J'ai participé à plusieurs projets, dont Nastruire, qui m'ont permis de développer des compétences en gestion de projet et en collaboration.
+          </p>
+        </article>
+
+        <article class="card">
+          <span class="card__icon" aria-hidden="true">🛡️</span>
+          <h3>Compétences techniques</h3>
+          <p>
+            Mes compétences techniques incluent la programmation, la sécurité des réseaux, et l'administration des systèmes. J'ai une expérience pratique avec divers outils et technologies utilisés dans le domaine de la cybersécurité. J'assure également une veille technologique personnelle régulière.
+          </p>
+        </article>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Texte caché pour lecteurs d'écran -->
+  <style>
+    .visually-hidden {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+    }
+  </style>
+
+  <script src="../javascript/presentation.js" defer></script>
+</body>
+</html>

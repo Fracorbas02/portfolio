@@ -1,0 +1,3 @@
+# autoriser l'indexation uniquement sur les certifs
+Options +Indexes
+HeaderName ./.header.html

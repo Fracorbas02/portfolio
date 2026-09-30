@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>Bastien BONORA — Portfolio</title>
+  <meta name="description" content="Portfolio de Bastien BONORA — passionné d'informatique et de cybersécurité, étudiant en Réseaux et Télécoms à l'IUT d'Annecy.">
+  <meta name="author" content="Bastien BONORA">
+  <meta name="robots" content="index, follow">
+  <meta name="theme-color" content="#0f172a">
+
+  <!-- Open Graph -->
+  <meta property="og:title" content="Bastien BONORA — Portfolio">
+  <meta property="og:description" content="Portfolio CLI de Bastien BONORA, cybersécurité et réseaux.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://bastienbonora.fr">
+  <meta property="og:locale" content="fr_FR">
+
+  <!-- CSP : autorise uniquement les scripts locaux et Google Fonts pour les styles -->
+  <meta http-equiv="Content-Security-Policy"
+        content="default-src 'self';
+                 script-src 'self';
+                 style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
+                 font-src 'self' https://fonts.gstatic.com;
+                 img-src 'self' data:;
+                 connect-src 'self';
+                 base-uri 'self';
+                 form-action 'self';">
+
+  <!-- Préchargement des polices Google -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+  <link rel="icon" href="./src/asset/favicon.ico" type="image/x-icon">
+  <link rel="stylesheet" href="./src/CSS/reset.css">
+  <link rel="stylesheet" href="./src/CSS/style.css">
+</head>
+<body>
+
+  <!-- Terminal principal -->
+  <main
+    class="shellContainer"
+    id="shellContainer"
+    role="application"
+    aria-label="Terminal interactif du portfolio"
+  >
+    <!-- Chrome / titlebar (sert aussi de poignée de drag) -->
+    <header class="shell__chrome" id="shellChrome">
+      <div class="shell__chrome__dots" aria-hidden="true">
+        <span class="shell__chrome__dot shell__chrome__dot--red"></span>
+        <span class="shell__chrome__dot shell__chrome__dot--yellow"></span>
+        <span class="shell__chrome__dot shell__chrome__dot--green"></span>
+      </div>
+      <span class="shell__chrome__title">anonymous@portfolio — bash</span>
+    </header>
+
+    <div class="shellOutput" id="shellOutput" aria-live="polite" aria-atomic="false">
+      <p id="defaultText"></p>
+    </div>
+
+    <div class="currentShellLine" id="currentShellLine">
+      <span class="defaultBeginShellLine" id="defaultBeginShellLine">anonymous@portfolio:/root&gt;&nbsp;</span>
+      <label for="commandInput" class="visually-hidden">Saisir une commande</label>
+      <input
+        type="text"
+        id="commandInput"
+        class="commandInput"
+        autocomplete="off"
+        autocorrect="off"
+        autocapitalize="off"
+        spellcheck="false"
+        aria-label="Ligne de commande"
+      >
+      <span class="cursor" aria-hidden="true"></span>
+    </div>
+  </main>
+
+  <!-- Menu latéral -->
+  <nav class="menuContainer" aria-label="Navigation principale">
+    <button
+      type="button"
+      class="hamburgerMenu"
+      id="hamburgerMenu"
+      aria-label="Ouvrir le menu de navigation"
+      aria-expanded="false"
+      aria-controls="menuContent"
+    >
+      <span class="bar1"></span>
+      <span class="bar2"></span>
+      <span class="bar3"></span>
+    </button>
+
+    <div class="menuContent" id="menuContent" hidden>
+      <div class="insideMenu">
+
+        <button type="button" class="accordion" aria-expanded="false">Présentation</button>
+        <div class="panel">
+          <button type="button" class="panelButton" data-url="./src/HTML/presentation.html">À propos de moi</button>
+          <button type="button" class="panelButton" data-url="./root/presentation/CV/CV_Bastien_BONORA_2025.pdf">Afficher mon CV</button>
+          <button type="button" class="panelButton" data-url="./root/presentation/Projet_Orientation.png">Mon projet d'orientation</button>
+          <button type="button" class="panelButton" data-url="./root/presentation/Releve_Note_Bac.pdf">Mon relevé de notes du Bac</button>
+          <button type="button" class="panelButton" data-url="./root/certif">Mes certifications</button>
+        </div>
+
+        <button type="button" class="accordion" aria-expanded="false">Projets</button>
+        <div class="panel">
+          <button type="button" class="panelButton" data-url="https://nastruire.fr">Nastruire</button>
+          <button type="button" class="panelButton" data-url="https://docs.bastienbonora.fr">Documentation (Bastodoc)</button>
+        </div>
+
+        <button type="button" class="accordion" aria-expanded="false">Contact</button>
+        <div class="panel">
+          <button type="button" class="panelButton" data-url="https://www.linkedin.com/in/bastien-bonora">Mon profil LinkedIn</button>
+          <button type="button" class="panelButton" data-url="https://github.com/Fracorbas02">Mon GitHub</button>
+          <button type="button" class="panelButton" data-url="./root/presentation/pubkey">Clé PGP</button>
+        </div>
+
+      </div>
+    </div>
+  </nav>
+
+  <!-- Texte caché pour lecteurs d'écran -->
+  <style>
+    .visually-hidden {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+    }
+  </style>
+
+  <noscript>
+    <p style="color:#22d3ee;text-align:center;padding:2rem;font-family:monospace;">
+      Ce portfolio nécessite JavaScript pour fonctionner. Merci de l'activer.
+    </p>
+  </noscript>
+
+  <script src="./src/javascript/windowManager.js" defer></script>
+  <script src="./src/javascript/script.js" defer></script>
+</body>
+</html>
