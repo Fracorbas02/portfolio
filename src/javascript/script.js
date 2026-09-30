@@ -1030,7 +1030,7 @@
     }
 
     try {
-      const response = await fetch('./src/JSON/elements.json');
+      const response = await fetch('./src/JSON/elements.json?v=20260930');
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
       const data = await response.json();
 
