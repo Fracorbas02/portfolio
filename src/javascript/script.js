@@ -219,7 +219,8 @@
     history: cmdHistory,
     cd:     cmdCd,
     cat:    cmdCat,
-    neofetch: cmdNeofetch
+    neofetch: cmdNeofetch,
+    sudo:   cmdSudo
   };
 
   /**
@@ -525,6 +526,15 @@
     const prompt = DEFAULT_BEGIN_SHELL.textContent;
     const username = prompt.split('@')[0];
     return escapeHTML(username);
+  }
+
+  /**
+   * Easter egg : on ne devient pas root sur ce portfolio.
+   * Refus systématique, à la manière du vrai sudo.
+   */
+  function cmdSudo() {
+    const username = DEFAULT_BEGIN_SHELL.textContent.split('@')[0];
+    return `<span style="color:var(--warning);">sudo :</span> ${escapeHTML(username)} n'est pas dans le fichier sudoers. Cet incident sera signalé.`;
   }
 
   function cmdDate() {
