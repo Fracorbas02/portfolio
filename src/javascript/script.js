@@ -1179,10 +1179,58 @@
   }
 
   // ──────────────────────────────────────────────────────────────
+  // Contrôles de fenêtre (pastilles rouge / jaune / verte)
+  // ──────────────────────────────────────────────────────────────
+  function setupWindowControls() {
+    const closeBtn    = root.querySelector('.shell__chrome__dot--red');
+    const minimizeBtn = root.querySelector('.shell__chrome__dot--yellow');
+    const maximizeBtn = root.querySelector('.shell__chrome__dot--green');
+
+    // Jaune : replie la fenêtre sur sa barre de titre
+    minimizeBtn.addEventListener('click', () => root.classList.toggle('minimized'));
+
+    // Vert : bascule plein écran, en mémorisant la géométrie
+    let savedGeometry = null;
+    maximizeBtn.addEventListener('click', () => {
+      if (root.classList.contains('maximized')) {
+        root.classList.remove('maximized');
+        Object.assign(root.style, savedGeometry ?? {});
+        savedGeometry = null;
+        return;
+      }
+      savedGeometry = {
+        left: root.style.left, top: root.style.top,
+        width: root.style.width, height: root.style.height,
+        transform: root.style.transform
+      };
+      root.classList.add('maximized');
+      Object.assign(root.style, {
+        left: '0px', top: '0px',
+        width: '100vw', height: '100vh',
+        transform: 'none'
+      });
+    });
+
+    // Rouge : ferme la fenêtre
+    closeBtn.addEventListener('click', () => {
+      if (root.id === 'shellContainer') {
+        // Fenêtre principale : masquée, le bouton d'allumage
+        // permet de la rallumer (reboot complet)
+        root.style.display = 'none';
+        const powerBtn = document.getElementById('powerButton');
+        if (powerBtn) powerBtn.hidden = false;
+        return;
+      }
+      root.remove();
+    });
+  }
+
+  // ──────────────────────────────────────────────────────────────
   // Initialisation de cette instance de shell
   // ──────────────────────────────────────────────────────────────
   setupInput();
   setupEasterEgg();
+  setupWindowControls();
   loadHistory();
   setupMenu(); // garde interne : branché une seule fois
 
@@ -1225,6 +1273,12 @@
     }
 
     await createShell(document.getElementById('shellContainer'));
+
+    // Bouton d'allumage : rallume le terminal après une fermeture
+    const powerBtn = document.getElementById('powerButton');
+    if (powerBtn) {
+      powerBtn.addEventListener('click', () => window.location.reload());
+    }
   }
 
   // Lancement quand le DOM est prêt
