@@ -187,9 +187,13 @@ body.is-window-dragging * {
   cursor: grabbing !important;
 }
 
-/* Zone de sortie scrollable */
+/* Zone de sortie scrollable.
+   Colonne flex dont le contenu s'adosse au bas : la dernière ligne
+   de sortie reste collée au prompt, comme dans un vrai terminal. */
 .shellOutput {
   flex: 1;
+  display: flex;
+  flex-direction: column;
   padding: 1.25rem 1.5rem;
   overflow-y: auto;
   overflow-x: hidden;
@@ -198,8 +202,24 @@ body.is-window-dragging * {
   color: var(--text-primary);
 }
 
+/* margin-top:auto plutôt que justify-content:flex-end : avec flex-end,
+   le contenu qui déborde par le haut devient impossible à scroller
+   sur certains navigateurs. Avec un margin auto, il retombe à 0
+   une fois la zone pleine. */
+.shellOutput > :first-child {
+  margin-top: auto;
+}
+
+/* Pendant la séquence de boot (prompt encore caché), le texte
+   reste ancré en haut comme avant. La classe est retirée par le
+   script au moment d'afficher le prompt. */
+.shellOutput.booting > :first-child {
+  margin-top: 0;
+}
+
 .shellOutput > div,
 .shellOutput > p {
+  flex-shrink: 0;
   margin-bottom: 0.4rem;
   white-space: pre-wrap;
   word-break: break-word;

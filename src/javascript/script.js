@@ -113,7 +113,7 @@
       await delay(800);
     }
 
-    CURRENT_SHELL_LINE.style.display = 'flex';
+    showPrompt();
     COMMAND_INPUT.focus();
   };
 
@@ -124,6 +124,16 @@
   // ──────────────────────────────────────────────────────────────
   const scrollToBottom = () => {
     SHELL_OUTPUT.scrollTop = SHELL_OUTPUT.scrollHeight;
+  };
+
+  /**
+   * Affiche la ligne de prompt et bascule la sortie en mode
+   * "ancrée en bas" (la classe .booting garde le texte en haut
+   * pendant la séquence d'initialisation).
+   */
+  const showPrompt = () => {
+    SHELL_OUTPUT.classList.remove('booting');
+    CURRENT_SHELL_LINE.style.display = 'flex';
   };
 
   const resizeInput = () => {
@@ -514,8 +524,50 @@
     await delay(400);
     await typewrite(defaultText, 'THE HOLY VALUE OF 42', 70);
     await typewrite(defaultText, '_The answer to life, the universe and everything.', 35);
-    CURRENT_SHELL_LINE.style.display = 'flex';
+    showPrompt();
     COMMAND_INPUT.focus();
+  }
+
+  // ──────────────────────────────────────────────────────────────
+  // Complétion automatique (Tab)
+  // ──────────────────────────────────────────────────────────────
+  /**
+   * Complète le nom de la commande en cours de saisie, à la manière
+   * de bash :
+   *   - une seule correspondance : complète directement (+ espace)
+   *   - plusieurs : étend au préfixe commun le plus long et affiche
+   *     la liste des possibilités au-dessus du prompt
+   *   - aucune : ne fait rien
+   * Ne s'applique qu'au premier mot, pas aux arguments.
+   */
+  function tabComplete() {
+    const value = COMMAND_INPUT.value;
+
+    // Pas de complétion au milieu d'une commande avec arguments
+    if (/\s/.test(value)) return;
+
+    const candidates = Object.keys(handlers)
+      .filter((name) => name.startsWith(value.toLowerCase()));
+
+    if (candidates.length === 0) return;
+
+    if (candidates.length === 1) {
+      COMMAND_INPUT.value = `${candidates[0]} `;
+    } else {
+      // Étend au préfixe commun le plus long
+      let prefix = candidates[0];
+      for (const name of candidates) {
+        while (!name.startsWith(prefix)) prefix = prefix.slice(0, -1);
+      }
+      if (prefix.length > value.length) {
+        COMMAND_INPUT.value = prefix;
+      }
+      printOutput(candidates
+        .map((name) => `<span class="helpCommand">${name}</span>`)
+        .join('&nbsp;&nbsp;'));
+      scrollToBottom();
+    }
+    resizeInput();
   }
 
   // ──────────────────────────────────────────────────────────────
@@ -539,6 +591,13 @@
         resizeInput();
         await executeCommand(command);
         scrollToBottom();
+        return;
+      }
+
+      // Complétion automatique des commandes
+      if (event.key === 'Tab') {
+        event.preventDefault();
+        tabComplete();
         return;
       }
 
@@ -599,7 +658,7 @@
       console.error('Échec du chargement des données :', err);
       const defaultText = document.getElementById('defaultText');
       defaultText.innerHTML = '<span style="color:#f87171;">Erreur : impossible de charger les données du portfolio.</span>';
-      CURRENT_SHELL_LINE.style.display = 'flex';
+      showPrompt();
     }
   }
 
