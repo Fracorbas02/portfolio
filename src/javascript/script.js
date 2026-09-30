@@ -221,6 +221,54 @@
   };
 
   /**
+   * Message bash-like pour une commande inconnue, avec suggestion de
+   * la commande la plus proche (distance de Levenshtein <= 2).
+   */
+  function unknownCommandMessage(name) {
+    const lowered = name.toLowerCase();
+    let best = null;
+    let bestDistance = Infinity;
+    for (const command of Object.keys(handlers)) {
+      const distance = levenshtein(lowered, command);
+      if (distance < bestDistance) {
+        bestDistance = distance;
+        best = command;
+      }
+    }
+
+    const base = `bash : « ${escapeHTML(name)} » : commande introuvable`;
+    if (best && bestDistance <= 2) {
+      return `${base}. Vouliez-vous dire : <span class="helpCommand">${escapeHTML(best)}</span> ?`;
+    }
+    return base;
+  }
+
+  /**
+   * Distance de Levenshtein entre deux chaînes (version itérative
+   * à deux lignes pour économiser la mémoire).
+   */
+  function levenshtein(a, b) {
+    const m = a.length;
+    const n = b.length;
+    if (m === 0) return n;
+    if (n === 0) return m;
+
+    let previous = Array.from({ length: n + 1 }, (_, i) => i);
+    for (let i = 1; i <= m; i++) {
+      const current = [i];
+      for (let j = 1; j <= n; j++) {
+        current[j] = Math.min(
+          previous[j] + 1,                    // suppression
+          current[j - 1] + 1,                 // insertion
+          previous[j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1)  // substitution
+        );
+      }
+      previous = current;
+    }
+    return previous[n];
+  }
+
+  /**
    * Découpe la commande en `[name, ...args]`
    * et délègue au handler approprié.
    */
@@ -240,7 +288,7 @@
 
     let output;
     try {
-      output = handler ? await handler(args) : `bash: « ${escapeHTML(name)} » : commande introuvable`;
+      output = handler ? await handler(args) : unknownCommandMessage(name);
     } catch (err) {
       console.error(err);
       output = `<span style="color:#f87171;">Une erreur est survenue lors de l'exécution.</span>`;
