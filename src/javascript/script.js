@@ -165,7 +165,8 @@
     show:   cmdShow,
     reboot: cmdReboot,
     whoami: cmdWhoami,
-    date:   cmdDate
+    date:   cmdDate,
+    history: cmdHistory
   };
 
   /**
@@ -400,6 +401,16 @@
 
   function cmdDate() {
     return escapeHTML(new Date().toString());
+  }
+
+  function cmdHistory() {
+    if (state.history.length === 0) {
+      return 'history : aucune commande enregistrée pour le moment';
+    }
+    return state.history
+      .map((cmd, index) =>
+        `<span style="color:var(--text-muted);">${String(index + 1).padStart(3)} </span> ${escapeHTML(cmd)}`)
+      .join('<br>');
   }
 
   // ──────────────────────────────────────────────────────────────

@@ -39,6 +39,10 @@
       {
         "name": "pwd",
         "description": "permet d'afficher le dossier dans lequel nous sommes actuellement (abréviation de Print Working Directory)"
+      },
+      {
+        "name": "history",
+        "description": "Affiche l'historique des commandes saisies dans le shell."
       }
     ],
     "manCommands": {
