@@ -55,6 +55,14 @@
       {
         "name": "neofetch",
         "description": "Affiche les informations du portfolio et ses compétences, à la manière de la commande neofetch."
+      },
+      {
+        "name": "bash",
+        "description": "Ouvre une nouvelle fenêtre de shell interactive."
+      },
+      {
+        "name": "exit",
+        "description": "Ferme la fenêtre de shell courante (sauf la fenêtre principale)."
       }
     ],
     "manCommands": {
@@ -121,6 +129,24 @@
           {
             "name": "sha",
             "usage": "permet de récupérer le hashage en sha256 d'une entrée. Exemple : get sha MyPassword"
+          }
+        ]
+      },
+      "bash": {
+        "description": "Cette commande ouvre une nouvelle fenêtre de shell interactive, avec son propre historique et son propre dossier courant.",
+        "options": [
+          {
+            "name": "sans argument",
+            "usage": "ouvre une nouvelle fenêtre de shell. Exemple : bash"
+          }
+        ]
+      },
+      "exit": {
+        "description": "Cette commande ferme la fenêtre de shell dans laquelle elle est saisie.",
+        "options": [
+          {
+            "name": "sans argument",
+            "usage": "ferme la fenêtre courante. La fenêtre principale ne peut pas être fermée avec cette commande : utilisez la pastille rouge."
           }
         ]
       }
