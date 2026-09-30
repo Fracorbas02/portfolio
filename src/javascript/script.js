@@ -29,11 +29,74 @@
   let eggListenerBound = false;
   let bootedShellApi = null;
 
+  // Gestion des fenêtres de shell (commande bash)
+  let shellCount = 0;
+  let topZ = 20;
+
+  function bringToFront(rootEl) {
+    topZ += 1;
+    rootEl.style.zIndex = topZ;
+  }
+
+  /**
+   * Ouvre une nouvelle fenêtre de shell : clone de la fenêtre
+   * principale (sans les id, dupliqués), position en cascade,
+   * démarrage instantané sans log de boot.
+   */
+  function spawnShell() {
+    const primary = document.getElementById('shellContainer');
+    if (!primary || !portfolioData) {
+      return 'bash : impossible d\'ouvrir une nouvelle fenêtre (données indisponibles)';
+    }
+
+    const clone = primary.cloneNode(true);
+    clone.removeAttribute('id');
+    clone.querySelectorAll('[id]').forEach((el) => el.removeAttribute('id'));
+    clone.classList.remove('minimized', 'maximized');
+    clone.querySelectorAll('.shell__resize').forEach((el) => el.remove());
+
+    // Sortie vierge : le clone a capturé l'état de la fenêtre source
+    const output = clone.querySelector('.shellOutput');
+    output.classList.add('booting');
+    output.innerHTML = '<p class="defaultText"></p>';
+    const input = clone.querySelector('.commandInput');
+    input.value = '';
+    input.style.width = '0ch';
+
+    // Position en cascade, décalée à chaque nouvelle fenêtre
+    shellCount += 1;
+    const offset = shellCount * 36;
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+    const width = Math.min(vw * 0.8, 1100);
+    const height = Math.min(vh * 0.8, 800);
+    Object.assign(clone.style, {
+      transform: 'none',
+      left: `${Math.max(0, (vw - width) / 2 + offset)}px`,
+      top: `${Math.max(0, vh * 0.08 + offset)}px`,
+      width: `${width}px`,
+      height: `${height}px`
+    });
+
+    document.body.appendChild(clone);
+    bringToFront(clone);
+
+    if (typeof window.initWindowManager === 'function') {
+      window.initWindowManager({
+        target: clone,
+        handle: clone.querySelector('.shell__chrome')
+      });
+    }
+
+    createShell(clone, { boot: false });
+    return null;
+  }
+
   // ──────────────────────────────────────────────────────────────
   // Fabrique de shell : chaque fenêtre du terminal instancie son
   // propre état, son prompt et ses écouteurs d'événements
   // ──────────────────────────────────────────────────────────────
-  async function createShell(root) {
+  async function createShell(root, options = {}) {
   // ──────────────────────────────────────────────────────────────
   // Références DOM de cette instance
   // ──────────────────────────────────────────────────────────────
@@ -275,7 +338,9 @@
     cd:     cmdCd,
     cat:    cmdCat,
     neofetch: cmdNeofetch,
-    sudo:   cmdSudo
+    sudo:   cmdSudo,
+    bash:   cmdBash,
+    exit:   cmdExit
   };
 
   /**
@@ -655,6 +720,29 @@
     return `<span style="color:var(--warning);">sudo :</span> ${escapeHTML(username)} n'est pas dans le fichier sudoers. Cet incident sera signalé.`;
   }
 
+  /**
+   * Ouvre une nouvelle fenêtre de shell, comme le lancement d'un
+   * bash dans un terminal.
+   */
+  function cmdBash() {
+    const error = spawnShell();
+    if (error) return error;
+    return 'bash : nouvelle fenêtre de shell ouverte';
+  }
+
+  /**
+   * Ferme la fenêtre courante — sauf la fenêtre principale, qui est
+   * le portfolio lui-même.
+   */
+  function cmdExit() {
+    if (root.id === 'shellContainer') {
+      return 'exit : impossible de fermer le shell principal. Utilisez la pastille rouge.';
+    }
+    // Laisse le temps à l'écho de la commande de s'afficher
+    setTimeout(() => root.remove(), 50);
+    return 'exit';
+  }
+
   function cmdDate() {
     return escapeHTML(new Date().toString());
   }
@@ -903,6 +991,12 @@
     document.addEventListener('keydown', (event) => {
       const api = bootedShellApi;
       if (!api || api.input.value !== '') {
+        sequence = '';
+        return;
+      }
+      // Frappe dans une autre fenêtre de shell : on ignore
+      const shellOfEvent = event.target?.closest?.('.shellContainer');
+      if (shellOfEvent && shellOfEvent !== api.root) {
         sequence = '';
         return;
       }
@@ -1234,7 +1328,11 @@
   loadHistory();
   setupMenu(); // garde interne : branché une seule fois
 
-  bootedShellApi = { input: COMMAND_INPUT, triggerEasterEgg };
+  // Cliquer une fenêtre la ramène au premier plan (multi-fenêtres)
+  root.addEventListener('pointerdown', () => bringToFront(root));
+
+  bootedShellApi = { root, input: COMMAND_INPUT, triggerEasterEgg };
+  if (options.boot === false) bootedShellApi = null;
 
   // Drag/resize de la fenêtre (si le module est chargé)
   if (typeof window.initWindowManager === 'function' && SHELL_CHROME) {
@@ -1256,6 +1354,17 @@
   state.manCommands   = portfolioData.manCommands;
   state.tree          = portfolioData.tree.tree;
   state.currentDir    = portfolioData.tree.currentDir;
+
+  if (options.boot === false) {
+    // Fenêtre ouverte via bash : pas de redémarrage complet, on
+    // arrive directement sur un prompt avec le neofetch, comme un
+    // shell fraîchement ouvert
+    printOutput(cmdNeofetch());
+    showPrompt();
+    COMMAND_INPUT.focus();
+    scrollToBottom();
+    return;
+  }
 
   await startPortfolio();
   }
