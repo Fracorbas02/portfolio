@@ -98,12 +98,15 @@
   /**
    * Écrit du texte caractère par caractère dans un élément.
    * Caractères spéciaux : `$` = double saut de ligne, `_` = simple.
+   * `ignoreInterrupt` : l'écriture continue même si le boot est
+   * interrompu (utilisé par l'easter egg 42, qui interrompt le boot
+   * avant d'afficher son propre message).
    */
-  const typewrite = (element, text, speed) =>
+  const typewrite = (element, text, speed, ignoreInterrupt = false) =>
     new Promise((resolve) => {
       let index = 0;
       const tick = () => {
-        if (state.bootInterrupted || index >= text.length) {
+        if ((state.bootInterrupted && !ignoreInterrupt) || index >= text.length) {
           return resolve();
         }
         const char = text.charAt(index);
@@ -849,8 +852,8 @@
     cmdClear();
     const defaultText = document.getElementById('defaultText');
     await delay(400);
-    await typewrite(defaultText, 'THE HOLY VALUE OF 42', 70);
-    await typewrite(defaultText, '_The answer to life, the universe and everything.', 35);
+    await typewrite(defaultText, 'THE HOLY VALUE OF 42', 70, true);
+    await typewrite(defaultText, '_The answer to life, the universe and everything.', 35, true);
     showPrompt();
     COMMAND_INPUT.focus();
   }
