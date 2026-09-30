@@ -13,20 +13,38 @@
   'use strict';
 
   // ──────────────────────────────────────────────────────────────
-  // Références DOM
+  // Références DOM globales : le menu hamburger, unique, est partagé
+  // par toutes les fenêtres de shell
   // ──────────────────────────────────────────────────────────────
-  const COMMAND_INPUT       = document.getElementById('commandInput');
-  const CURSOR              = document.querySelector('.cursor');
-  const DEFAULT_BEGIN_SHELL = document.getElementById('defaultBeginShellLine');
-  const SEARCH_LABEL         = document.getElementById('searchLabel');
-  const SHELL_CONTAINER     = document.getElementById('shellContainer');
-  const SHELL_CHROME        = document.getElementById('shellChrome');
-  const SHELL_OUTPUT        = document.getElementById('shellOutput');
-  const CURRENT_SHELL_LINE  = document.querySelector('.currentShellLine');
   const HAMBURGER           = document.getElementById('hamburgerMenu');
   const MENU_CONTENT        = document.getElementById('menuContent');
   const ACCORDIONS          = document.querySelectorAll('.accordion');
   const PANEL_BUTTONS       = document.querySelectorAll('.panelButton');
+
+  let menuSetupDone = false;
+  let portfolioData = null;
+
+  // Easter egg 42 : un seul écouteur document, branché sur la fenêtre
+  // qui vient de démarrer
+  let eggListenerBound = false;
+  let bootedShellApi = null;
+
+  // ──────────────────────────────────────────────────────────────
+  // Fabrique de shell : chaque fenêtre du terminal instancie son
+  // propre état, son prompt et ses écouteurs d'événements
+  // ──────────────────────────────────────────────────────────────
+  async function createShell(root) {
+  // ──────────────────────────────────────────────────────────────
+  // Références DOM de cette instance
+  // ──────────────────────────────────────────────────────────────
+  const COMMAND_INPUT       = root.querySelector('.commandInput');
+  const CURSOR              = root.querySelector('.cursor');
+  const DEFAULT_BEGIN_SHELL = root.querySelector('.defaultBeginShellLine');
+  const SEARCH_LABEL         = root.querySelector('.searchLabel');
+  const SHELL_CHROME        = root.querySelector('.shell__chrome');
+  const SHELL_OUTPUT        = root.querySelector('.shellOutput');
+  const CURRENT_SHELL_LINE  = root.querySelector('.currentShellLine');
+  const DEFAULT_TEXT        = root.querySelector('.defaultText');
 
   // ──────────────────────────────────────────────────────────────
   // État global
@@ -143,13 +161,11 @@
   };
 
   const startPortfolio = async () => {
-    const defaultText = document.getElementById('defaultText');
-
     // Log de services : rapide, avec un temps aléatoire entre chaque
     // ligne pour un défilement non linéaire, comme un vrai boot
     for (const line of BOOT_SEQUENCE) {
       if (state.bootInterrupted) break;
-      defaultText.innerHTML += `${bootLineHTML(line)}\n`;
+      DEFAULT_TEXT.innerHTML += `${bootLineHTML(line)}\n`;
       await delay(30 + Math.random() * 90);
     }
 
@@ -158,14 +174,14 @@
     if (!state.bootInterrupted) {
       await delay(1200);
       if (state.bootInterrupted) return;
-      defaultText.innerHTML = '';
+      DEFAULT_TEXT.innerHTML = '';
       await delay(300);
     }
 
     // Message d'accueil : effet machine à écrire rapide
     for (const line of BOOT_LINES_NORMAL) {
       if (state.bootInterrupted) break;
-      await typewrite(defaultText, line, 8);
+      await typewrite(DEFAULT_TEXT, line, 8);
       await delay(150);
     }
 
@@ -359,7 +375,11 @@
   }
 
   function cmdClear() {
-    SHELL_OUTPUT.innerHTML = '<p id="defaultText"></p>';
+    // Vide la sortie en conservant l'élément defaultText (la factory
+    // en garde une référence, il ne faut pas le recréer)
+    DEFAULT_TEXT.innerHTML = '';
+    SHELL_OUTPUT.innerHTML = '';
+    SHELL_OUTPUT.appendChild(DEFAULT_TEXT);
     return null;
   }
 
@@ -820,6 +840,11 @@
   }
 
   function setupMenu() {
+    // Le menu est global : ne le brancher qu'une fois, même si
+    // plusieurs fenêtres de shell existent
+    if (menuSetupDone) return;
+    menuSetupDone = true;
+
     HAMBURGER.addEventListener('click', (e) => {
       e.stopPropagation();
       toggleMenu();
@@ -869,9 +894,15 @@
   // interférer avec une commande contenant "42".
   // ──────────────────────────────────────────────────────────────
   function setupEasterEgg() {
+    // L'écouteur est unique et global : il se déclenche pendant le
+    // boot, quand l'input n'a pas encore le focus
+    if (eggListenerBound) return;
+    eggListenerBound = true;
+
     let sequence = '';
     document.addEventListener('keydown', (event) => {
-      if (COMMAND_INPUT.value !== '') {
+      const api = bootedShellApi;
+      if (!api || api.input.value !== '') {
         sequence = '';
         return;
       }
@@ -882,7 +913,7 @@
       sequence += event.key;
       if (sequence === '42') {
         sequence = '';
-        triggerEasterEgg();
+        api.triggerEasterEgg();
       }
     });
   }
@@ -890,10 +921,9 @@
   async function triggerEasterEgg() {
     state.bootInterrupted = true;
     cmdClear();
-    const defaultText = document.getElementById('defaultText');
     await delay(400);
-    await typewrite(defaultText, 'THE HOLY VALUE OF 42', 70, true);
-    await typewrite(defaultText, '_The answer to life, the universe and everything.', 35, true);
+    await typewrite(DEFAULT_TEXT, 'THE HOLY VALUE OF 42', 70, true);
+    await typewrite(DEFAULT_TEXT, '_The answer to life, the universe and everything.', 35, true);
     showPrompt();
     COMMAND_INPUT.focus();
   }
@@ -1032,7 +1062,9 @@
   // ──────────────────────────────────────────────────────────────
   function setupInput() {
     COMMAND_INPUT.focus();
-    document.addEventListener('click', (e) => {
+    // Un clic dans cette fenêtre rend le focus à son input ; les
+    // autres fenêtres gardent le leur (multi-shells)
+    root.addEventListener('click', (e) => {
       // Ne pas voler le focus si on clique sur un bouton ou lien
       if (e.target.closest('button, a, .menuContent')) return;
       COMMAND_INPUT.focus();
@@ -1147,40 +1179,52 @@
   }
 
   // ──────────────────────────────────────────────────────────────
-  // Initialisation
+  // Initialisation de cette instance de shell
+  // ──────────────────────────────────────────────────────────────
+  setupInput();
+  setupEasterEgg();
+  loadHistory();
+  setupMenu(); // garde interne : branché une seule fois
+
+  bootedShellApi = { input: COMMAND_INPUT, triggerEasterEgg };
+
+  // Drag/resize de la fenêtre (si le module est chargé)
+  if (typeof window.initWindowManager === 'function' && SHELL_CHROME) {
+    window.initWindowManager({
+      target: root,
+      handle: SHELL_CHROME
+    });
+  }
+
+  if (!portfolioData) {
+    DEFAULT_TEXT.innerHTML = '<span style="color:#f87171;">Erreur : impossible de charger les données du portfolio.</span>';
+    showPrompt();
+    COMMAND_INPUT.focus();
+    return;
+  }
+
+  state.portfolioData = portfolioData;
+  state.commands      = portfolioData.commands;
+  state.manCommands   = portfolioData.manCommands;
+  state.tree          = portfolioData.tree.tree;
+  state.currentDir    = portfolioData.tree.currentDir;
+
+  await startPortfolio();
+  }
+
+  // ──────────────────────────────────────────────────────────────
+  // Chargement des données puis création du shell principal
   // ──────────────────────────────────────────────────────────────
   async function init() {
-    setupInput();
-    setupMenu();
-    setupEasterEgg();
-    loadHistory();
-
-    // Active drag/resize sur la fenêtre du terminal (si le module est chargé)
-    if (typeof window.initWindowManager === 'function' && SHELL_CHROME) {
-      window.initWindowManager({
-        target: SHELL_CONTAINER,
-        handle: SHELL_CHROME
-      });
-    }
-
     try {
       const response = await fetch('./src/JSON/elements.json?v=20260930');
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
-      const data = await response.json();
-
-      state.portfolioData = data;
-      state.commands      = data.commands;
-      state.manCommands   = data.manCommands;
-      state.tree          = data.tree.tree;
-      state.currentDir    = data.tree.currentDir;
-
-      await startPortfolio();
+      portfolioData = await response.json();
     } catch (err) {
       console.error('Échec du chargement des données :', err);
-      const defaultText = document.getElementById('defaultText');
-      defaultText.innerHTML = '<span style="color:#f87171;">Erreur : impossible de charger les données du portfolio.</span>';
-      showPrompt();
     }
+
+    await createShell(document.getElementById('shellContainer'));
   }
 
   // Lancement quand le DOM est prêt
