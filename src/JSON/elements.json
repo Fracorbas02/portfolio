@@ -18,7 +18,7 @@
       },
       {
         "name": "open",
-        "description": "Permet d'ouvrir un fichier dans un nouvel onglet. Exemple : open CV."
+        "description": "Permet d'ouvrir un fichier local ou un lien externe du dossier courant. Exemple : open CV.pdf"
       },
       {
         "name": "clear",
@@ -69,27 +69,22 @@
         
       },
       "open": {
-        "description": "Cette commande est utilisée pour ouvrir des fichiers dans un nouvel onglet. Voici les variables que vous pouvez utiliser avec cette commande :",
+        "description": "Cette commande ouvre un fichier ou un lien du dossier courant dans un nouvel onglet. Les éléments ouvrables sont indiqués par la commande ls :",
         "options" :[
             {
-                "name": "cv",
-                "usage": "utilisée pour ouvrir mon CV : exemple : open cv"
+                "name": "fichier local",
+                "usage": "ouvre un fichier du portfolio. Exemple depuis /root/presentation : open CV.pdf"
             },
             {
-                "name": "linkedin",
-                "usage": "utilisé pour ouvrir mon compte linkedin."
+                "name": "lien externe",
+                "usage": "ouvre un site dans un nouvel onglet. Exemple depuis /root/projets : open nastruire.url"
             },
             {
-                "name": "tryhackme",
-                "usage": "permet de visualiser mon compte tryhackme, vous pouvez utiliser : open tryhackme ou open thm"
-            },
-            {
-                "name" : "pgp",
-                "usage": "permet d'ouvrir l'onglet de la clé PGP de mon portfolio. Cette clé peut être utilisée pour me contacter via mon mail personnel : bastien.bonora@gmail.com"
+                "name": "Tab",
+                "usage": "la complétion automatique liste uniquement les éléments ouvrables du dossier courant"
             }
-        ]   
-      },
-      "pwd": {
+        ]
+      },      "pwd": {
         "description": "Cette commande permet d'afficher le dossier dans lequel nous sommes",
         "options" :[
           {
@@ -148,30 +143,45 @@
         "currentDir": "/root",
         "tree": {
             "root": {
-              ".": {
-                "type": "directory"
-              },
-              "..": {
-                "type": "directory"
-              },
-              "README.md": "Bienvenue sur le portfolio de Bastien BONORA !\n\nCe terminal simule un shell bash : tapez 'help' pour la liste des commandes,\n'cd' pour naviguer dans l'arborescence, 'cat' pour lire un fichier.\n\nBonne visite !",
+              "README.md": "Bienvenue sur le portfolio de Bastien BONORA !\n\nCe terminal simule un shell bash : tapez 'help' pour la liste des commandes,\n'cd' pour naviguer dans l'arborescence, 'cat' pour lire un fichier texte,\n'open' pour ouvrir un fichier ou un lien dans un nouvel onglet.\n\nPour découvrir mon parcours, commencez par : cd competences\n\nBonne visite !",
               "presentation": {
                 "type": "directory",
-                "CV": [
-                    "CV_Bastien_BONORA_2024.pdf"
-                ]
+                "CV.pdf": { "type": "file", "url": "./root/presentation/CV/CV_Bastien_BONORA_2025.pdf" },
+                "releve_bac.pdf": { "type": "file", "url": "./root/presentation/Releve_Note_Bac.pdf" },
+                "projet_orientation.png": { "type": "file", "url": "./root/presentation/Projet_Orientation.png" },
+                "pubkey.asc": { "type": "file", "url": "./root/presentation/pubkey" }
+              },
+              "certifications": {
+                "type": "directory",
+                "TOEIC.pdf": { "type": "file", "url": "./root/certif/Certification_TOEIC.pdf" },
+                "CSNA.pdf": { "type": "file", "url": "./root/certif/Certification_CSNA.pdf" },
+                "Cambridge.pdf": { "type": "file", "url": "./root/certif/Certification_Cambridge.pdf" }
+              },
+              "competences": {
+                "type": "directory",
+                "reseaux.txt": "Réseaux & Télécoms\n==================\n\n- Étudiant en Réseaux et Télécoms à l'IUT d'Annecy\n- Certification Cisco CSNA\n- Administration réseau : routage, commutation, VLAN, DHCP, DNS",
+                "cybersecurite.txt": "Cybersécurité\n=============\n\n- TryHackMe : https://tryhackme.com/p/Fracorbas\n- Write-ups de rooms TryHackMe : voir le dossier ctf/\n- Intérêt pour l'offensive security et les CTF",
+                "developpement.txt": "Développement\n=============\n\n- Web : JavaScript, HTML, CSS (ce portfolio est un terminal en JS pur)\n- Scripts et automatisation : Python\n- Projets : Nastruire (https://nastruire.fr), Bastodoc (https://docs.bastienbonora.fr)",
+                "ctf": {
+                  "type": "directory",
+                  "brute_it.html": { "type": "file", "url": "./root/CTF/Brute%20It.html" },
+                  "archangel.html": { "type": "file", "url": "./root/CTF/Archangel.html" },
+                  "mustacchio.html": { "type": "file", "url": "./root/CTF/Mustacchio.html" },
+                  "break_out_the_cage.html": { "type": "file", "url": "./root/CTF/Break%20Out%20The%20Cage.html" }
+                }
               },
               "projets": {
-                  "type": "directory",
-                  "nastruire": [
-                      "nastruire.html",
-                      "presentation_nastruire.pdf"
-                  ]
+                "type": "directory",
+                "nastruire.url": { "type": "link", "url": "https://nastruire.fr" },
+                "bastodoc.url": { "type": "link", "url": "https://docs.bastienbonora.fr" }
+              },
+              "contacts": {
+                "type": "directory",
+                "linkedin.url": { "type": "link", "url": "https://www.linkedin.com/in/bastien-bonora/" },
+                "github.url": { "type": "link", "url": "https://github.com/Fracorbas02" },
+                "tryhackme.url": { "type": "link", "url": "https://tryhackme.com/p/Fracorbas" }
               }
             }
-            
         }
     }
-
-  }
-  
+}
