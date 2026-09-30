@@ -106,11 +106,81 @@ body {
   width: 12px;
   height: 12px;
   border-radius: 50%;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  transition: filter 0.15s ease;
 }
+
+.shell__chrome__dot:hover { filter: brightness(1.3); }
 
 .shell__chrome__dot--red    { background: #ef4444; }
 .shell__chrome__dot--yellow { background: #f59e0b; }
 .shell__chrome__dot--green  { background: #10b981; }
+
+/* ─── Fenêtre réduite (jaune) : repliée sur sa barre de titre ── */
+.shellContainer.minimized .shellOutput,
+.shellContainer.minimized .currentShellLine {
+  display: none;
+}
+
+.shellContainer.minimized {
+  height: 39px !important;   /* chrome uniquement */
+}
+
+.shellContainer.minimized .shell__chrome {
+  cursor: default;
+}
+
+/* ─── Fenêtre maximisée (vert) ───────────────────────────────── */
+.shellContainer.maximized {
+  border-radius: 0;
+}
+
+/* ─── Bouton d'allumage (fenêtre principale fermée) ────────── */
+.powerButton {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 96px;
+  height: 96px;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: var(--bg-surface);
+  box-shadow: var(--shadow-lg), var(--shadow-glow);
+  cursor: pointer;
+  z-index: 1000;
+  transition: box-shadow 0.2s ease;
+}
+
+.powerButton:hover {
+  box-shadow: 0 0 0 1px rgba(34, 211, 238, 0.25), 0 0 40px -6px var(--accent-glow);
+}
+
+/* Icône power dessinée en CSS : cercle ouvert + barre verticale */
+.powerButton::before {
+  content: '';
+  position: absolute;
+  top: 22px;
+  left: 50%;
+  width: 2px;
+  height: 20px;
+  background: var(--accent);
+  transform: translateX(-50%);
+  box-shadow: 0 0 8px var(--accent-glow);
+}
+
+.powerButton::after {
+  content: '';
+  position: absolute;
+  inset: 14px;
+  border-radius: 50%;
+  border: 2px solid var(--accent);
+  border-top-color: transparent;
+  transform: rotate(-45deg);
+  box-shadow: inset 0 0 12px rgba(34, 211, 238, 0.15);
+}
 
 .shell__chrome__title {
   position: absolute;

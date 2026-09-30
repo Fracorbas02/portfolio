@@ -38,7 +38,7 @@
        pas toujours de Cache-Control, le navigateur peut alors servir
        des fichiers périmés depuis son cache heuristique) -->
   <link rel="stylesheet" href="./src/CSS/reset.css?v=20260930">
-  <link rel="stylesheet" href="./src/CSS/style.css?v=20260930.4">
+  <link rel="stylesheet" href="./src/CSS/style.css?v=20260930.5">
 </head>
 <body>
 
@@ -51,10 +51,10 @@
   >
     <!-- Chrome / titlebar (sert aussi de poignée de drag) -->
     <header class="shell__chrome" id="shellChrome">
-      <div class="shell__chrome__dots" aria-hidden="true">
-        <span class="shell__chrome__dot shell__chrome__dot--red"></span>
-        <span class="shell__chrome__dot shell__chrome__dot--yellow"></span>
-        <span class="shell__chrome__dot shell__chrome__dot--green"></span>
+      <div class="shell__chrome__dots" role="group" aria-label="Contrôles de la fenêtre">
+        <button type="button" class="shell__chrome__dot shell__chrome__dot--red" aria-label="Fermer la fenêtre"></button>
+        <button type="button" class="shell__chrome__dot shell__chrome__dot--yellow" aria-label="Réduire la fenêtre"></button>
+        <button type="button" class="shell__chrome__dot shell__chrome__dot--green" aria-label="Agrandir la fenêtre"></button>
       </div>
       <span class="shell__chrome__title">anonymous@portfolio — bash</span>
     </header>
@@ -146,7 +146,10 @@
     </p>
   </noscript>
 
+  <!-- Bouton d'allumage, affiché quand la fenêtre principale est fermée -->
+  <button type="button" class="powerButton" id="powerButton" hidden aria-label="Rallumer le terminal"></button>
+
   <script src="./src/javascript/windowManager.js?v=20260930" defer></script>
-  <script src="./src/javascript/script.js?v=20260930.6" defer></script>
+  <script src="./src/javascript/script.js?v=20260930.7" defer></script>
 </body>
 </html>
