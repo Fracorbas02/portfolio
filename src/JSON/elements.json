@@ -63,7 +63,7 @@
         "options":[
           {
             "name": "username",
-            "usage": "utilisée pour définir le nom de l'utilisateur. Exemple : set username <nom de l'utilisateur>"
+            "usage": "utilisée pour définir le nom de l'utilisateur. Exemple : set username <nom de l'utilisateur>. Attention : seuls bastien (propriétaire) et anonymous (accès invité, comme en FTP) peuvent lire les fichiers"
           }
         ]
         

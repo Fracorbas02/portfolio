@@ -381,6 +381,16 @@
     return null;
   }
 
+  /**
+   * Lecture des fichiers réservée au propriétaire (bastien) et au
+   * compte anonymous — comme un login FTP anonyme, il a accès en
+   * lecture. Tout autre nom d'utilisateur est refusé.
+   */
+  function canReadFiles() {
+    const username = DEFAULT_BEGIN_SHELL.textContent.split('@')[0];
+    return username === 'bastien' || username === 'anonymous';
+  }
+
   function cmdCat(args) {
     if (args.length === 0) return 'cat : veuillez donner un argument';
 
@@ -392,6 +402,9 @@
     }
     if (isDirectory(node)) {
       return `cat : ${escapeHTML(target)} : est un dossier`;
+    }
+    if (!canReadFiles()) {
+      return `cat : ${escapeHTML(target)} : Permission non accordée`;
     }
     if (typeof node !== 'string') {
       return `cat : ${escapeHTML(target)} : fichier binaire (non affichable). Essayez : open`;
@@ -536,6 +549,9 @@
     }
     if (isDirectory(node)) {
       return `open : ${escapeHTML(target)} : est un dossier`;
+    }
+    if (!canReadFiles()) {
+      return `open : ${escapeHTML(target)} : Permission non accordée`;
     }
     if (typeof node === 'string') {
       return `open : ${escapeHTML(target)} : fichier texte. Essayez : cat`;
