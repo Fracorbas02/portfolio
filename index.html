@@ -33,8 +33,12 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 
   <link rel="icon" href="./src/asset/favicon.ico" type="image/x-icon">
-  <link rel="stylesheet" href="./src/CSS/reset.css">
-  <link rel="stylesheet" href="./src/CSS/style.css">
+  <!-- Cache busting : incrémenter ?v= à chaque déploiement pour forcer
+       le rechargement des ressources (les serveurs statiques n'envoient
+       pas toujours de Cache-Control, le navigateur peut alors servir
+       des fichiers périmés depuis son cache heuristique) -->
+  <link rel="stylesheet" href="./src/CSS/reset.css?v=20260930">
+  <link rel="stylesheet" href="./src/CSS/style.css?v=20260930">
 </head>
 <body>
 
@@ -142,7 +146,7 @@
     </p>
   </noscript>
 
-  <script src="./src/javascript/windowManager.js" defer></script>
-  <script src="./src/javascript/script.js" defer></script>
+  <script src="./src/javascript/windowManager.js?v=20260930" defer></script>
+  <script src="./src/javascript/script.js?v=20260930" defer></script>
 </body>
 </html>
