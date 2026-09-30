@@ -99,6 +99,10 @@
           {
             "name": "-a",
             "usage": "Permet d'afficher également les éléments masqués dans le dossier actuel"
+          },
+          {
+            "name": "-l",
+            "usage": "Affiche le format long : droits, liens, propriétaire, groupe, taille, date et nom. Combinable avec -a : ls -la"
           }
         ]
       },

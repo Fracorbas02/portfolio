@@ -335,6 +335,17 @@ body.is-window-dragging * {
   white-space: pre;
 }
 
+/* Liens symboliques dans ls -l : la cible est atténuée */
+.lsLink {
+  color: var(--accent-dim);
+  font-weight: 600;
+  white-space: pre;
+}
+
+.lsTarget {
+  color: var(--text-muted);
+}
+
 .cliSection {
   color: var(--text-muted);
   font-weight: 700;
