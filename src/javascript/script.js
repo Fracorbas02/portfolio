@@ -475,7 +475,7 @@
   /**
    * Comme dans un vrai shell : tant que le curseur bouge (saisie,
    * flèches, clic), il reste "allumé" sans clignoter. Le
-   * clignotement ne reprend qu'après une seconde d'inactivité.
+   * clignotement ne reprend qu'après une demi-seconde d'inactivité.
    */
   let cursorIdleTimer = null;
   const wakeCursor = () => {
@@ -484,7 +484,7 @@
     clearTimeout(cursorIdleTimer);
     cursorIdleTimer = setTimeout(() => {
       CURSOR.style.animation = '';
-    }, 1000);
+    }, 500);
   };
 
   const printOutput = (html) => {
