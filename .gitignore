@@ -1,0 +1,19 @@
+# Fichiers de sauvegarde / éditeurs
+*.bak
+*.swp
+*~
+.DS_Store
+Thumbs.db
+
+# Environnements
+node_modules/
+.env
+.env.*
+
+# Logs et fichiers temporaires
+*.log
+*.tmp
+
+# VS Code / JetBrains
+.vscode/
+.idea/

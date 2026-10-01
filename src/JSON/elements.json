@@ -105,7 +105,8 @@
           { "cmd": "open CV", "desc": "ouvre le CV au format PDF dans un nouvel onglet" },
           { "cmd": "open github", "desc": "ouvre le lien externe vers GitHub" }
         ]
-      },      "pwd": {
+      },
+      "pwd": {
         "description": "Affiche le chemin absolu du dossier courant (abréviation de Print Working Directory).",
         "options" :[
           {
@@ -184,24 +185,6 @@
         ]
       }
     },
-    "filesToOpen": [
-      {
-        "name": "CV",
-        "url": "./root/presentation/CV/CV_Bastien_BONORA_2024.pdf"
-      },
-      {
-        "name": "nastruire",
-        "url": "https://nastruire.fr"
-      },
-      {
-          "name": "tryhackme",
-          "url": "https://tryhackme.com/p/Fracorbas"
-      },
-      {
-          "name": "thm",
-          "url": "https://tryhackme.com/p/Fracorbas"
-      }
-    ],
     "tree" : {
         "currentDir": "/root",
         "tree": {
@@ -209,7 +192,8 @@
               "README.md": "Bienvenue sur le portfolio de Bastien BONORA !\n\nCe terminal simule un shell bash : tapez 'help' pour la liste des commandes,\n'cd' pour naviguer dans l'arborescence, 'cat' pour lire un fichier texte,\n'open' pour ouvrir un fichier ou un lien dans un nouvel onglet.\n\nPour découvrir mon parcours, commencez par : cd competences\nPour me découvrir en quelques lignes : open presentation/qui_suis_je.html\n\nBonne visite !",
               "presentation": {
                 "type": "directory",
-                "CV.pdf": { "type": "file", "url": "./root/presentation/CV/CV_Bastien_BONORA_2025.pdf", "viewer": "cv" },				"qui_suis_je.html": { "type": "file", "url": "https://bastienbonora.fr/", "viewer": "profile" },
+                "CV.pdf": { "type": "file", "url": "./root/presentation/CV/CV_Bastien_BONORA_2025.pdf", "viewer": "cv" },
+				"qui_suis_je.html": { "type": "file", "url": "https://bastienbonora.fr/", "viewer": "profile" },
                 "releve_bac.pdf": { "type": "file", "url": "./root/presentation/Releve_Note_Bac.pdf" },
                 "projet_orientation.png": { "type": "file", "url": "./root/presentation/Projet_Orientation.png" },
                 "pubkey.asc": { "type": "file", "url": "./root/presentation/pubkey" }
