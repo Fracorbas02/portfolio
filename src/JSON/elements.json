@@ -225,9 +225,6 @@
                 "developpement.html": { "type": "file", "url": "https://docs.bastienbonora.fr/", "viewer": "dev" },
                 "reseaux.html": { "type": "file", "url": "https://docs.bastienbonora.fr/", "viewer": "reseaux" },
                 "type": "directory",
-                "reseaux.txt": "Réseaux & Télécoms\n==================\n\n- Étudiant en Réseaux et Télécoms à l'IUT d'Annecy\n- Certification Cisco CSNA\n- Administration réseau : routage, commutation, VLAN, DHCP, DNS",
-                "cybersecurite.txt": "Cybersécurité\n=============\n\n- TryHackMe : https://tryhackme.com/p/Fracorbas\n- Write-ups de rooms TryHackMe : voir le dossier ctf/\n- Intérêt pour l'offensive security et les CTF",
-                "developpement.txt": "Développement\n=============\n\n- Web : JavaScript, HTML, CSS (ce portfolio est un terminal en JS pur)\n- Scripts et automatisation : Python\n- Projets : Nastruire (https://nastruire.fr), Bastodoc (https://docs.bastienbonora.fr)",
                 "ctf": {
                   "type": "directory",
                   "brute_it.html": { "type": "file", "url": "./root/CTF/Brute%20It.html" },
