@@ -35,78 +35,78 @@
   const LOGO_TERMINAL = {
     title: 'portfolio-sh',
     art: [
-      '.---------------------.',
-      '| portfolio-sh    _   |',
-      '| > whoami           |',
-      '| bastien bonora     |',
-      "| > open qui_suis_je |",
-      '| ...                |',
-      "'---------------------'"
+      "    .---------------.",
+      "   /                 \\",
+      "  |  portfolio-sh    |",
+      "  |  > whoami _      |",
+      "  |__________________|",
+      "   \\______/---\\______/",
+      "  ~ ~ ~ ~ ~ ~ ~ ~ ~ ~",
     ]
   };
 
   const LOGO_THM = {
     title: 'tryhackme',
     art: [
-      '     .---------.',
-      '    / .-------. \\',
-      '   | |         | |',
-      '   | |  T H M  | |',
-      '   | |         | |',
-      "    \\ '-------' /",
-      "     '---------'"
+      "          /\\",
+      "         /  \\",
+      "        /    \\",
+      "       /      \\",
+      "      /________\\",
+      "      |  T H M  |",
+      "      |   [ ]   |"
     ]
   };
 
   const LOGO_ROOTME = {
     title: 'root-me.org',
     art: [
-      '  .----------------.',
-      '  | root@me:~$     |',
-      '  | > whoami       |',
-      '  | root           |',
-      '  |                |',
-      '  | 75 challenges  |',
-      "  '----------------'"
+      "      .@@@.",
+      "     .@@@@@.",
+      "    @@@@@@@@@@",
+      "     \\  ||  /",
+      "      \\_||_/",
+      "  ______||______",
+      "  \\____root____/"
     ]
   };
 
   const LOGO_CISCO = {
     title: 'cisco ccna',
     art: [
-      '    \\_/  \\_/  \\_/  \\_/',
-      '   _____________________',
-      '      |    |    |    |',
-      '   ~~~|~~~~|~~~~|~~~~|~~~~',
-      '      |    |    |    |',
-      '   ~~~|~~~~|~~~~|~~~~|~~~~',
-      '      |    |    |    |'
+      "       ___        ___",
+      "      |   |      |   |",
+      "  ____|___|______|___|____",
+      "  ~~~~~~~~~~~~~~~~~~~~~~~~",
+      "  ~ ~ c i s c o ~ ~ ~ ~ ~",
+      "  ~~~~~~~~~~~~~~~~~~~~~~~~",
+      "   ~ ~ ~ ~ ~ ~ ~ ~ ~ ~"
     ]
   };
 
   const LOGO_STORMSHIELD = {
     title: 'stormshield',
     art: [
-      '     .---------.',
-      '    /  .-----.  \\',
-      '   |  |  S S  |  |',
-      '   |  |  S S  |  |',
-      "   |   '-----'   |",
-      '    \\           /',
-      "     '---------'"
+      "    /\\",
+      "   /  \\",
+      "   \\   \\",
+      "    \\   \\",
+      "    /   /",
+      "   /___/",
+      "  *   *   *"
     ]
   };
 
   const LOGO_NASTRUIRE = {
     title: 'nastruire — godot',
     art: [
-      '   .----------------.',
-      '   |  N A S T R U I |',
-      '   |  R E           |',
-      '   |  jeu · godot   |',
-      '   |  équipe de 4   |',
-      '   |  nastruire.fr  |',
-      "   '----------------'"
+      "    .----------.",
+      "   /            \\",
+      "  |   _|_    o  |",
+      "  |  (_|_)  o o |",
+      "  |     [==]     |",
+      "   \\            /",
+      "    '----------'"
     ]
   };
 
@@ -687,6 +687,18 @@
         ]
       }
     ]
+  };
+
+  // Source unique des logos ASCII du panneau latéral : le viewer CV
+  // (cvViewer.js) pointe ici plutôt que de porter sa propre copie
+  window.PORTFOLIO_VIEWER_LOGOS = {
+    tux:         LOGO_TUX,
+    terminal:    LOGO_TERMINAL,
+    thm:         LOGO_THM,
+    rootme:      LOGO_ROOTME,
+    cisco:       LOGO_CISCO,
+    stormshield: LOGO_STORMSHIELD,
+    nastruire:   LOGO_NASTRUIRE
   };
 
   window.PORTFOLIO_VIEWERS = {

@@ -404,67 +404,15 @@
   const LOGO_ROWS = 7;
   const LOGO_HOLD_TICKS = 40; // ~4,4 s d'affichage par logo (110 ms/tick)
 
-  const LOGOS = [
-    {
-      title: 'linux au quotidien',
-      art: [
-        '        .--.',
-        '       |o_o |',
-        '       |:_/ |',
-        '      //   \\ \\',
-        "     (|     | )",
-        "    /'\\_   _/`\\",
-        "    \\___)=(___/"
-      ]
-    },
-    {
-      title: 'tryhackme',
-      art: [
-        '     .---------.',
-        '    / .-------. \\',
-        '   | |         | |',
-        '   | |  T H M  | |',
-        '   | |         | |',
-        "    \\ '-------' /",
-        "     '---------'"
-      ]
-    },
-    {
-      title: 'root-me.org',
-      art: [
-        '  .----------------.',
-        '  | root@me:~$     |',
-        '  | > whoami       |',
-        '  | root           |',
-        '  |                |',
-        '  | 75 challenges  |',
-        "  '----------------'"
-      ]
-    },
-    {
-      title: 'cisco ccna',
-      art: [
-        '    \\_/  \\_/  \\_/  \\_/',
-        '   _____________________',
-        '      |    |    |    |',
-        '   ~~~|~~~~|~~~~|~~~~|~~~~',
-        '      |    |    |    |',
-        '   ~~~|~~~~|~~~~|~~~~|~~~~',
-        '      |    |    |    |'
-      ]
-    },
-    {
-      title: 'stormshield',
-      art: [
-        '     .---------.',
-        '    /  .-----.  \\',
-        '   |  |  S S  |  |',
-        '   |  |  S S  |  |',
-        "   |   '-----'   |",
-        '    \\           /',
-        "     '---------'"
-      ]
-    }
+  // Logos ASCII partagés avec les viewers de documents : la source
+  // unique vit dans viewerData.js (chargé après ce fichier), on la
+  // résout donc à l'exécution — jamais à l'évaluation du module.
+  const LOGOS = () => [
+    window.PORTFOLIO_VIEWER_LOGOS.tux,
+    window.PORTFOLIO_VIEWER_LOGOS.thm,
+    window.PORTFOLIO_VIEWER_LOGOS.rootme,
+    window.PORTFOLIO_VIEWER_LOGOS.cisco,
+    window.PORTFOLIO_VIEWER_LOGOS.stormshield
   ];
 
   // Logo courant et phase de l'animation (voir animateLogo) :
@@ -531,7 +479,7 @@
   const renderSide = () => {
     // Lignes complétées à LOGO_W : l'animation peut réécrire leur
     // contenu sans casser l'alignement du cadre
-    const logo = LOGOS[logoState.i];
+    const logo = LOGOS()[logoState.i];
     const padArt = (line) => line.padEnd(LOGO_W).slice(0, LOGO_W);
     const tux = sideBox(padArt(logo.title), logo.art.map((l) => ({
       html: `<span class="cvViewerTux cvViewerLogoRow">${escape(padArt(l))}</span>`,
@@ -610,14 +558,14 @@
       if (logoState.row >= LOGO_ROWS) {
         logoState.phase = 'draw';
         logoState.row = 0;
-        logoState.i = (logoState.i + 1) % LOGOS.length;
-        title.textContent = LOGOS[logoState.i].title.padEnd(LOGO_W);
+        logoState.i = (logoState.i + 1) % LOGOS().length;
+        title.textContent = LOGOS()[logoState.i].title.padEnd(LOGO_W);
       }
       return;
     }
 
     // phase 'draw' : le nouveau logo se dessine ligne par ligne
-    const art = LOGOS[logoState.i].art;
+    const art = LOGOS()[logoState.i].art;
     rows[logoState.row].textContent = art[logoState.row].padEnd(LOGO_W).slice(0, LOGO_W);
     logoState.row += 1;
     if (logoState.row >= LOGO_ROWS) {
