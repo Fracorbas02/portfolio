@@ -30,11 +30,13 @@ jobs:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
           persist-credentials: false
-      - name: Syntax check (JS + JSON)
+      - name: Syntax check (JS + JSON + XML)
         run: |
           for f in src/javascript/*.js; do node --check "$f"; done
           python3 -c "import json; json.load(open('src/JSON/elements.json'))"
-          xmllint --noout sitemap.xml
+          # xmllint n'est pas préinstallé sur le runner : validation XML
+          # via la bibliothèque standard Python, zéro dépendance
+          python3 -c "import xml.etree.ElementTree as ET; ET.parse('sitemap.xml')"
       - name: Setup SSH
         run: |
           mkdir -p ~/.ssh && chmod 700 ~/.ssh
