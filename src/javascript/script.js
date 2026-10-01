@@ -744,20 +744,23 @@
    *   - une seule correspondance : complète (+ espace)
    *   - plusieurs : étend au préfixe commun et affiche la liste
    */
-  function applyCompletion(candidates, lastWord, before, dirNode = null) {
+  function applyCompletion(candidates, lastWord, before, dirNode = null, dirPart = '') {
     if (candidates.length === 0) return;
 
     if (candidates.length === 1) {
       // Un dossier complété reçoit « / » pour poursuivre la
       // navigation dans l'arborescence, un fichier une espace
       const suffix = dirNode && isDirectory(dirNode[candidates[0]]) ? '/' : ' ';
-      COMMAND_INPUT.value = `${before}${candidates[0]}${suffix}`;
+      COMMAND_INPUT.value = `${before}${dirPart}${candidates[0]}${suffix}`;
     } else {
       let prefix = candidates[0];
       for (const name of candidates) {
         while (!name.startsWith(prefix)) prefix = prefix.slice(0, -1);
       }
-      COMMAND_INPUT.value = `${before}${prefix.length > lastWord.length ? prefix : lastWord}`;
+      // Le dossier de base fait partie du mot complété : il doit
+      // être réécrit devant le préfixe commun (ex. « presentation/ »)
+      const full = `${dirPart}${prefix}`;
+      COMMAND_INPUT.value = `${before}${full.length > lastWord.length ? full : lastWord}`;
       printOutput(candidates
         .map((name) => `<span class="helpCommand">${escapeHTML(name)}</span>`)
         .join('&nbsp;&nbsp;'));
@@ -768,9 +771,11 @@
 
   /**
    * Candidats de complétion pour le dernier argument d'une commande.
-   * Renvoie { candidates, dirNode } : dirNode est le dossier dans
-   * lequel on complète (null pour les pools statiques), pour qu'
-   * applyCompletion sache si un candidat est un dossier.
+   * Renvoie { candidates, dirNode, dirPart } : dirNode est le dossier
+   * dans lequel on complète (null pour les pools statiques), pour
+   * qu'applyCompletion sache si un candidat est un dossier ; dirPart
+   * est le début du mot déjà saisi (« presentation/ ») à réécrire
+   * devant le candidat choisi.
    *
    * Le dernier mot peut être un chemin : on sépare le dossier de
    * base (« presentation/ », « ../ », « /root/ »…) du préfixe à
@@ -817,7 +822,8 @@
     }
     return {
       candidates: pool.filter((name) => name.startsWith(prefix)),
-      dirNode
+      dirNode,
+      dirPart
     };
   }
 
@@ -840,8 +846,8 @@
     const [command, ...rest] = value.split(/\s+/);
     const lastWord = rest[rest.length - 1] ?? '';
     const before = value.slice(0, value.length - lastWord.length);
-    const { candidates, dirNode } = argumentCandidates(command.toLowerCase(), lastWord);
-    applyCompletion(candidates, lastWord, before, dirNode);
+    const { candidates, dirNode, dirPart } = argumentCandidates(command.toLowerCase(), lastWord);
+    applyCompletion(candidates, lastWord, before, dirNode, dirPart);
   }
 
   // ──────────────────────────────────────────────────────────────
