@@ -58,7 +58,8 @@
    * Ouvre une nouvelle fenêtre de shell : clone de la fenêtre
    * principale (sans les id, dupliqués), position en cascade,
    * démarrage instantané sans log de boot. `options.viewer` (nœud
-   * JSON avec `viewer: "cv"`) ouvre directement le viewer de CV.
+   * JSON avec un champ `viewer`) ouvre directement le viewer
+   * interactif correspondant.
    */
   function spawnShell(options = {}) {
     const primary = document.getElementById('shellContainer');
@@ -270,10 +271,11 @@
   };
 
   // ──────────────────────────────────────────────────────────────
-  // Viewer de CV interactif : fenêtre ouverte via `open CV.pdf`.
-  // Le menu et les rubriques sont rendus par cvViewer.js ; cette
-  // instance ne gère que l'état et le clavier (flèches, Entrée,
-  // Échap, q, Ctrl+C pour le PDF).
+  // Viewer interactif : fenêtre ouverte via `open <fichier>`. Le
+  // rendu dépend du champ `viewer` du fichier (registre
+  // viewerData.js) : CV, présentation, compétences… Cette instance
+  // ne gère que l'état et le clavier (flèches, Entrée, Échap, q,
+  // chiffres, Ctrl+C).
   // ──────────────────────────────────────────────────────────────
   /** Ouvre un lien du viewer : onglet pour le web, client natif pour mailto/tel. */
   const openViewerLink = (href) => {
@@ -291,21 +293,22 @@
 
   /** Redessine l'écran courant du viewer (menu ou rubrique). */
   const renderViewer = () => {
+    const api = state.viewer?.api;
     let view = SHELL_OUTPUT.querySelector('.cvViewer');
     if (!view) {
       view = document.createElement('div');
       view.className = 'cvViewer';
       SHELL_OUTPUT.appendChild(view);
-      view.innerHTML = window.CV_VIEWER.render(state.viewer);
+      view.innerHTML = api.render(state.viewer);
     } else {
       // Seule la colonne principale change : le panneau latéral garde
       // ses éléments DOM, sinon le spinner repart de zéro, le texte
       // tapé se vide et le logo en cours d'effacement se redessine.
       const main = view.querySelector('.cvViewerMain');
       if (main) {
-        main.innerHTML = window.CV_VIEWER.renderMain(state.viewer);
+        main.innerHTML = api.renderMain(state.viewer);
       } else {
-        view.innerHTML = window.CV_VIEWER.render(state.viewer);
+        view.innerHTML = api.render(state.viewer);
       }
     }
     // Panneau de logos seulement sur les fenêtres assez larges
@@ -317,12 +320,23 @@
       bar.className = 'cvViewerBar';
       root.appendChild(bar);
     }
-    bar.innerHTML = window.CV_VIEWER.bar(state.viewer);
+    bar.innerHTML = api.bar(state.viewer);
   };
 
-  /** Entre dans le viewer : masque le prompt, affiche le menu. */
-  const enterCVViewer = (node) => {
-    state.viewer = { node, index: 0, section: null };
+  /** API de rendu du viewer demandé par un nœud, ou null. */
+  const viewerApiFor = (node) => window.PORTFOLIO_VIEWERS?.[node?.viewer] ?? null;
+
+  /**
+   * Entre dans le viewer : masque le prompt, affiche le menu.
+   * Retourne un message d'erreur si aucun viewer n'existe pour ce
+   * fichier.
+   */
+  const enterViewer = (node) => {
+    const api = viewerApiFor(node);
+    if (!api) {
+      return `open : viewer « ${escapeHTML(node?.viewer ?? '')} » inconnu`;
+    }
+    state.viewer = { node, api, index: 0, section: null };
     root.classList.add('viewerMode');
     // Sortie ancrée en haut, comme pendant le boot
     SHELL_OUTPUT.classList.add('booting');
@@ -333,18 +347,20 @@
     COMMAND_INPUT.value = '';
     resizeInput();
     renderViewer();
-    if (typeof window.CV_VIEWER?.startAnimations === 'function') {
-      window.CV_VIEWER.startAnimations();
+    if (typeof api.startAnimations === 'function') {
+      api.startAnimations(root);
     }
     COMMAND_INPUT.focus();
+    return null;
   };
 
   /** Quitte le viewer et rend la main sur le prompt. */
   const quitViewer = (message) => {
+    const api = state.viewer?.api;
     state.viewer = null;
     root.classList.remove('viewerMode');
-    if (typeof window.CV_VIEWER?.stopAnimations === 'function') {
-      window.CV_VIEWER.stopAnimations();
+    if (typeof api?.stopAnimations === 'function') {
+      api.stopAnimations();
     }
     const bar = root.querySelector('.cvViewerBar');
     if (bar) bar.remove();
@@ -372,7 +388,7 @@
       return;
     }
 
-    const sections = window.CV_VIEWER.sections();
+    const sections = viewer.api.sections();
 
     if (viewer.section === null) {
       // Menu : ↑↓ déplacent la sélection, Entrée ouvre une rubrique
@@ -412,7 +428,7 @@
         return;
       }
       if (/^[1-9]$/.test(event.key)) {
-        const link = window.CV_VIEWER.links(viewer.section)[Number(event.key) - 1];
+        const link = viewer.api.links(viewer.section)[Number(event.key) - 1];
         if (link) openViewerLink(link.href);
         return;
       }
@@ -1030,7 +1046,12 @@
     // arrive directement sur un prompt avec le neofetch, comme un
     // shell fraîchement ouvert — sauf si un viewer est demandé
     if (options.viewer) {
-      enterCVViewer(options.viewer);
+      const error = enterViewer(options.viewer);
+      if (error) {
+        printOutput(error);
+        showPrompt();
+        COMMAND_INPUT.focus();
+      }
       return;
     }
     printOutput(cmdNeofetch());
