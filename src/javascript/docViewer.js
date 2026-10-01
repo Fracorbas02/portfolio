@@ -361,12 +361,41 @@
         return result;
       };
 
+      // ── Version texte brut, pour `cat` ───────────────────────
+      // Mêmes données que le viewer, sans bordures ni HTML :
+      // cat d'un fichier viewer affiche le fond, open affiche la forme.
+      const toText = () => {
+        const out = [title.toUpperCase(), subtitle, ''];
+        for (const section of sections) {
+          out.push(`== ${section.title} ==`);
+          for (const entry of section.entries) {
+            out.push('', entry.heading);
+            if (entry.sub) out.push(entry.sub);
+            if (entry.lines) {
+              for (const line of entry.lines) {
+                out.push(typeof line === 'string'
+                  ? `  - ${line}`
+                  : `  - ${line.text} (${line.href})`);
+              }
+            }
+            if (entry.links) {
+              for (const link of entry.links) {
+                out.push(`  - ${link.label}${link.value ? ` : ${link.value}` : ''} — ${link.href}`);
+              }
+            }
+          }
+          out.push('');
+        }
+        return out.join('\n').trim() + '\n';
+      };
+
       return {
         sections: () => sections.map(({ id, title: t }) => ({ id, title: t })),
         render,
         renderMain,
         bar: barHTML,
         links,
+        toText,
         startAnimations,
         stopAnimations
       };

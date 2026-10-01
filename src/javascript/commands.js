@@ -157,6 +157,11 @@
       if (!canReadFiles()) {
         return `cat : ${escapeHTML(target)} : Permission non accordée`;
       }
+      // Fichier viewer (CV.html, reseaux.html…) : rendu texte brut
+      // des mêmes données que `open`, sans le rendu interactif.
+      if (node.viewer && window.PORTFOLIO_VIEWERS?.[node.viewer]?.toText) {
+        return escapeHTML(window.PORTFOLIO_VIEWERS[node.viewer].toText());
+      }
       if (typeof node !== 'string') {
         return `cat : ${escapeHTML(target)} : fichier binaire (non affichable). Essayez : open`;
       }
