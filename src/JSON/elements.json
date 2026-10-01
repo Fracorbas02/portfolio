@@ -209,7 +209,7 @@
               "README.md": "Bienvenue sur le portfolio de Bastien BONORA !\n\nCe terminal simule un shell bash : tapez 'help' pour la liste des commandes,\n'cd' pour naviguer dans l'arborescence, 'cat' pour lire un fichier texte,\n'open' pour ouvrir un fichier ou un lien dans un nouvel onglet.\n\nPour découvrir mon parcours, commencez par : cd competences\n\nBonne visite !",
               "presentation": {
                 "type": "directory",
-                "CV.pdf": { "type": "file", "url": "./root/presentation/CV/CV_Bastien_BONORA_2025.pdf" },
+                "CV.pdf": { "type": "file", "url": "./root/presentation/CV/CV_Bastien_BONORA_2025.pdf", "viewer": "cv" },
                 "releve_bac.pdf": { "type": "file", "url": "./root/presentation/Releve_Note_Bac.pdf" },
                 "projet_orientation.png": { "type": "file", "url": "./root/presentation/Projet_Orientation.png" },
                 "pubkey.asc": { "type": "file", "url": "./root/presentation/pubkey" }

@@ -677,3 +677,60 @@ body.is-window-dragging * {
     left: 1rem;
   }
 }
+/* ──────────────────────────────────────────────────────────────
+   Viewer de CV interactif (`open CV.pdf` dans une nouvelle fenêtre)
+   ────────────────────────────────────────────────────────────── */
+
+/* Le prompt disparaît mais doit rester focusable : opacity plutôt
+   que display:none, sinon l'input ne reçoit plus le clavier. */
+.shellContainer.viewerMode .currentShellLine {
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* Rendu ASCII : les cadres exigeent de ne pas replier les lignes */
+.cvViewer {
+  white-space: pre;
+  line-height: 1.5;
+}
+
+.cvViewerTitle {
+  color: var(--accent-strong);
+  font-weight: 700;
+}
+
+.cvViewerSubtitle {
+  color: var(--text-secondary);
+}
+
+.cvViewerItem {
+  color: var(--text-primary);
+}
+
+.cvViewerItemSelected {
+  color: var(--accent);
+  font-weight: 600;
+  text-shadow: 0 0 8px var(--accent-glow);
+}
+
+.cvViewerHeading {
+  color: var(--accent-strong);
+  font-weight: 600;
+}
+
+.cvViewerSub {
+  color: var(--text-secondary);
+  font-style: italic;
+}
+
+.cvViewerText {
+  color: var(--text-primary);
+}
+
+.cvViewerMuted {
+  color: var(--text-muted);
+}
+
+.cvViewerSection {
+  white-space: pre;
+}
