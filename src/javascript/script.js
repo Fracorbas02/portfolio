@@ -282,12 +282,17 @@
     if (/^https?:/.test(href)) {
       window.open(href, '_blank', 'noopener,noreferrer');
     } else {
-      // mailto:, tel: ou fichier local : on laisse naviguer l'ancre
+      // mailto:, tel: ou fichier local : on laisse naviguer l'ancre.
+      // Elle doit être dans le document pour que le clic se propage
+      // et que la navigation s'ouvre comme un vrai clic de l'utilisateur.
       const a = document.createElement('a');
       a.href = href;
       a.target = '_blank';
       a.rel = 'noopener noreferrer';
+      a.style.display = 'none';
+      document.body.appendChild(a);
       a.click();
+      a.remove();
     }
   };
 
@@ -1072,7 +1077,7 @@
     window.PORTFOLIO_THEME.restore();
 
     try {
-      const response = await fetch('./src/JSON/elements.json?v=20261001');
+      const response = await fetch('./src/JSON/elements.json?v=20261001.2');
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
       portfolioData = await response.json();
     } catch (err) {
