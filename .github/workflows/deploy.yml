@@ -18,7 +18,11 @@ jobs:
           echo "${{ secrets.SSH_KNOWN_HOSTS }}" > ~/.ssh/known_hosts
       - name: Deploy via rsync
         run: |
-          rsync -az --delete --chmod=Du=rwx,Dgo=rx,Fu=rw,Fgo=r \
+          rsync -az --delete \
+            --exclude '.git' \
+            --exclude '.github' \
+            --exclude '.well-known' \
+            --chmod=Du=rwx,Dgo=rx,Fu=rw,Fgo=r \
             -e "ssh -i ~/.ssh/id_ed25519" \
             . \
             ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:
