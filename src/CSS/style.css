@@ -72,7 +72,11 @@ body {
   box-shadow: var(--shadow-lg), var(--shadow-glow);
   display: flex;
   flex-direction: column;
+  /* clip (là où il est supporté) rend le conteneur non scrollable :
+     le navigateur ne peut plus le faire défiler pour révéler l'input
+     au focus, ce qui masquait le chrome d'une fenêtre réduite. */
   overflow: hidden;
+  overflow: clip;
 }
 
 /* Chrome / titlebar — sert de poignée de drag */
@@ -122,6 +126,14 @@ body {
 .shellContainer.minimized .shellOutput,
 .shellContainer.minimized .currentShellLine {
   display: none;
+}
+
+/* !important : showPrompt pose un display:flex en style inline,
+   qui gagnerait sinon et laisserait la ligne de saisie occuper
+   ~31px sous le pli ; le focus de l'input faisait alors défiler
+   le conteneur et masquait le chrome (pastilles incliquables). */
+.shellContainer.minimized .currentShellLine {
+  display: none !important;
 }
 
 .shellContainer.minimized {
