@@ -7,8 +7,9 @@
  * Le pilotage clavier (flèches, Entrée, Échap, chiffres 1-8,
  * Ctrl+C) est géré par script.js ; ce module décrit les rubriques
  * du CV, produit le rendu ASCII (colonne principale + panneau
- * latéral de logos animés) et anime le spinner braille et le
- * texte en machine à écrire.
+ * latéral de logos animés) et anime le spinner braille, le texte
+ * en machine à écrire et la rotation des logos (Tux, TryHackMe,
+ * Root-Me, Cisco, Stormshield).
  *
  * Exposition globale (pas de système de modules ici) :
  *   window.CV_VIEWER.sections() -> liste des rubriques
@@ -373,28 +374,97 @@
   const SIDE_WIDTH = 30;
 
   /** Encadre des lignes { html, text } : le pad compte le visible. */
-  const sideBox = (title, rows) => {
+  const sideBox = (title, rows, titleClass = 'cvViewerMuted') => {
     const bar = '─'.repeat(SIDE_WIDTH);
     const row = (r) => r.border ? `├${bar}┤`
       : `│ ${r.html}${' '.repeat(Math.max(0, SIDE_WIDTH - 1 - r.text.length))}│`;
     return [
       `┌${bar}┐`,
-      row({ html: mutedHTML(title), text: title }),
+      row({ html: `<span class="${titleClass}">${escape(title)}</span>`, text: title }),
       `├${bar}┤`,
       ...rows.map(row),
       `└${bar}┘`
     ].join('\n');
   };
 
-  const TUX = [
-    '        .--.',
-    '       |o_o |',
-    '       |:_/ |',
-    '      //   \\ \\',
-    "     (|     | )",
-    "    /'\\_   _/`\\",
-    '    \\___)=(___/'
+  // ── Logos animés du panneau latéral ───────────────────────────
+  // Le logo de la première boîte défile (Tux → TryHackMe → Root-Me
+  // → Cisco → Stormshield) : chaque logo reste affiché un moment,
+  // puis l'ancien s'efface ligne par ligne pendant que le suivant
+  // se dessine, comme le scan du périmètre plus bas.
+  // Tous les logos ont exactement LOGO_ROWS lignes de LOGO_W
+  // colonnes max : l'animation réécrit les textContent à longueur
+  // constante pour préserver l'alignement du cadre.
+  const LOGO_W = 26;
+  const LOGO_ROWS = 7;
+  const LOGO_HOLD_TICKS = 40; // ~4,4 s d'affichage par logo (110 ms/tick)
+
+  const LOGOS = [
+    {
+      title: 'linux au quotidien',
+      art: [
+        '        .--.',
+        '       |o_o |',
+        '       |:_/ |',
+        '      //   \\ \\',
+        "     (|     | )",
+        "    /'\\_   _/`\\",
+        "    \\___)=(___/"
+      ]
+    },
+    {
+      title: 'tryhackme',
+      art: [
+        '     .---------.',
+        '    / .-------. \\',
+        '   | |         | |',
+        '   | |  T H M  | |',
+        '   | |         | |',
+        "    \\ '-------' /",
+        "     '---------'"
+      ]
+    },
+    {
+      title: 'root-me.org',
+      art: [
+        '  .----------------.',
+        '  | root@me:~$     |',
+        '  | > whoami       |',
+        '  | root           |',
+        '  |                |',
+        '  | 75 challenges  |',
+        "  '----------------'"
+      ]
+    },
+    {
+      title: 'cisco ccna',
+      art: [
+        '    \\_/  \\_/  \\_/  \\_/',
+        '   _____________________',
+        '      |    |    |    |',
+        '   ~~~|~~~~|~~~~|~~~~|~~~~',
+        '      |    |    |    |',
+        '   ~~~|~~~~|~~~~|~~~~|~~~~',
+        '      |    |    |    |'
+      ]
+    },
+    {
+      title: 'stormshield',
+      art: [
+        '     .---------.',
+        '    /  .-----.  \\',
+        '   |  |  S S  |  |',
+        '   |  |  S S  |  |',
+        "   |   '-----'   |",
+        '    \\           /',
+        "     '---------'"
+      ]
+    }
   ];
+
+  // Logo courant et phase de l'animation (voir animateLogo) :
+  // 'hold' (affiché) → 'wipe' (effacé ligne par ligne) → 'draw'.
+  const logoState = { i: 0, phase: 'hold', ticks: LOGO_HOLD_TICKS, row: 0 };
 
   const BADGES = [
     ' TRYHACKME  [0xA] WIZARD',
@@ -405,9 +475,14 @@
   ];
 
   const renderSide = () => {
-    const tux = sideBox('linux au quotidien', TUX.map((l) => ({
-      html: `<span class="cvViewerTux">${escape(l)}</span>`, text: l
-    })));
+    // Lignes complétées à LOGO_W : l'animation peut réécrire leur
+    // contenu sans casser l'alignement du cadre
+    const logo = LOGOS[logoState.i];
+    const padArt = (line) => line.padEnd(LOGO_W).slice(0, LOGO_W);
+    const tux = sideBox(padArt(logo.title), logo.art.map((l) => ({
+      html: `<span class="cvViewerTux cvViewerLogoRow">${escape(padArt(l))}</span>`,
+      text: padArt(l)
+    })), 'cvViewerMuted cvViewerLogoTitle');
     const badges = sideBox('plateformes', BADGES.map((l) => ({
       html: `<span class="cvViewerBadge">${escape(l)}</span>`, text: l
     })));
@@ -455,18 +530,62 @@
     return phrase.slice(0, Math.max(0, typed.pos));
   };
 
+  /**
+   * Fait défiler les logos du panneau latéral : le logo affiché
+   * reste en place (hold), s'efface ligne par ligne en laissant
+   * une trame ░ comme une trace de scan (wipe), puis le suivant
+   * se dessine ligne par ligne (draw). Titre et lignes sont
+   * réécrits à LOGO_W caractères pour garder le cadre aligné.
+   */
+  const animateLogo = () => {
+    const rows = document.querySelectorAll('.cvViewerLogoRow');
+    const title = document.querySelector('.cvViewerLogoTitle');
+    if (rows.length < LOGO_ROWS || !title) return;
+
+    if (logoState.phase === 'hold') {
+      logoState.ticks -= 1;
+      if (logoState.ticks > 0) return;
+      logoState.phase = 'wipe';
+      logoState.row = 0;
+      return;
+    }
+
+    if (logoState.phase === 'wipe') {
+      rows[logoState.row].textContent = '░'.repeat(LOGO_W);
+      logoState.row += 1;
+      if (logoState.row >= LOGO_ROWS) {
+        logoState.phase = 'draw';
+        logoState.row = 0;
+        logoState.i = (logoState.i + 1) % LOGOS.length;
+        title.textContent = LOGOS[logoState.i].title.padEnd(LOGO_W);
+      }
+      return;
+    }
+
+    // phase 'draw' : le nouveau logo se dessine ligne par ligne
+    const art = LOGOS[logoState.i].art;
+    rows[logoState.row].textContent = art[logoState.row].padEnd(LOGO_W).slice(0, LOGO_W);
+    logoState.row += 1;
+    if (logoState.row >= LOGO_ROWS) {
+      logoState.phase = 'hold';
+      logoState.ticks = LOGO_HOLD_TICKS;
+    }
+  };
+
   const startAnimations = () => {
     stopAnimations();
     animTimer = setInterval(() => {
       tick += 1;
       const spin = document.querySelector('.cvViewerSpin');
       const type = document.querySelector('.cvViewerType');
-      if (!spin && !type) {
+      const logoRow = document.querySelector('.cvViewerLogoRow');
+      if (!spin && !type && !logoRow) {
         stopAnimations();
         return;
       }
       if (spin) spin.textContent = SPIN_FRAMES[tick % SPIN_FRAMES.length];
       if (type) type.textContent = typedText();
+      animateLogo();
     }, 110);
   };
 
