@@ -96,13 +96,8 @@
     document.body.appendChild(clone);
     bringToFront(clone);
 
-    if (typeof window.initWindowManager === 'function') {
-      window.initWindowManager({
-        target: clone,
-        handle: clone.querySelector('.shell__chrome')
-      });
-    }
-
+    // Le window manager est branché par createShell (une seule
+    // instance par fenêtre, sinon poignées et listeners dupliqués)
     createShell(clone, { boot: false, viewer: options.viewer });
     return null;
   }
@@ -1703,11 +1698,16 @@
           root.style.height = `${savedSize.height}px`;
         }
         savedSize = null;
+        // Le focus de l'input est perdu à la réduction (la ligne est
+        // masquée) : on le rend pour pouvoir taper / naviguer aussitôt
+        root.scrollTop = 0;
+        COMMAND_INPUT.focus();
         return;
       }
       const rect = root.getBoundingClientRect();
       savedSize = { height: rect.height };
       root.classList.add('minimized');
+      root.scrollTop = 0;
     });
 
     // Vert : bascule plein écran, en mémorisant la géométrie
