@@ -136,7 +136,7 @@
     title: 'QUI SUIS-JE ?',
     subtitle: 'Bastien BONORA — derrière le terminal',
     statusLabel: 'scan du propriétaire',
-    ctrlLabel: 'bastienbonora.fr',
+    ctrlLabel: 'la page à propos',
     logos: [LOGO_TUX, LOGO_TERMINAL, LOGO_THM, LOGO_ROOTME],
     platforms: PLATFORM_LINES,
     typedPhrases: [

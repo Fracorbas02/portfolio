@@ -98,7 +98,11 @@
 
     // Le window manager est branché par createShell (une seule
     // instance par fenêtre, sinon poignées et listeners dupliqués)
-    createShell(clone, { boot: false, viewer: options.viewer });
+    createShell(clone, {
+      boot: false,
+      viewer: options.viewer,
+      seedHistory: options.seedHistory
+    });
     return null;
   }
 
@@ -263,6 +267,13 @@
     SHELL_OUTPUT.appendChild(line);
   };
 
+  /**
+   * Impression sûre : échappe le texte avant insertion. À préférer
+   * à printOutput pour tout contenu qui n'est pas du HTML construit
+   * par le code — c'est le garde-fou anti-XSS par défaut.
+   */
+  const printText = (text) => printOutput(window.PORTFOLIO_HTML.escapeHTML(text));
+
   // ──────────────────────────────────────────────────────────────
   // Viewer interactif : fenêtre ouverte via `open <fichier>`. Le
   // rendu dépend du champ `viewer` du fichier (registre
@@ -380,12 +391,16 @@
     const viewer = state.viewer;
     if (!viewer) return;
 
-    // Ctrl+C : ouvre le CV PDF dans le navigateur puis quitte
+    // Ctrl+C : ouvre le lien associé au fichier dans le navigateur
+    // puis quitte (le CV pour CV.pdf, la page à propos pour
+    // qui_suis_je.html, la doc pour les compétences…)
     if (event.ctrlKey && event.key.toLowerCase() === 'c') {
       if (viewer.node?.url && window.PORTFOLIO_HTML.isSafeHref(viewer.node.url)) {
         window.open(viewer.node.url, '_blank', 'noopener,noreferrer');
+        quitViewer('ouverture du lien dans un nouvel onglet...');
+      } else {
+        quitViewer();
       }
-      quitViewer('ouverture du CV PDF dans un nouvel onglet...');
       return;
     }
 
@@ -438,20 +453,52 @@
 
   // ──────────────────────────────────────────────────────────────
   // Persistance de l'historique (localStorage)
+  //
+  // Chaque fenêtre de shell est une instance indépendante : la
+  // fenêtre principale persiste dans la clé canonique (elle survit
+  // aux rechargements de page), chaque fenêtre ouverte par `bash`
+  // ou `open` persiste dans sa propre clé d'instance — deux
+  // fenêtres ne s'écrasent plus mutuellement leur historique. Les
+  // clés d'instance portent un horodatage et sont purgées après
+  // une semaine d'inactivité.
   // ──────────────────────────────────────────────────────────────
-  const HISTORY_KEY   = 'portfolioShellHistory';
-  const HISTORY_LIMIT = 100;
+  const HISTORY_KEY          = 'portfolioShellHistory';
+  const HISTORY_INSTANCE_KEY = 'portfolioShellHistory:instance:';
+  const HISTORY_INSTANCE_TTL = 7 * 24 * 60 * 60 * 1000;
+  const HISTORY_LIMIT        = 100;
+
+  // Clé de persistance de cette fenêtre : null pour la fenêtre
+  // principale (clé canonique), sinon une clé d'instance unique
+  const instanceKey = options.boot === false
+    ? `${HISTORY_INSTANCE_KEY}${crypto.randomUUID?.() ?? `${Date.now()}-${Math.random()}`}`
+    : null;
 
   function persistHistory() {
     try {
-      localStorage.setItem(HISTORY_KEY, JSON.stringify(state.history.slice(-HISTORY_LIMIT)));
+      const payload = state.history.slice(-HISTORY_LIMIT);
+      if (instanceKey) {
+        localStorage.setItem(instanceKey, JSON.stringify({
+          updatedAt: Date.now(),
+          history: payload
+        }));
+      } else {
+        localStorage.setItem(HISTORY_KEY, JSON.stringify(payload));
+      }
     } catch {
       // Stockage indisponible (mode privé, etc.) : l'historique
       // reste en mémoire pour la session en cours.
     }
   }
 
-  function loadHistory() {
+  function loadHistory(seed = null) {
+    // Héritage : une fenêtre ouverte par `bash` part de l'historique
+    // de la fenêtre qui l'a lancée, comme un terminal neuf qui lit
+    // le .bash_history au démarrage
+    if (Array.isArray(seed)) {
+      state.history = seed.filter((cmd) => typeof cmd === 'string').slice(-HISTORY_LIMIT);
+      state.historyIndex = state.history.length;
+      return;
+    }
     try {
       const saved = JSON.parse(localStorage.getItem(HISTORY_KEY) ?? '[]');
       if (Array.isArray(saved)) {
@@ -460,6 +507,28 @@
       }
     } catch {
       // Données corrompues ou stockage indisponible : on repart à zéro
+    }
+    pruneInstanceHistory();
+  }
+
+  /** Supprime les clés d'instance inutilisées depuis plus d'une semaine. */
+  function pruneInstanceHistory() {
+    try {
+      const now = Date.now();
+      for (let i = localStorage.length - 1; i >= 0; i--) {
+        const key = localStorage.key(i);
+        if (!key?.startsWith(HISTORY_INSTANCE_KEY)) continue;
+        try {
+          const entry = JSON.parse(localStorage.getItem(key));
+          if (!entry?.updatedAt || now - entry.updatedAt > HISTORY_INSTANCE_TTL) {
+            localStorage.removeItem(key);
+          }
+        } catch {
+          localStorage.removeItem(key); // entrée illisible : on purge
+        }
+      }
+    } catch {
+      // Stockage indisponible : rien à purger
     }
   }
 
@@ -489,7 +558,7 @@
   const executeCommand = async (rawCommand) => {
     const trimmed = rawCommand.trim();
     if (!trimmed) {
-      printOutput(`${escapeHTML(DEFAULT_BEGIN_SHELL.textContent)}`);
+      printText(DEFAULT_BEGIN_SHELL.textContent);
       return;
     }
 
@@ -884,7 +953,7 @@
       // Ctrl+C : annule la ligne en cours, affiche ^C comme bash
       if (event.ctrlKey && event.key.toLowerCase() === 'c') {
         event.preventDefault();
-        printOutput(`${escapeHTML(DEFAULT_BEGIN_SHELL.textContent)}${escapeHTML(COMMAND_INPUT.value)}^C`);
+        printText(`${DEFAULT_BEGIN_SHELL.textContent}${COMMAND_INPUT.value}^C`);
         COMMAND_INPUT.value = '';
         resizeInput();
         scrollToBottom();
@@ -1017,7 +1086,7 @@
   setupInput();
   setupEasterEgg();
   setupWindowControls();
-  loadHistory();
+  loadHistory(options.seedHistory);
   setupMenu(); // garde interne : branché une seule fois
 
   // Cliquer une fenêtre la ramène au premier plan (multi-fenêtres)
@@ -1078,7 +1147,7 @@
     window.PORTFOLIO_THEME.restore();
 
     try {
-      const response = await fetch('./src/JSON/elements.json?v=20261002.2');
+      const response = await fetch('./src/JSON/elements.json?v=20261002.4');
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
       portfolioData = await response.json();
     } catch (err) {

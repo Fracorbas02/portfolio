@@ -349,7 +349,7 @@
         if (!window.PORTFOLIO_VIEWERS?.[node.viewer]) {
           return `open : viewer « ${escapeHTML(node.viewer)} » inconnu`;
         }
-        const error = spawnShell({ viewer: node });
+        const error = spawnShell({ viewer: node, seedHistory: state.history.slice() });
         if (error) return error;
         return `ouverture de ${escapeHTML(target)} dans une nouvelle fenêtre...`;
       }
@@ -437,7 +437,8 @@
      * bash dans un terminal.
      */
     function cmdBash() {
-      const error = spawnShell();
+      // La nouvelle fenêtre hérite de l'historique de celle-ci
+      const error = spawnShell({ seedHistory: state.history.slice() });
       if (error) return error;
       return 'bash : nouvelle fenêtre de shell ouverte';
     }
