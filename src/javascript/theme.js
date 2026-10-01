@@ -10,14 +10,7 @@
 (() => {
   'use strict';
 
-  const escapeHTML = (str) =>
-    String(str).replace(/[&<>"']/g, (m) => ({
-      '&': '&amp;',
-      '<': '&lt;',
-      '>': '&gt;',
-      '"': '&quot;',
-      "'": '&#39;'
-    })[m]);
+  const escapeHTML = window.PORTFOLIO_HTML.escapeHTML;
 
   const THEME_KEY = 'portfolioShellTheme';
 

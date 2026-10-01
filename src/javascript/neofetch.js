@@ -11,14 +11,7 @@
 (() => {
   'use strict';
 
-  const escapeHTML = (str) =>
-    String(str).replace(/[&<>"']/g, (m) => ({
-      '&': '&amp;',
-      '<': '&lt;',
-      '>': '&gt;',
-      '"': '&quot;',
-      "'": '&#39;'
-    })[m]);
+  const escapeHTML = window.PORTFOLIO_HTML.escapeHTML;
 
   /** Durée de session lisible : "42s", "3m 12s", "2h 4m". */
   function formatUptime(ms) {

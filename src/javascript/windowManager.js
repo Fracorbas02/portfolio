@@ -178,7 +178,14 @@
 
     // ── 7. Si l'utilisateur redimensionne la fenêtre du navigateur,
     //       on garde la fenêtre interne dans le viewport ───────────
-    window.addEventListener('resize', () => {
+    // La fenêtre peut être fermée (exit, pastille rouge) : au
+    // prochain resize, l'écouteur se retire seul au lieu de garder
+    // une référence sur un élément détaché.
+    const onWindowResize = () => {
+      if (!target.isConnected) {
+        window.removeEventListener('resize', onWindowResize);
+        return;
+      }
       if (!hasTakenControl) return;
       const rect = target.getBoundingClientRect();
       const vw = window.innerWidth;
@@ -199,7 +206,8 @@
       const clampedTop  = clamp(rect.top,  0, Math.max(0, vh - rect.height));
       if (clampedLeft !== rect.left) target.style.left = `${clampedLeft}px`;
       if (clampedTop  !== rect.top)  target.style.top  = `${clampedTop}px`;
-    });
+    };
+    window.addEventListener('resize', onWindowResize);
   }
 
   // Petit utilitaire de clamping (borne une valeur entre min et max)
