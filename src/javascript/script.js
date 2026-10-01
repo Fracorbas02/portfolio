@@ -1,12 +1,18 @@
 /**
  * Portfolio CLI — Bastien BONORA
  * ----------------------------------------------------------------
- * Ce script gère :
- *   - Le chargement asynchrone des données (elements.json)
- *   - La séquence d'introduction (effet machine à écrire)
- *   - L'analyse et l'exécution des commandes
- *   - Le menu hamburger latéral
- *   - L'easter egg "42"
+ * Orchestrateur du shell : fabrique les fenêtres de terminal et
+ * les assemble avec les modules dédiés.
+ *   - theme.js : palette de couleurs (commande set theme)
+ *   - filesystem.js : navigation dans l'arborescence JSON
+ *   - boot.js : log de démarrage systemd et effet machine à écrire
+ *   - neofetch.js : rendu du neofetch
+ *   - commands.js : handlers de commandes et registre
+ *
+ * Ici restent : le chargement des données (elements.json), la
+ * fabrique de fenêtres (multi-shells), le curseur, l'historique,
+ * la complétion Tab, la recherche Ctrl+R, le viewer de CV, le menu
+ * hamburger latéral et l'easter egg "42"
  */
 
 (() => {
