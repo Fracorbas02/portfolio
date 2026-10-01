@@ -51,9 +51,10 @@
   /**
    * Ouvre une nouvelle fenêtre de shell : clone de la fenêtre
    * principale (sans les id, dupliqués), position en cascade,
-   * démarrage instantané sans log de boot.
+   * démarrage instantané sans log de boot. `options.viewer` (nœud
+   * JSON avec `viewer: "cv"`) ouvre directement le viewer de CV.
    */
-  function spawnShell() {
+  function spawnShell(options = {}) {
     const primary = document.getElementById('shellContainer');
     if (!primary || !portfolioData) {
       return 'bash : impossible d\'ouvrir une nouvelle fenêtre (données indisponibles)';
@@ -102,7 +103,7 @@
       });
     }
 
-    createShell(clone, { boot: false });
+    createShell(clone, { boot: false, viewer: options.viewer });
     return null;
   }
 
@@ -301,7 +302,8 @@
     shaCache: new Map(),
     history: [],
     historyIndex: -1,
-    sessionStart: Date.now()
+    sessionStart: Date.now(),
+    viewer: null
   };
 
   // État de la recherche inversée (Ctrl+R)
@@ -491,6 +493,108 @@
     const line = document.createElement('div');
     line.innerHTML = html;
     SHELL_OUTPUT.appendChild(line);
+  };
+
+  // ──────────────────────────────────────────────────────────────
+  // Viewer de CV interactif : fenêtre ouverte via `open CV.pdf`.
+  // Le menu et les rubriques sont rendus par cvViewer.js ; cette
+  // instance ne gère que l'état et le clavier (flèches, Entrée,
+  // Échap, q, Ctrl+C pour le PDF).
+  // ──────────────────────────────────────────────────────────────
+  /** Redessine l'écran courant du viewer (menu ou rubrique). */
+  const renderViewer = () => {
+    let view = SHELL_OUTPUT.querySelector('.cvViewer');
+    if (!view) {
+      view = document.createElement('div');
+      view.className = 'cvViewer';
+      SHELL_OUTPUT.appendChild(view);
+    }
+    view.innerHTML = window.CV_VIEWER.render(state.viewer);
+  };
+
+  /** Entre dans le viewer : masque le prompt, affiche le menu. */
+  const enterCVViewer = (node) => {
+    state.viewer = { node, index: 0, section: null };
+    root.classList.add('viewerMode');
+    // Sortie ancrée en haut, comme pendant le boot
+    SHELL_OUTPUT.classList.add('booting');
+    DEFAULT_TEXT.innerHTML = '';
+    // Le prompt reste affiché (masqué par opacity:0 en mode
+    // viewer) : sinon l'input perd le focus clavier
+    CURRENT_SHELL_LINE.style.display = 'flex';
+    COMMAND_INPUT.value = '';
+    resizeInput();
+    renderViewer();
+    COMMAND_INPUT.focus();
+  };
+
+  /** Quitte le viewer et rend la main sur le prompt. */
+  const quitViewer = (message) => {
+    state.viewer = null;
+    root.classList.remove('viewerMode');
+    // La factory garde une référence sur defaultText : on le
+    // réinsère comme le fait cmdClear après un vidage complet.
+    SHELL_OUTPUT.innerHTML = '';
+    SHELL_OUTPUT.appendChild(DEFAULT_TEXT);
+    DEFAULT_TEXT.innerHTML = '';
+    showPrompt();
+    if (message) printOutput(message);
+    scrollToBottom();
+  };
+
+  /** Clavier du viewer : flèches, Entrée, Échap, q, Ctrl+C. */
+  const handleViewerKey = (event) => {
+    const viewer = state.viewer;
+    if (!viewer) return;
+
+    // Ctrl+C : ouvre le CV PDF dans le navigateur puis quitte
+    if (event.ctrlKey && event.key.toLowerCase() === 'c') {
+      if (viewer.node?.url) {
+        window.open(viewer.node.url, '_blank', 'noopener,noreferrer');
+      }
+      quitViewer('ouverture du CV PDF dans un nouvel onglet...');
+      return;
+    }
+
+    const sections = window.CV_VIEWER.sections();
+
+    if (viewer.section === null) {
+      // Menu : ↑↓ déplacent la sélection, Entrée ouvre une rubrique
+      if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+        const delta = event.key === 'ArrowDown' ? 1 : -1;
+        viewer.index = (viewer.index + delta + sections.length) % sections.length;
+        renderViewer();
+        return;
+      }
+      if (event.key === 'Enter') {
+        viewer.section = sections[viewer.index].id;
+        renderViewer();
+        return;
+      }
+      if (event.key === 'Escape' || event.key === 'q') {
+        quitViewer();
+        return;
+      }
+    } else {
+      // Rubrique : ↑↓ défilent, Entrée/Échap retournent au menu
+      if (event.key === 'ArrowDown') {
+        SHELL_OUTPUT.scrollTop += 40;
+        return;
+      }
+      if (event.key === 'ArrowUp') {
+        SHELL_OUTPUT.scrollTop -= 40;
+        return;
+      }
+      if (event.key === 'Enter' || event.key === 'Escape') {
+        viewer.section = null;
+        renderViewer();
+        return;
+      }
+      if (event.key === 'q') {
+        quitViewer();
+        return;
+      }
+    }
   };
 
   // ──────────────────────────────────────────────────────────────
@@ -875,6 +979,14 @@
     }
     if (!isOpenable(node)) {
       return `open : ${escapeHTML(target)} : n'est pas ouvrable`;
+    }
+
+    // Viewer interactif : le CV s'ouvre dans une nouvelle fenêtre
+    // de shell navigable au clavier (Ctrl+C pour le PDF)
+    if (node.viewer === 'cv') {
+      const error = spawnShell({ viewer: node });
+      if (error) return error;
+      return `ouverture de ${escapeHTML(target)} dans une nouvelle fenêtre...`;
     }
 
     window.open(node.url, '_blank', 'noopener,noreferrer');
@@ -1412,6 +1524,13 @@
     COMMAND_INPUT.addEventListener('focus', updateCursor);
 
     COMMAND_INPUT.addEventListener('keydown', async (event) => {
+      // Viewer de CV actif : toutes les touches lui sont capturées
+      if (state.viewer) {
+        event.preventDefault();
+        handleViewerKey(event);
+        return;
+      }
+
       // Ctrl+R : entre en recherche inversée, ou passe à la correspondance suivante
       if (event.ctrlKey && event.key.toLowerCase() === 'r') {
         event.preventDefault();
@@ -1621,7 +1740,11 @@
   if (options.boot === false) {
     // Fenêtre ouverte via bash : pas de redémarrage complet, on
     // arrive directement sur un prompt avec le neofetch, comme un
-    // shell fraîchement ouvert
+    // shell fraîchement ouvert — sauf si un viewer est demandé
+    if (options.viewer) {
+      enterCVViewer(options.viewer);
+      return;
+    }
     printOutput(cmdNeofetch());
     showPrompt();
     COMMAND_INPUT.focus();
@@ -1640,7 +1763,7 @@
     restoreTheme();
 
     try {
-      const response = await fetch('./src/JSON/elements.json?v=20260930');
+      const response = await fetch('./src/JSON/elements.json?v=20261001');
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
       portfolioData = await response.json();
     } catch (err) {
