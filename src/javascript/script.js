@@ -724,10 +724,15 @@
         break;
       }
       case 'cat': {
+        // Cat-able : fichier texte, ou fichier viewer dont le
+        // moteur sait rendre le texte brut (cmdCat → toText()).
+        const catAble = (node) =>
+          typeof node === 'string'
+          || (node?.viewer && window.PORTFOLIO_VIEWERS?.[node.viewer]?.toText);
         const dir = navigateTree(state.currentDir);
         pool = Object.keys(dir ?? {})
           .filter((key) => key !== 'type')
-          .filter((key) => typeof dir[key] === 'string');
+          .filter((key) => catAble(dir[key]));
         break;
       }
       default: return [];
