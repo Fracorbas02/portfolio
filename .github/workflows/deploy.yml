@@ -5,12 +5,23 @@ on:
     branches: [main]
   workflow_dispatch:
 
+# Un seul déploiement à la fois : les pushs successifs s'annulent
+# mutuellement plutôt que de déployer en parallèle
+concurrency:
+  group: deploy
+  cancel-in-progress: true
+
 jobs:
   deploy:
     name: Deploy to VPS
     runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      SSH_USER: ${{ secrets.SSH_USER }}
+      SSH_HOST: ${{ secrets.SSH_HOST }}
     steps:
-      - uses: actions/checkout@v4
+      # actions/checkout v4.2.2 épinglé par SHA (supply-chain)
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
       - name: Setup SSH
         run: |
           mkdir -p ~/.ssh && chmod 700 ~/.ssh
@@ -21,8 +32,9 @@ jobs:
           rsync -az --delete \
             --exclude '.git' \
             --exclude '.github' \
+            --exclude '.gitignore' \
             --exclude '.well-known' \
             --chmod=Du=rwx,Dgo=rx,Fu=rw,Fgo=r \
             -e "ssh -i ~/.ssh/id_ed25519" \
             . \
-            ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:
+            "${SSH_USER}@${SSH_HOST}:"

@@ -17,20 +17,17 @@
   <meta property="og:url" content="https://bastienbonora.fr">
   <meta property="og:locale" content="fr_FR">
 
-  <!-- CSP : autorise uniquement les scripts locaux et Google Fonts pour les styles -->
+  <!-- CSP : uniquement des ressources locales (polices auto-hébergées).
+       unsafe-inline reste nécessaire pour les styles inline du neofetch. -->
   <meta http-equiv="Content-Security-Policy"
         content="default-src 'self';
                  script-src 'self';
-                 style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
-                 font-src 'self' https://fonts.gstatic.com;
+                 style-src 'self' 'unsafe-inline';
+                 font-src 'self';
                  img-src 'self' data:;
                  connect-src 'self';
                  base-uri 'self';
                  form-action 'self';">
-
-  <!-- Préchargement des polices Google -->
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 
   <link rel="icon" href="./favicon.ico" type="image/x-icon">
   <!-- Cache busting : incrémenter ?v= à chaque déploiement pour forcer
@@ -149,15 +146,16 @@
   <!-- Bouton d'allumage, affiché quand la fenêtre principale est fermée -->
   <button type="button" class="powerButton" id="powerButton" hidden aria-label="Rallumer le terminal"></button>
 
-  <script src="./src/javascript/windowManager.js?v=20260930" defer></script>
-  <script src="./src/javascript/cvViewer.js?v=20261001.4" defer></script>
-  <script src="./src/javascript/docViewer.js?v=20261001.2" defer></script>
+  <script src="./src/javascript/html.js?v=20261002.2" defer></script>
+  <script src="./src/javascript/windowManager.js?v=20261002.2" defer></script>
+  <script src="./src/javascript/cvViewer.js?v=20261002.2" defer></script>
+  <script src="./src/javascript/docViewer.js?v=20261002.2" defer></script>
   <script src="./src/javascript/viewerData.js?v=20261001.2" defer></script>
-  <script src="./src/javascript/theme.js?v=20261001" defer></script>
+  <script src="./src/javascript/theme.js?v=20261002.2" defer></script>
   <script src="./src/javascript/filesystem.js?v=20261001" defer></script>
-  <script src="./src/javascript/boot.js?v=20261001" defer></script>
-  <script src="./src/javascript/neofetch.js?v=20261001" defer></script>
-  <script src="./src/javascript/commands.js?v=20261001.2" defer></script>
-  <script src="./src/javascript/script.js?v=20261002.1" defer></script>
+  <script src="./src/javascript/boot.js?v=20261002.2" defer></script>
+  <script src="./src/javascript/neofetch.js?v=20261002.2" defer></script>
+  <script src="./src/javascript/commands.js?v=20261002.2" defer></script>
+  <script src="./src/javascript/script.js?v=20261002.2" defer></script>
 </body>
 </html>

@@ -31,14 +31,7 @@
   let portfolioData = null;
 
   // Échappement HTML (XSS) — partagé par toutes les fenêtres de shell
-  const escapeHTML = (str) =>
-    String(str).replace(/[&<>"']/g, (m) => ({
-      '&': '&amp;',
-      '<': '&lt;',
-      '>': '&gt;',
-      '"': '&quot;',
-      "'": '&#39;'
-    })[m]);
+  const escapeHTML = window.PORTFOLIO_HTML.escapeHTML;
 
   // Easter egg 42 : un seul écouteur document, branché sur la fenêtre
   // qui vient de démarrer
@@ -279,6 +272,9 @@
   // ──────────────────────────────────────────────────────────────
   /** Ouvre un lien du viewer : onglet pour le web, client natif pour mailto/tel. */
   const openViewerLink = (href) => {
+    // Liste blanche de schémas : un javascript: ou data: dans les
+    // données ne doit jamais devenir cliquable
+    if (!window.PORTFOLIO_HTML.isSafeHref(href)) return;
     if (/^https?:/.test(href)) {
       window.open(href, '_blank', 'noopener,noreferrer');
     } else {
@@ -386,7 +382,7 @@
 
     // Ctrl+C : ouvre le CV PDF dans le navigateur puis quitte
     if (event.ctrlKey && event.key.toLowerCase() === 'c') {
-      if (viewer.node?.url) {
+      if (viewer.node?.url && window.PORTFOLIO_HTML.isSafeHref(viewer.node.url)) {
         window.open(viewer.node.url, '_blank', 'noopener,noreferrer');
       }
       quitViewer('ouverture du CV PDF dans un nouvel onglet...');
@@ -1082,7 +1078,7 @@
     window.PORTFOLIO_THEME.restore();
 
     try {
-      const response = await fetch('./src/JSON/elements.json?v=20261002.1');
+      const response = await fetch('./src/JSON/elements.json?v=20261002.2');
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
       portfolioData = await response.json();
     } catch (err) {

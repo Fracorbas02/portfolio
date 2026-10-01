@@ -153,11 +153,11 @@
         "options" :[
           {
             "name": "sha",
-            "usage": "permet de récupérer le hashage en sha256 d'une entrée. Exemple : get sha MyPassword"
+            "usage": "permet de récupérer le hash SHA-256 d'une entrée. Exemple : get sha CV.pdf"
           }
         ],
         "examples": [
-          { "cmd": "get sha MyPassword", "desc": "retourne l'empreinte SHA-256 de la chaîne donnée" }
+          { "cmd": "get sha CV.pdf", "desc": "retourne l'empreinte SHA-256 — utile pour vérifier l'intégrité d'un fichier" }
         ]
       },
       "bash": {

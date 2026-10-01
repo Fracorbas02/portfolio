@@ -15,14 +15,7 @@
 (() => {
   'use strict';
 
-  const escapeHTML = (str) =>
-    String(str).replace(/[&<>"']/g, (m) => ({
-      '&': '&amp;',
-      '<': '&lt;',
-      '>': '&gt;',
-      '"': '&quot;',
-      "'": '&#39;'
-    })[m]);
+  const escapeHTML = window.PORTFOLIO_HTML.escapeHTML;
 
   /**
    * Distance de Levenshtein entre deux chaînes (version itérative
@@ -361,6 +354,9 @@
         return `ouverture de ${escapeHTML(target)} dans une nouvelle fenêtre...`;
       }
 
+      if (!window.PORTFOLIO_HTML.isSafeHref(node.url)) {
+        return `open : ${escapeHTML(target)} : URL non autorisée`;
+      }
       window.open(node.url, '_blank', 'noopener,noreferrer');
       return `ouverture de ${escapeHTML(target)} dans un nouvel onglet...`;
     }
@@ -397,7 +393,7 @@
 
         // Liste des hashs déjà calculés
         if (state.shaCache.size === 0) {
-          return 'get sha : aucun hash calculé. Exemple : get sha MyPassword';
+          return 'get sha : aucun hash calculé. Exemple : get sha CV.pdf';
         }
 
         const entries = [...state.shaCache];

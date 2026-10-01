@@ -23,12 +23,7 @@
 (() => {
   'use strict';
 
-  const escape = (text) => String(text)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
-
+  const escape = window.PORTFOLIO_HTML.escapeHTML;
   // ── Rubriques du CV ──────────────────────────────────────────
   // Chaque rubrique : { id, title, entries: [{ heading, sub,
   // lines, links }] }. Une ligne peut être une chaîne ou
@@ -301,6 +296,10 @@
   /** Ligne de contenu : texte simple ou lien cliquable. */
   const lineHTML = (line) => {
     if (typeof line === 'string') return `  • ${textHTML(line)}`;
+    // Schéma hors liste blanche (javascript:, data:…) : texte brut
+    if (!window.PORTFOLIO_HTML.isSafeHref(line.href)) {
+      return `  • ${textHTML(line.text)}`;
+    }
     const external = /^https?:/.test(line.href);
     return `  • <a class="cvViewerLink" href="${escape(line.href)}"${
       external ? ' target="_blank" rel="noopener noreferrer"' : ''
@@ -349,9 +348,14 @@
           linkIndex += 1;
           const external = /^https?:/.test(link.href);
           const prefix = `  ${linkIndex} `;
-          lines.push(`${prefix}<a class="cvViewerLink" href="${escape(link.href)}"${
-            external ? ' target="_blank" rel="noopener noreferrer"' : ''
-          }>${textHTML(link.label.padEnd(10))} ${textHTML(link.value)}</a>`);
+          const labelHTML = `${textHTML(link.label.padEnd(10))} ${textHTML(link.value)}`;
+          // Schéma hors liste blanche : texte brut, pas de lien
+          const anchor = window.PORTFOLIO_HTML.isSafeHref(link.href)
+            ? `<a class="cvViewerLink" href="${escape(link.href)}"${
+                external ? ' target="_blank" rel="noopener noreferrer"' : ''
+              }>${labelHTML}</a>`
+            : labelHTML;
+          lines.push(`${prefix}${anchor}`);
         }
       }
       lines.push('');
@@ -627,6 +631,12 @@
   const startAnimations = (scope = document) => {
     stopAnimations();
     animTimer = setInterval(() => {
+      // Fenêtre fermée (pastille rouge) sans passer par quit :
+      // le viewer n'est plus dans le document, on stoppe
+      if (!scope.isConnected) {
+        stopAnimations();
+        return;
+      }
       tick += 1;
       const spin = scope.querySelector('.cvViewerSpin');
       const type = scope.querySelector('.cvViewerType');
