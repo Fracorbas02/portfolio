@@ -744,11 +744,14 @@
    *   - une seule correspondance : complète (+ espace)
    *   - plusieurs : étend au préfixe commun et affiche la liste
    */
-  function applyCompletion(candidates, lastWord, before) {
+  function applyCompletion(candidates, lastWord, before, dirNode = null) {
     if (candidates.length === 0) return;
 
     if (candidates.length === 1) {
-      COMMAND_INPUT.value = `${before}${candidates[0]} `;
+      // Un dossier complété reçoit « / » pour poursuivre la
+      // navigation dans l'arborescence, un fichier une espace
+      const suffix = dirNode && isDirectory(dirNode[candidates[0]]) ? '/' : ' ';
+      COMMAND_INPUT.value = `${before}${candidates[0]}${suffix}`;
     } else {
       let prefix = candidates[0];
       for (const name of candidates) {
@@ -765,15 +768,44 @@
 
   /**
    * Candidats de complétion pour le dernier argument d'une commande.
+   * Renvoie { candidates, dirNode } : dirNode est le dossier dans
+   * lequel on complète (null pour les pools statiques), pour qu'
+   * applyCompletion sache si un candidat est un dossier.
+   *
+   * Le dernier mot peut être un chemin : on sépare le dossier de
+   * base (« presentation/ », « ../ », « /root/ »…) du préfixe à
+   * compléter, pour que la Tabulation traverse l'arborescence.
    */
-  function argumentCandidates(command, prefix) {
+  function argumentCandidates(command, lastWord) {
+    const slash = lastWord.lastIndexOf('/');
+    const dirPart = slash === -1 ? '' : lastWord.slice(0, slash + 1);
+    const prefix = slash === -1 ? lastWord : lastWord.slice(slash + 1);
+
     let pool = [];
+    let dirNode = null;
     switch (command) {
-      case 'open': {
-        const dir = navigateTree(state.currentDir);
-        pool = Object.keys(dir ?? {})
+      case 'open':
+      case 'cd':
+      case 'cat': {
+        const dir = navigateTree(dirPart
+          ? window.PORTFOLIO_FS.resolve(state.currentDir, dirPart)
+          : state.currentDir);
+        if (!isDirectory(dir)) break;
+
+        // Les dossiers sont complétés aussi : étapes du chemin,
+        // même quand la commande les refuserait en argument final
+        const wanted = command === 'cd'
+          ? isDirectory
+          : command === 'cat'
+            ? (node) => isDirectory(node)
+              || typeof node === 'string'
+              || (node?.viewer && window.PORTFOLIO_VIEWERS?.[node.viewer]?.toText)
+            : (node) => isDirectory(node) || isOpenable(node);
+
+        dirNode = dir;
+        pool = Object.keys(dir)
           .filter((key) => key !== 'type')
-          .filter((key) => isOpenable(dir[key]));
+          .filter((key) => wanted(dir[key]));
         break;
       }
       case 'man':  pool = Object.keys(state.manCommands ?? {}); break;
@@ -781,28 +813,12 @@
       case 'get':  pool = ['sha']; break;
       case 'ls':   pool = ['-a', '-l', '-la']; break;
       case 'rm':   pool = ['*']; break;
-      case 'cd': {
-        const dir = navigateTree(state.currentDir);
-        pool = Object.keys(dir ?? {})
-          .filter((key) => key !== 'type')
-          .filter((key) => isDirectory(dir[key]));
-        break;
-      }
-      case 'cat': {
-        // Cat-able : fichier texte, ou fichier viewer dont le
-        // moteur sait rendre le texte brut (cmdCat → toText()).
-        const catAble = (node) =>
-          typeof node === 'string'
-          || (node?.viewer && window.PORTFOLIO_VIEWERS?.[node.viewer]?.toText);
-        const dir = navigateTree(state.currentDir);
-        pool = Object.keys(dir ?? {})
-          .filter((key) => key !== 'type')
-          .filter((key) => catAble(dir[key]));
-        break;
-      }
-      default: return [];
+      default: break;
     }
-    return pool.filter((name) => name.startsWith(prefix));
+    return {
+      candidates: pool.filter((name) => name.startsWith(prefix)),
+      dirNode
+    };
   }
 
   /**
@@ -824,7 +840,8 @@
     const [command, ...rest] = value.split(/\s+/);
     const lastWord = rest[rest.length - 1] ?? '';
     const before = value.slice(0, value.length - lastWord.length);
-    applyCompletion(argumentCandidates(command.toLowerCase(), lastWord), lastWord, before);
+    const { candidates, dirNode } = argumentCandidates(command.toLowerCase(), lastWord);
+    applyCompletion(candidates, lastWord, before, dirNode);
   }
 
   // ──────────────────────────────────────────────────────────────
