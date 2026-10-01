@@ -947,6 +947,9 @@
       // Reconstitue le nom (autorise les espaces -> remplacés par _)
       const username = rest.join('_').slice(0, 32); // garde-fou de longueur
       DEFAULT_BEGIN_SHELL.textContent = `${username}@portfolio:${state.currentDir}> `;
+      // Même recalage que updatePrompt : le prompt vient de changer
+      // de largeur
+      updateCursor();
       return 'modification effectuée dans le terminal';
     }
     if (key === 'theme') {
@@ -1235,6 +1238,10 @@
   function updatePrompt() {
     const username = DEFAULT_BEGIN_SHELL.textContent.split('@')[0];
     DEFAULT_BEGIN_SHELL.textContent = `${username}@portfolio:${state.currentDir}> `;
+    // La largeur du prompt vient de changer : le curseur clignotant
+    // doit suivre le décalage de l'input, sinon il reste à sa
+    // dernière position tant qu'on ne tape pas
+    updateCursor();
   }
 
   // ──────────────────────────────────────────────────────────────
