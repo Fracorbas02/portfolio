@@ -469,6 +469,22 @@
     const y = COMMAND_INPUT.offsetTop
             + (COMMAND_INPUT.offsetHeight - CURSOR.offsetHeight) / 2;
     CURSOR.style.transform = `translate(${x}px, ${y}px)`;
+    wakeCursor();
+  };
+
+  /**
+   * Comme dans un vrai shell : tant que le curseur bouge (saisie,
+   * flèches, clic), il reste "allumé" sans clignoter. Le
+   * clignotement ne reprend qu'après une seconde d'inactivité.
+   */
+  let cursorIdleTimer = null;
+  const wakeCursor = () => {
+    // animation: none fige le curseur en position "pleine"
+    CURSOR.style.animation = 'none';
+    clearTimeout(cursorIdleTimer);
+    cursorIdleTimer = setTimeout(() => {
+      CURSOR.style.animation = '';
+    }, 1000);
   };
 
   const printOutput = (html) => {
