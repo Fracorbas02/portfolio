@@ -6,8 +6,11 @@
  * Le shell (script.js) est agnostique : il résout l'API via ce
  * registre au moment du `open`.
  *
- *   cv      → viewer de CV (cvViewer.js)
- *   profile → « qui suis-je » (presentation/qui_suis_je.html)
+ *   cv       → viewer de CV (cvViewer.js)
+ *   profile  → « qui suis-je » (presentation/qui_suis_je.html)
+ *   reseaux  → Réseaux & Télécoms (competences/reseaux.html)
+ *   cyber    → Cybersécurité (competences/cybersecurite.html)
+ *   dev      → Développement (competences/developpement.html)
  *
  * Les viewers construits sur le moteur générique (docViewer.js)
  * s'enregistrent ici au fur et à mesure.
@@ -65,6 +68,45 @@
       '  |                |',
       '  | 75 challenges  |',
       "  '----------------'"
+    ]
+  };
+
+  const LOGO_CISCO = {
+    title: 'cisco ccna',
+    art: [
+      '    \\_/  \\_/  \\_/  \\_/',
+      '   _____________________',
+      '      |    |    |    |',
+      '   ~~~|~~~~|~~~~|~~~~|~~~~',
+      '      |    |    |    |',
+      '   ~~~|~~~~|~~~~|~~~~|~~~~',
+      '      |    |    |    |'
+    ]
+  };
+
+  const LOGO_STORMSHIELD = {
+    title: 'stormshield',
+    art: [
+      '     .---------.',
+      '    /  .-----.  \\',
+      '   |  |  S S  |  |',
+      '   |  |  S S  |  |',
+      "   |   '-----'   |",
+      '    \\           /',
+      "     '---------'"
+    ]
+  };
+
+  const LOGO_NASTRUIRE = {
+    title: 'nastruire — godot',
+    art: [
+      '   .----------------.',
+      '   |  N A S T R U I |',
+      '   |  R E           |',
+      '   |  jeu · godot   |',
+      '   |  équipe de 4   |',
+      '   |  nastruire.fr  |',
+      "   '----------------'"
     ]
   };
 
@@ -270,8 +312,388 @@
     ]
   };
 
+  // ── Viewer Réseaux & Télécoms ────────────────────────────────
+  // La page Réseaux, ouverte via `open reseaux.html` depuis
+  // /root/competences : fondamentaux, protocoles, matériel,
+  // terrain et certifications.
+  const RESEAUX = {
+    title: 'RÉSEAUX & TÉLÉCOMS',
+    subtitle: 'routage · commutation · sécurité de périmètre',
+    statusLabel: 'scan du réseau',
+    ctrlLabel: 'bastodoc',
+    logos: [LOGO_CISCO, LOGO_STORMSHIELD, LOGO_TUX],
+    platforms: PLATFORM_LINES,
+    typedPhrases: [
+      'routage & switching',
+      'VLAN · trunk · STP',
+      'BGP · MPLS · TLS',
+      'pare-feu Stormshield',
+      'monitoring ELK'
+    ],
+    sections: [
+      {
+        id: 'panorama',
+        title: 'Les fondamentaux',
+        entries: [
+          {
+            heading: 'Fondations',
+            lines: [
+              'Modèle OSI : je l\u2019ai même réexpliqué sur bastodoc.',
+              'Adressage IPv4/IPv6, subnetting sans calculatrice.',
+              'Routage statique et dynamique entre sites.'
+            ]
+          },
+          {
+            heading: 'Commutation',
+            lines: [
+              'VLAN, trunk 802.1Q, STP, port-security.',
+              'Conception de segments : utilisateurs, serveurs,',
+              'management, DMZ — chacun dans son VLAN.'
+            ]
+          },
+          {
+            heading: 'Services réseau',
+            lines: [
+              'DHCP (scopes, relais), DNS (zones, split-horizon).',
+              'NAT/PAT, ACL — filtrer sans casser l\u2019usage.'
+            ]
+          }
+        ]
+      },
+      {
+        id: 'protocoles',
+        title: 'Protocoles creusés',
+        entries: [
+          {
+            heading: 'Ceux que j\u2019ai vraiment étudiés',
+            lines: [
+              'TLS — du handshake à la re-négociation.',
+              'BGP — l\u2019AS de l\u2019EPSM vers le monde.',
+              'MPLS — migration de sites externes (terrain, pas',
+              'seulement la théorie du cours).'
+            ]
+          },
+          {
+            heading: 'Articles dédiés sur bastodoc',
+            lines: [
+              { text: 'Le modèle OSI, couche par couche', href: 'https://docs.bastienbonora.fr/' },
+              { text: 'TLS : chiffrement et certificats', href: 'https://docs.bastienbonora.fr/' },
+              { text: 'BGP : le routage entre AS', href: 'https://docs.bastienbonora.fr/' },
+              { text: 'MPLS : VPN opérateur et labels', href: 'https://docs.bastienbonora.fr/' }
+            ]
+          }
+        ]
+      },
+      {
+        id: 'materiel',
+        title: 'Matériel & configurations',
+        entries: [
+          {
+            heading: 'Cisco',
+            lines: [
+              'CCNA 1 & 2 — routage et switching.',
+              'Configuration avancée de matériel Cisco :',
+              'interfaces, VLANs, STP, OSPF, ACL, SSH.'
+            ]
+          },
+          {
+            heading: 'Stormshield',
+            lines: [
+              'Certifié CSNA & CSNE — pare-feu Stormshield.',
+              'VPN IKEv2 site-à-site et nomade, NAT, filtrage',
+              'applicationnel, logs et objets.'
+            ]
+          },
+          {
+            heading: 'Écosystème',
+            lines: [
+              'Ubiquiti (UniFi), SNMP, supervision via ELK.',
+              'Lab de 3 ESX + Proxmox pour tester avant de',
+              'toucher la production.'
+            ]
+          }
+        ]
+      },
+      {
+        id: 'terrain',
+        title: 'En conditions réelles',
+        entries: [
+          {
+            heading: 'EPSM La Roche-sur-Foron — alternance',
+            sub: 'Service informatique, 2022 → 2025',
+            lines: [
+              'Bastion réseau avec monitoring via la stack ELK.',
+              'Migration de sites externes dans un MPLS.',
+              'Sauvegarde sécurisée des configurations réseau.',
+              'Référent réseau sur les interventions sites :',
+              'pare-feu, switchs, liens opérateur.'
+            ]
+          },
+          {
+            heading: 'Home-lab',
+            lines: [
+              'OPNsense, VLANs, VPN, FreeIPA, GitLab, SIEM —',
+              'mon propre périmètre à sécuriser, 24/7.'
+            ]
+          }
+        ]
+      },
+      {
+        id: 'certifications',
+        title: 'Certifications',
+        entries: [
+          {
+            heading: 'Papiers officiels',
+            links: [
+              { label: 'CSNA', value: 'Stormshield — pdf', href: './root/certif/Certification_CSNA.pdf' },
+              { label: 'TOEIC', value: 'pdf', href: './root/certif/Certification_TOEIC.pdf' },
+              { label: 'Cambridge', value: 'pdf', href: './root/certif/Certification_Cambridge.pdf' }
+            ]
+          },
+          {
+            heading: 'Cisco',
+            lines: ['CCNA 1 & 2 — voir la rubrique Matériel.']
+          }
+        ]
+      }
+    ]
+  };
+
+  // ── Viewer Cybersécurité ─────────────────────────────────────
+  // La page Cybersécurité, ouverte via `open cybersecurite.html`
+  // depuis /root/competences : offensive, défensive, write-ups,
+  // plateformes et veille.
+  const CYBER = {
+    title: 'CYBERSÉCURITÉ',
+    subtitle: 'offensive le jour, défensive au quotidien',
+    statusLabel: 'scan de la surface d\u2019attaque',
+    ctrlLabel: 'bastodoc',
+    logos: [LOGO_THM, LOGO_ROOTME, LOGO_STORMSHIELD],
+    platforms: PLATFORM_LINES,
+    typedPhrases: [
+      'offensive security',
+      'SIEM Elastic',
+      'CTF player',
+      'pare-feu Stormshield',
+      'home-lab durci'
+    ],
+    sections: [
+      {
+        id: 'offensive',
+        title: 'Côté offensive',
+        entries: [
+          {
+            heading: 'CTF & challenges',
+            lines: [
+              'TryHackMe : [0xA] WIZARD — 12 379 pts, 85 rooms.',
+              'Root-Me : 1 220 pts — 75 challenges.',
+              'Insomni\u2019hack (Lausanne) : 36e en équipe, FeelTheBit.'
+            ]
+          },
+          {
+            heading: 'Outils du quotidien',
+            lines: [
+              'Recon : nmap, gobuster, énumération méthode.',
+              'Cracking : hashcat, john — de la wordlist à la',
+              'règle de mangling.',
+              'Privesc : GTFOBins, SUID, cron, capabilities.'
+            ]
+          }
+        ]
+      },
+      {
+        id: 'defensive',
+        title: 'Côté défensive',
+        entries: [
+          {
+            heading: 'Détection & réponse',
+            lines: [
+              'SIEM Elastic Security — règles, alertes, cas de',
+              'détection sur un trafic réel.',
+              'Stack ELK : bastion réseau supervisé à l\u2019EPSM.'
+            ]
+          },
+          {
+            heading: 'Durcissement',
+            lines: [
+              'Pare-feu Stormshield (CSNA/CSNE) : filtrage,',
+              'VPN IKEv2, NAT, segmentation VLAN.',
+              'FreeIPA pour l\u2019identité et les règles du lab.',
+              'Bonne hygiène : moindre privilège, sauvegardes,',
+              'configurations versionnées.'
+            ]
+          }
+        ]
+      },
+      {
+        id: 'writeups',
+        title: 'Write-ups TryHackMe',
+        entries: [
+          {
+            heading: 'Rooms documentées sur le portfolio',
+            links: [
+              { label: 'Brute It', value: 'hash cracking, sudo', href: './root/CTF/Brute%20It.html' },
+              { label: 'Archangel', value: 'LFI, RCE via log', href: './root/CTF/Archangel.html' },
+              { label: 'Mustacchio', value: 'SQLite, GTFOBins', href: './root/CTF/Mustacchio.html' },
+              { label: 'Break Out', value: 'énumération, privesc', href: './root/CTF/Break%20Out%20The%20Cage.html' }
+            ]
+          },
+          {
+            heading: 'Pourquoi j\u2019écris',
+            lines: [
+              'Un CTF non écrit est un CTF oublié : chaque write-up',
+              'm\u2019oblige à comprendre la faille assez pour',
+              'l\u2019expliquer.'
+            ]
+          }
+        ]
+      },
+      {
+        id: 'plateformes',
+        title: 'Plateformes & veille',
+        entries: [
+          {
+            heading: 'Profils',
+            links: [
+              { label: 'TryHackMe', value: 'tryhackme.com/p/Fracorbas', href: 'https://tryhackme.com/p/Fracorbas' },
+              { label: 'Root-Me', value: 'root-me.org', href: 'https://root-me.org/' }
+            ]
+          },
+          {
+            heading: 'Conférences',
+            lines: [
+              'European Cyber Week — Rennes (2024).',
+              'Swiss IT Forum — Genève (2024).',
+              'Insomni\u2019hack — Lausanne (2025).'
+            ]
+          },
+          {
+            heading: 'Articles sécurité sur bastodoc',
+            lines: [
+              { text: 'Monitorer son OS Linux', href: 'https://docs.bastienbonora.fr/' },
+              { text: 'Maîtriser grep (et trier des logs)', href: 'https://docs.bastienbonora.fr/' },
+              { text: 'Auth. biométrique sous Linux', href: 'https://docs.bastienbonora.fr/' }
+            ]
+          }
+        ]
+      }
+    ]
+  };
+
+  // ── Viewer Développement ─────────────────────────────────────
+  // La page Développement, ouverte via `open developpement.html`
+  // depuis /root/competences : web, scripts, projets, apprentissage.
+  const DEV = {
+    title: 'DÉVELOPPEMENT',
+    subtitle: 'scripts, web et projets d\u2019équipe',
+    statusLabel: 'compilation des projets',
+    ctrlLabel: 'bastodoc',
+    logos: [LOGO_TUX, LOGO_TERMINAL, LOGO_NASTRUIRE],
+    platforms: PLATFORM_LINES,
+    typedPhrases: [
+      'JavaScript',
+      'Python',
+      'bash & systemd',
+      'Rust en cours',
+      'PowerShell'
+    ],
+    sections: [
+      {
+        id: 'web',
+        title: 'Web',
+        entries: [
+          {
+            heading: 'Ce portfolio',
+            lines: [
+              'Un terminal bash en JavaScript pur, sans framework :',
+              'fenêtres draggables, complétion Tab, historique,',
+              'recherche Ctrl+R, thème dynamique… et ces viewers.',
+              'HTML/CSS/JS — chaque feature est née d\u2019une idée',
+              'de shell réel à imiter.'
+            ]
+          },
+          {
+            heading: 'Ce que ça m\u2019a appris',
+            lines: [
+              'DOM, events, timers — et la discipline d\u2019un code',
+              'découpé en modules qui se testent au navigateur.'
+            ]
+          }
+        ]
+      },
+      {
+        id: 'scripts',
+        title: 'Scripts & automatisation',
+        entries: [
+          {
+            heading: 'Python & bash',
+            lines: [
+              'Python : scripts d\u2019automatisation, parsing,',
+              'petits outils d\u2019admin.',
+              'bash + systemd : services, timers, boot UKI sur',
+              'ArchLinux — le quotidien au terminal.'
+            ]
+          },
+          {
+            heading: 'PowerShell',
+            lines: [
+              'Administration Windows : AD, DHCP, NPS.',
+              'Automatisation de tâches serveur.'
+            ]
+          }
+        ]
+      },
+      {
+        id: 'projets',
+        title: 'Projets',
+        entries: [
+          {
+            heading: 'Les trois têtes d\u2019affiche',
+            links: [
+              { label: 'Nastruire', value: 'jeu Godot, équipe de 4', href: 'https://nastruire.fr/' },
+              { label: 'Bastodoc', value: 'blog de write-ups & docs', href: 'https://docs.bastienbonora.fr/' },
+              { label: 'Portfolio', value: 'ce terminal JS', href: 'https://bastienbonora.fr/' }
+            ]
+          },
+          {
+            heading: 'Le reste',
+            lines: [
+              { text: 'github.com/Fracorbas02', href: 'https://github.com/Fracorbas02' },
+              'Home-lab : Proxmox, OPNsense, FreeIPA, GitLab,',
+              'SIEM — assemblé et scripté maison.'
+            ]
+          }
+        ]
+      },
+      {
+        id: 'apprentissage',
+        title: 'En cours d\u2019apprentissage',
+        entries: [
+          {
+            heading: 'Rust',
+            lines: [
+              'Cheatsheet Rust publiée sur bastodoc.',
+              'Objectif : réécrire certains scripts Python en',
+              'Rust, pour la rigueur que le langage impose.'
+            ]
+          },
+          {
+            heading: 'C',
+            lines: [
+              'Bases solides : comprendre ce qui se passe sous',
+              'les langages haut niveau.'
+            ]
+          }
+        ]
+      }
+    ]
+  };
+
   window.PORTFOLIO_VIEWERS = {
     cv: window.CV_VIEWER,
-    profile: window.PORTFOLIO_DOC_VIEWER.create(PROFILE)
+    profile: window.PORTFOLIO_DOC_VIEWER.create(PROFILE),
+    reseaux: window.PORTFOLIO_DOC_VIEWER.create(RESEAUX),
+    cyber: window.PORTFOLIO_DOC_VIEWER.create(CYBER),
+    dev: window.PORTFOLIO_DOC_VIEWER.create(DEV)
   };
 })();
