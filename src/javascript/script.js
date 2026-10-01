@@ -501,6 +501,20 @@
   // instance ne gère que l'état et le clavier (flèches, Entrée,
   // Échap, q, Ctrl+C pour le PDF).
   // ──────────────────────────────────────────────────────────────
+  /** Ouvre un lien du viewer : onglet pour le web, client natif pour mailto/tel. */
+  const openViewerLink = (href) => {
+    if (/^https?:/.test(href)) {
+      window.open(href, '_blank', 'noopener,noreferrer');
+    } else {
+      // mailto:, tel: ou fichier local : on laisse naviguer l'ancre
+      const a = document.createElement('a');
+      a.href = href;
+      a.target = '_blank';
+      a.rel = 'noopener noreferrer';
+      a.click();
+    }
+  };
+
   /** Redessine l'écran courant du viewer (menu ou rubrique). */
   const renderViewer = () => {
     let view = SHELL_OUTPUT.querySelector('.cvViewer');
@@ -510,6 +524,16 @@
       SHELL_OUTPUT.appendChild(view);
     }
     view.innerHTML = window.CV_VIEWER.render(state.viewer);
+    // Panneau de logos seulement sur les fenêtres assez larges
+    view.classList.toggle('cvViewerWide', SHELL_OUTPUT.clientWidth >= 760);
+    // Barre de raccourcis façon nano, collée en bas de la fenêtre
+    let bar = root.querySelector('.cvViewerBar');
+    if (!bar) {
+      bar = document.createElement('div');
+      bar.className = 'cvViewerBar';
+      root.appendChild(bar);
+    }
+    bar.innerHTML = window.CV_VIEWER.bar(state.viewer);
   };
 
   /** Entre dans le viewer : masque le prompt, affiche le menu. */
@@ -525,6 +549,9 @@
     COMMAND_INPUT.value = '';
     resizeInput();
     renderViewer();
+    if (typeof window.CV_VIEWER?.startAnimations === 'function') {
+      window.CV_VIEWER.startAnimations();
+    }
     COMMAND_INPUT.focus();
   };
 
@@ -532,6 +559,11 @@
   const quitViewer = (message) => {
     state.viewer = null;
     root.classList.remove('viewerMode');
+    if (typeof window.CV_VIEWER?.stopAnimations === 'function') {
+      window.CV_VIEWER.stopAnimations();
+    }
+    const bar = root.querySelector('.cvViewerBar');
+    if (bar) bar.remove();
     // La factory garde une référence sur defaultText : on le
     // réinsère comme le fait cmdClear après un vidage complet.
     SHELL_OUTPUT.innerHTML = '';
@@ -576,7 +608,8 @@
         return;
       }
     } else {
-      // Rubrique : ↑↓ défilent, Entrée/Échap retournent au menu
+      // Rubrique : ↑↓ défilent, Entrée/Échap retournent au menu,
+      // un chiffre ouvre le lien correspondant (contacts, écrits…)
       if (event.key === 'ArrowDown') {
         SHELL_OUTPUT.scrollTop += 40;
         return;
@@ -592,6 +625,11 @@
       }
       if (event.key === 'q') {
         quitViewer();
+        return;
+      }
+      if (/^[1-9]$/.test(event.key)) {
+        const link = window.CV_VIEWER.links(viewer.section)[Number(event.key) - 1];
+        if (link) openViewerLink(link.href);
         return;
       }
     }
