@@ -517,8 +517,18 @@
       view = document.createElement('div');
       view.className = 'cvViewer';
       SHELL_OUTPUT.appendChild(view);
+      view.innerHTML = window.CV_VIEWER.render(state.viewer);
+    } else {
+      // Seule la colonne principale change : le panneau latéral garde
+      // ses éléments DOM, sinon le spinner repart de zéro, le texte
+      // tapé se vide et le logo en cours d'effacement se redessine.
+      const main = view.querySelector('.cvViewerMain');
+      if (main) {
+        main.innerHTML = window.CV_VIEWER.renderMain(state.viewer);
+      } else {
+        view.innerHTML = window.CV_VIEWER.render(state.viewer);
+      }
     }
-    view.innerHTML = window.CV_VIEWER.render(state.viewer);
     // Panneau de logos seulement sur les fenêtres assez larges
     view.classList.toggle('cvViewerWide', SHELL_OUTPUT.clientWidth >= 760);
     // Barre de raccourcis façon nano, collée en bas de la fenêtre
