@@ -4,14 +4,18 @@
  * Données et rendu du viewer de CV interactif, ouvert via
  * `open CV.pdf` dans une nouvelle fenêtre de shell.
  *
- * Le pilotage clavier (flèches, Entrée, Échap, Ctrl+C) est géré
- * par script.js ; ce module ne fait que décrire les rubriques
- * du CV et produire le rendu ASCII correspondant à l'état
- * courant (menu ou rubrique ouverte).
+ * Le pilotage clavier (flèches, Entrée, Échap, chiffres 1-8,
+ * Ctrl+C) est géré par script.js ; ce module décrit les rubriques
+ * du CV, produit le rendu ASCII (colonne principale + panneau
+ * latéral de logos animés) et anime le spinner braille et le
+ * texte en machine à écrire.
  *
  * Exposition globale (pas de système de modules ici) :
  *   window.CV_VIEWER.sections() -> liste des rubriques
- *   window.CV_VIEWER.render({ index, section }) -> HTML
+ *   window.CV_VIEWER.render(viewerState) -> HTML (2 colonnes)
+ *   window.CV_VIEWER.bar(viewerState) -> HTML de la barre bas
+ *   window.CV_VIEWER.links(sectionId) -> liens ordonnés de la rubrique
+ *   window.CV_VIEWER.startAnimations() / stopAnimations()
  */
 
 (() => {
@@ -20,10 +24,14 @@
   const escape = (text) => String(text)
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;');
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
 
   // ── Rubriques du CV ──────────────────────────────────────────
-  // Chaque rubrique : { id, title, entries: [{ heading, sub, lines }] }
+  // Chaque rubrique : { id, title, entries: [{ heading, sub,
+  // lines, links }] }. Une ligne peut être une chaîne ou
+  // { text, href } pour un lien cliquable (http, mailto:, tel:
+  // ou fichier local du portfolio).
   const SECTIONS = [
     {
       id: 'profil',
@@ -32,9 +40,12 @@
         {
           heading: 'À propos',
           lines: [
-            "Persévérant, perspicace, autonome et à l'aise en",
-            "travail d'équipe, j'approfondis mes connaissances",
-            'en cybersécurité au quotidien.'
+            "Persévérant, perspicace et autonome, je suis à l'aise",
+            "autant en équipe qu'en solitaire. Passionné de cyber-",
+            'sécurité, je pratique au quotidien : CTF (TryHackMe,',
+            'Root-Me), home-lab auto-hébergé et veille technique.',
+            "J'écris aussi des write-ups et des articles sur mon",
+            'blog docs.bastienbonora.fr (bastodoc).'
           ]
         },
         {
@@ -46,7 +57,18 @@
         },
         {
           heading: 'Localisation',
-          lines: ['74130 Bonneville — France']
+          lines: [
+            '74130 Bonneville — France (74)',
+            'Mobilité : Annecy, Genève, remote'
+          ]
+        },
+        {
+          heading: 'En ce moment',
+          lines: [
+            'Home-lab : Proxmox VE, OPNsense, FreeIPA, GitLab,',
+            'SIEM Elastic sur un Dell R620 (32 Go de RAM)',
+            'Write-ups TryHackMe + articles sur bastodoc'
+          ]
         }
       ]
     },
@@ -82,7 +104,7 @@
           heading: '2022 — 2024  Projet Nastruire',
           lines: [
             'Jeu sur plateforme Godot, en équipe de 4',
-            'https://nastruire.fr/'
+            { text: 'https://nastruire.fr/', href: 'https://nastruire.fr/' }
           ]
         },
         {
@@ -99,7 +121,16 @@
           heading: '2022 — 2025  IUT Annecy',
           lines: [
             'BUT Réseaux & Télécoms en alternance',
-            'Parcours Cybersécurité'
+            'Parcours Cybersécurité',
+            'Alternance au service informatique de l’EPSM',
+            'La Roche-sur-Foron'
+          ]
+        },
+        {
+          heading: 'Baccalauréat',
+          lines: [
+            'Relevé de notes disponible :',
+            'presentation/releve_bac.pdf'
           ]
         }
       ]
@@ -113,21 +144,26 @@
           lines: [
             'Cisco CCNA 1 & 2',
             'VPN, VLAN, Trunk, STP, routage, NAT',
+            'MPLS, BGP, TLS — articles dédiés sur bastodoc',
             'Configuration avancée de matériel Cisco'
           ]
         },
         {
-          heading: 'Firewall',
+          heading: 'Sécurité & pare-feu',
           lines: [
             'Stormshield — VPN, IKEv2, NAT, filtrage',
-            'Configuration avancée'
+            'SIEM Elastic Security, stack ELK',
+            'Offensive security : CTF, Root-Me, TryHackMe',
+            'nmap, gobuster, hashcat, john, gtfobins…'
           ]
         },
         {
           heading: 'Systèmes Linux',
           lines: [
             'ArchLinux au quotidien, Debian, Kali',
-            'Scripting bash, automatisation'
+            'Scripting bash, automatisation, systemd',
+            'Docker : images, compose, network/volumes',
+            'Debug matériel : boot UKI, bluetooth, eGPU'
           ]
         },
         {
@@ -138,15 +174,54 @@
           ]
         },
         {
-          heading: 'Virtualisation',
+          heading: 'Virtualisation & infra',
           lines: [
-            'Proxmox, VMware, VirtualBox',
-            'Lab de 3 ESX à la maison'
+            'Proxmox VE, VMware ESX, VirtualBox',
+            'Lab de 3 ESX à la maison',
+            'Home-lab : OPNsense, FreeIPA, GitLab, VLANs',
+            'Déploiement VPS (rsync), Ubiquiti, SNMP'
           ]
         },
         {
           heading: 'Programmation',
-          lines: ['Python, C — bonne capacité d’adaptation']
+          lines: [
+            'Python, C — bonne capacité d’adaptation',
+            'JavaScript : ce portfolio est un terminal JS pur',
+            'Rust en apprentissage (cheatsheet sur bastodoc)'
+          ]
+        }
+      ]
+    },
+    {
+      id: 'ecrits',
+      title: 'Écrits & Write-ups',
+      entries: [
+        {
+          heading: 'Write-ups TryHackMe',
+          lines: [
+            { text: 'Brute It           — hash cracking, sudo', href: './root/CTF/Brute%20It.html' },
+            { text: 'Archangel          — LFI, RCE via log', href: './root/CTF/Archangel.html' },
+            { text: 'Mustacchio         — SQLite, GTFOBins', href: './root/CTF/Mustacchio.html' },
+            { text: 'Break Out The Cage — énumération, privesc', href: './root/CTF/Break%20Out%20The%20Cage.html' }
+          ]
+        },
+        {
+          heading: 'Articles — docs.bastienbonora.fr',
+          lines: [
+            { text: 'Le modèle OSI · Protocoles TLS, BGP, MPLS', href: 'https://docs.bastienbonora.fr/' },
+            { text: 'Docker : commandes fondamentales, compose', href: 'https://docs.bastienbonora.fr/' },
+            { text: 'Maîtriser grep · Monitorer son OS Linux', href: 'https://docs.bastienbonora.fr/' },
+            { text: 'mon Home-Lab : Proxmox, OPNsense, FreeIPA', href: 'https://docs.bastienbonora.fr/' },
+            { text: 'Steam Deck + Kali distrobox · eGPU Linux', href: 'https://docs.bastienbonora.fr/' },
+            { text: 'Rust & C cheatsheets · auth. biométrique…', href: 'https://docs.bastienbonora.fr/' }
+          ]
+        },
+        {
+          heading: 'À lire aussi',
+          lines: [
+            'Nastruire — jeu Godot, équipe de 4 (nastruire.fr)',
+            { text: 'https://docs.bastienbonora.fr/', href: 'https://docs.bastienbonora.fr/' }
+          ]
         }
       ]
     },
@@ -157,20 +232,21 @@
         {
           heading: 'Certifications',
           lines: [
-            'Stormshield CSNA & CSNE',
-            'Cisco CCNA 1 & 2'
+            { text: 'Stormshield CSNA & CSNE', href: './root/certif/Certification_CSNA.pdf' },
+            { text: 'Cisco CCNA 1 & 2', href: './root/certif/Certification_Cambridge.pdf' },
+            { text: 'TOEIC & Cambridge', href: './root/certif/Certification_TOEIC.pdf' }
           ]
         },
         {
-          heading: 'RootMe',
-          lines: ['1220 pts — 75 challenges — root-me.org']
+          heading: 'Root-Me',
+          lines: ['1 220 pts — 75 challenges — root-me.org']
         },
         {
           heading: 'TryHackMe',
           lines: [
             '[0xA] [WIZARD] — 12 379 points',
-            '85 rooms — tryhackme.com/p/Fracorbas',
-            'nmap, gobuster, hashcat, john, gtfobins…'
+            { text: 'tryhackme.com/p/Fracorbas', href: 'https://tryhackme.com/p/Fracorbas' },
+            '85 rooms — write-ups sur le portfolio'
           ]
         }
       ]
@@ -181,18 +257,25 @@
       entries: [
         {
           heading: 'Coordonnées',
-          lines: [
-            'bastien.bonora@gmail.com',
-            '+33 6 16 29 64 01',
-            'https://bastienbonora.fr/',
-            'Clé PGP disponible sur bastienbonora.fr'
+          links: [
+            { label: 'E-mail', value: 'bastien.bonora@gmail.com', href: 'mailto:bastien.bonora@gmail.com' },
+            { label: 'Téléphone', value: '+33 6 16 29 64 01', href: 'tel:+33616296401' },
+            { label: 'Site', value: 'bastienbonora.fr', href: 'https://bastienbonora.fr/' },
+            { label: 'Blog', value: 'docs.bastienbonora.fr', href: 'https://docs.bastienbonora.fr/' }
           ]
         },
         {
           heading: 'Réseaux',
-          lines: [
-            'LinkedIn : linkedin.com/in/bastien-bonora',
-            'GitHub : github.com/Fracorbas02'
+          links: [
+            { label: 'GitHub', value: 'github.com/Fracorbas02', href: 'https://github.com/Fracorbas02' },
+            { label: 'LinkedIn', value: 'in/bastien-bonora', href: 'https://www.linkedin.com/in/bastien-bonora' },
+            { label: 'TryHackMe', value: 'p/Fracorbas', href: 'https://tryhackme.com/p/Fracorbas' }
+          ]
+        },
+        {
+          heading: 'PGP',
+          links: [
+            { label: 'Clé publique', value: 'presentation/pubkey.asc', href: './root/presentation/pubkey' }
           ]
         }
       ]
@@ -204,10 +287,6 @@
   const SUBTITLE = 'Administrateur Systèmes & Réseaux';
   const WIDTH = 58;
 
-  const FOOTER_MENU = '↑↓ naviguer · Entrée ouvrir · Échap quitter';
-  const FOOTER_SECTION = '↑↓ défiler · Entrée/Échap retour · Ctrl+C PDF';
-  const FOOTER_HINT = 'Ctrl+C : CV PDF dans le navigateur · q quitter';
-
   const headingHTML = (text) =>
     `<span class="cvViewerHeading">${escape(text)}</span>`;
   const subHTML = (text) =>
@@ -217,7 +296,16 @@
   const mutedHTML = (text) =>
     `<span class="cvViewerMuted">${escape(text)}</span>`;
 
-  /** Écran menu : cartouche titre + rubriques + aide. */
+  /** Ligne de contenu : texte simple ou lien cliquable. */
+  const lineHTML = (line) => {
+    if (typeof line === 'string') return `  • ${textHTML(line)}`;
+    const external = /^https?:/.test(line.href);
+    return `  • <a class="cvViewerLink" href="${escape(line.href)}"${
+      external ? ' target="_blank" rel="noopener noreferrer"' : ''
+    }>${textHTML(line.text)}</a>`;
+  };
+
+  /** Écran menu : cartouche titre + rubriques. */
   const renderMenu = (index) => {
     // Construction ligne à ligne : le pad se fait sur le texte
     // visible, pas sur le HTML (les spans ne comptent pas).
@@ -230,8 +318,7 @@
         text: (i === index ? '► ' : '  ') + section.title
       })),
       { border: true },
-      { html: mutedHTML(FOOTER_MENU), text: FOOTER_MENU },
-      { html: mutedHTML(FOOTER_HINT), text: FOOTER_HINT }
+      { html: mutedHTML('Tout est cliquable, tout est réel.'), text: 'Tout est cliquable, tout est réel.' }
     ];
 
     const bar = '─'.repeat(WIDTH);
@@ -241,45 +328,212 @@
     return [`┌${bar}┐`, ...rows, `└${bar}┘`].join('\n');
   };
 
-  /** Écran rubrique : barre de titre + contenu défilable + aide. */
+  /** Écran rubrique : barre de titre + contenu (liens cliquables). */
   const renderSection = (sectionId) => {
     const section = SECTIONS.find((s) => s.id === sectionId);
     if (!section) return renderMenu(0);
 
     const lines = [];
+    let linkIndex = 0; // numérotation globale : touches 1-8
     for (const entry of section.entries) {
       lines.push(headingHTML(entry.heading));
       if (entry.sub) lines.push(subHTML(entry.sub));
-      for (const line of entry.lines) {
-        lines.push(textHTML(`  • ${line}`));
+      if (entry.lines) {
+        for (const line of entry.lines) lines.push(lineHTML(line));
+      }
+      if (entry.links) {
+        // Items numérotés : le numéro ouvre le lien au clavier
+        for (const link of entry.links) {
+          linkIndex += 1;
+          const external = /^https?:/.test(link.href);
+          const prefix = `  ${linkIndex} `;
+          lines.push(`${prefix}<a class="cvViewerLink" href="${escape(link.href)}"${
+            external ? ' target="_blank" rel="noopener noreferrer"' : ''
+          }>${textHTML(link.label.padEnd(10))} ${textHTML(link.value)}</a>`);
+        }
       }
       lines.push('');
     }
     lines.pop(); // dernier saut de ligne superflu
 
     const header = `  ${section.title.toUpperCase()}`;
-
     const body = [
       `┌─${escape(header)}─${'─'.repeat(Math.max(0, WIDTH - header.length - 3))}┐`,
       '',
-      ...lines.map((l) => `  ${l}`),
-      '',
-      mutedHTML(`  ${FOOTER_SECTION}`),
-      mutedHTML(`  ${FOOTER_HINT}`)
+      ...lines.map((l) => `  ${l}`)
     ].join('\n');
 
     return `<div class="cvViewerSection">${body}</div>`;
   };
 
+  // ── Panneau latéral (grands écrans) ───────────────────────────
+  // Tux + badges plateforme + animations (spinner braille, texte
+  // qui se tape). Les éléments animés portent des classes que le
+  // module retrouve à chaque tick.
+  const SIDE_WIDTH = 30;
+
+  /** Encadre des lignes { html, text } : le pad compte le visible. */
+  const sideBox = (title, rows) => {
+    const bar = '─'.repeat(SIDE_WIDTH);
+    const row = (r) => r.border ? `├${bar}┤`
+      : `│ ${r.html}${' '.repeat(Math.max(0, SIDE_WIDTH - 1 - r.text.length))}│`;
+    return [
+      `┌${bar}┐`,
+      row({ html: mutedHTML(title), text: title }),
+      `├${bar}┤`,
+      ...rows.map(row),
+      `└${bar}┘`
+    ].join('\n');
+  };
+
+  const TUX = [
+    '        .--.',
+    '       |o_o |',
+    '       |:_/ |',
+    '      //   \\ \\',
+    "     (|     | )",
+    "    /'\\_   _/`\\",
+    '    \\___)=(___/'
+  ];
+
+  const BADGES = [
+    ' TRYHACKME  [0xA] WIZARD',
+    '   12 379 pts · 85 rooms',
+    ' ROOT-ME    1 220 pts',
+    ' CISCO      CCNA 1 & 2',
+    ' STORMSHIELD CSNA · CSNE'
+  ];
+
+  const renderSide = () => {
+    const tux = sideBox('linux au quotidien', TUX.map((l) => ({
+      html: `<span class="cvViewerTux">${escape(l)}</span>`, text: l
+    })));
+    const badges = sideBox('plateformes', BADGES.map((l) => ({
+      html: `<span class="cvViewerBadge">${escape(l)}</span>`, text: l
+    })));
+    // Statut libre (hors cadre) : le texte tapé grandit à chaque
+    // tick, un cadre figerait mal son alignement
+    const status = [
+      `  <span class="cvViewerSpin">⠋</span> scan du périmètre...`,
+      '',
+      `  &gt; <span class="cvViewerType"></span><span class="cvViewerUnderscore">_</span>`
+    ].join('\n');
+    return [tux, '', badges, '', status].join('\n');
+  };
+
+  // ── Animations (spinner + machine à écrire) ──────────────────
+  const SPIN_FRAMES = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏'];
+  const TYPED_PHRASES = [
+    'admin. systèmes & réseaux',
+    'cybersécurité',
+    'Arch Linux user',
+    'CTF player',
+    'curieux de tout'
+  ];
+  let animTimer = null;
+  let tick = 0;
+  let typed = { phrase: 0, pos: 0, hold: 0, erasing: false };
+
+  const typedText = () => {
+    const phrase = TYPED_PHRASES[typed.phrase];
+    if (typed.erasing) {
+      typed.pos -= 1;
+      if (typed.pos <= 0) {
+        typed.erasing = false;
+        typed.pos = 0;
+        typed.phrase = (typed.phrase + 1) % TYPED_PHRASES.length;
+      }
+    } else if (typed.pos < phrase.length) {
+      typed.pos += 1;
+    } else {
+      typed.hold += 1;
+      if (typed.hold >= 9) { // petite pause une fois la phrase tapée
+        typed.hold = 0;
+        typed.erasing = true;
+      }
+    }
+    return phrase.slice(0, Math.max(0, typed.pos));
+  };
+
+  const startAnimations = () => {
+    stopAnimations();
+    animTimer = setInterval(() => {
+      tick += 1;
+      const spin = document.querySelector('.cvViewerSpin');
+      const type = document.querySelector('.cvViewerType');
+      if (!spin && !type) {
+        stopAnimations();
+        return;
+      }
+      if (spin) spin.textContent = SPIN_FRAMES[tick % SPIN_FRAMES.length];
+      if (type) type.textContent = typedText();
+    }, 110);
+  };
+
+  const stopAnimations = () => {
+    if (animTimer !== null) {
+      clearInterval(animTimer);
+      animTimer = null;
+    }
+  };
+
+  // ── Barre de raccourcis façon nano (bas de fenêtre) ──────────
+  const key = (combo, label) =>
+    `<span class="cvViewerKey">${escape(combo)}</span> ${escape(label)}`;
+
+  const barHTML = (viewerState) => {
+    if (!viewerState) return '';
+    const sep = '<span class="cvViewerKeySep">│</span>';
+    if (viewerState.section === null) {
+      return [
+        key('↑↓', 'naviguer'),
+        key('⏎', 'ouvrir'),
+        key('q', 'quitter'),
+        key('^C', 'CV PDF')
+      ].join(sep);
+    }
+    if (viewerState.section === 'contact') {
+      return [
+        key('1-8', 'ouvrir un contact'),
+        key('↑↓', 'défiler'),
+        key('⏎/⎋', 'menu'),
+        key('^C', 'CV PDF'),
+        key('q', 'quitter')
+      ].join(sep);
+    }
+    return [
+      key('↑↓', 'défiler'),
+      key('⏎/⎋', 'menu'),
+      key('^C', 'CV PDF'),
+      key('q', 'quitter')
+    ].join(sep);
+  };
+
+  // ── API ──────────────────────────────────────────────────────
   const render = (viewerState) => {
     if (!viewerState) return '';
-    return viewerState.section === null
+    const main = viewerState.section === null
       ? renderMenu(viewerState.index)
       : renderSection(viewerState.section);
+    return `<div class="cvViewerMain">${main}</div>`
+         + `<div class="cvViewerSide">${renderSide()}</div>`;
   };
 
   window.CV_VIEWER = {
     sections: () => SECTIONS.map(({ id, title }) => ({ id, title })),
-    render
+    render,
+    bar: barHTML,
+    /** Liens ordonnés d'une rubrique (ouvertures clavier 1-8). */
+    links: (sectionId) => {
+      const section = SECTIONS.find((s) => s.id === sectionId);
+      if (!section) return [];
+      const links = [];
+      for (const entry of section.entries) {
+        if (entry.links) links.push(...entry.links);
+      }
+      return links;
+    },
+    startAnimations,
+    stopAnimations
   };
 })();

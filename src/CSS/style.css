@@ -688,10 +688,35 @@ body.is-window-dragging * {
   pointer-events: none;
 }
 
-/* Rendu ASCII : les cadres exigeent de ne pas replier les lignes */
+/* Rendu ASCII : les cadres exigent de ne pas replier les lignes.
+   Deux colonnes : contenu du CV à gauche, panneau de logos à
+   droite (seulement sur les fenêtres assez larges). */
 .cvViewer {
-  white-space: pre;
+  display: flex;
+  align-items: flex-start;
+  gap: 1.75rem;
   line-height: 1.5;
+}
+
+.cvViewerMain {
+  white-space: pre;
+  flex-shrink: 0;
+}
+
+.cvViewerSide {
+  white-space: pre;
+  display: none;
+  margin-left: auto;
+  flex-shrink: 0;
+  line-height: 1.45;
+}
+
+.cvViewerWide .cvViewerSide {
+  display: block;
+}
+
+.cvViewerSection {
+  white-space: pre;
 }
 
 .cvViewerTitle {
@@ -731,6 +756,78 @@ body.is-window-dragging * {
   color: var(--text-muted);
 }
 
-.cvViewerSection {
-  white-space: pre;
+/* Liens cliquables du CV (mail, téléphone, profils, write-ups) */
+.cvViewerLink {
+  color: var(--accent);
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.cvViewerLink:hover {
+  color: var(--accent-strong);
+  text-decoration: underline;
+  text-shadow: 0 0 8px var(--accent-glow);
+}
+
+/* Panneau latéral : Tux, badges, animations */
+.cvViewerTux {
+  color: var(--accent);
+}
+
+.cvViewerBadge {
+  color: var(--text-secondary);
+}
+
+.cvViewerSpin {
+  color: var(--accent);
+  font-weight: 700;
+}
+
+.cvViewerType {
+  color: var(--accent-strong);
+}
+
+.cvViewerUnderscore {
+  color: var(--accent);
+  animation: cvUnderscoreBlink 1s steps(1) infinite;
+}
+
+@keyframes cvUnderscoreBlink {
+  50% { opacity: 0; }
+}
+
+/* Barre de raccourcis façon nano, collée en bas de la fenêtre.
+   Le shell gagne du padding bas pour ne pas être masqué. */
+.shellContainer.viewerMode .shellOutput {
+  padding-bottom: 3.4rem;
+}
+
+.cvViewerBar {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+  padding: 0.4rem 1.5rem;
+  font-size: 0.8rem;
+  white-space: nowrap;
+  overflow-x: auto;
+  background: rgba(2, 6, 23, 0.82);
+  border-top: 1px solid var(--accent-dim);
+  z-index: 6;
+}
+
+.cvViewerKey {
+  color: var(--accent);
+  font-weight: 700;
+  background: rgba(34, 211, 238, 0.12);
+  border: 1px solid var(--accent-dim);
+  border-radius: 3px;
+  padding: 0.05rem 0.35rem;
+}
+
+.cvViewerKeySep {
+  color: var(--text-muted);
 }
