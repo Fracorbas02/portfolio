@@ -8,8 +8,8 @@
  * Ctrl+C) est géré par script.js ; ce module décrit les rubriques
  * du CV, produit le rendu ASCII (colonne principale + panneau
  * latéral de logos animés) et anime le spinner braille, le texte
- * en machine à écrire et la rotation des logos (Tux, TryHackMe,
- * Root-Me, Cisco, Stormshield).
+ * en machine à écrire, la rotation des logos (Tux, TryHackMe,
+ * Root-Me, Cisco, Stormshield) et le ticker des plateformes.
  *
  * Exposition globale (pas de système de modules ici) :
  *   window.CV_VIEWER.sections() -> liste des rubriques
@@ -466,13 +466,62 @@
   // 'hold' (affiché) → 'wipe' (effacé ligne par ligne) → 'draw'.
   const logoState = { i: 0, phase: 'hold', ticks: LOGO_HOLD_TICKS, row: 0 };
 
-  const BADGES = [
-    ' TRYHACKME  [0xA] WIZARD',
+  // ── Ticker des plateformes ───────────────────────────────────
+  // Cartes d'une plateforme : nom + détails, séparées par une
+  // ligne vide. La boîte « plateformes » affiche une fenêtre de
+  // BADGE_ROWS lignes qui défile d'une ligne à intervalle régulier,
+  // comme un bandeau d'actualités en terminal. Les lignes sont
+  // complétées à BADGE_W : l'animation réécrit les textContent sans
+  // casser l'alignement du cadre.
+  const BADGE_ROWS = 5;
+  const BADGE_W = SIDE_WIDTH - 1;
+  const BADGE_SCROLL_TICKS = 6; // ~0,66 s par ligne (110 ms/tick)
+
+  const PLATFORM_LINES = [
+    ' TRYHACKME [0xA] WIZARD',
     '   12 379 pts · 85 rooms',
-    ' ROOT-ME    1 220 pts',
-    ' CISCO      CCNA 1 & 2',
-    ' STORMSHIELD CSNA · CSNE'
+    '   write-ups sur le portfolio',
+    '',
+    ' ROOT-ME 1 220 pts',
+    '   75 challenges',
+    '   root-me.org',
+    '',
+    ' CISCO CCNA 1 & 2',
+    '   routage · VPN · switching',
+    '',
+    ' STORMSHIELD CSNA · CSNE',
+    '   pare-feu · VPN · filtrage',
+    ''
   ];
+
+  const badgeState = { offset: 0, ticks: BADGE_SCROLL_TICKS };
+
+  /** Fenêtre de BADGE_ROWS lignes visible dans la boîte. */
+  const badgeWindow = () => {
+    const rows = [];
+    for (let k = 0; k < BADGE_ROWS; k++) {
+      rows.push(
+        PLATFORM_LINES[(badgeState.offset + k) % PLATFORM_LINES.length]
+          .padEnd(BADGE_W).slice(0, BADGE_W)
+      );
+    }
+    return rows;
+  };
+
+  /**
+   * Fait défiler le ticker : une ligne de moins par intervalle,
+   * la fenêtre glisse sur la liste cyclique des plateformes.
+   */
+  const animateBadges = () => {
+    const rows = document.querySelectorAll('.cvViewerBadgeRow');
+    if (rows.length < BADGE_ROWS) return;
+    badgeState.ticks -= 1;
+    if (badgeState.ticks > 0) return;
+    badgeState.ticks = BADGE_SCROLL_TICKS;
+    badgeState.offset = (badgeState.offset + 1) % PLATFORM_LINES.length;
+    const win = badgeWindow();
+    rows.forEach((row, i) => { row.textContent = win[i]; });
+  };
 
   const renderSide = () => {
     // Lignes complétées à LOGO_W : l'animation peut réécrire leur
@@ -483,8 +532,8 @@
       html: `<span class="cvViewerTux cvViewerLogoRow">${escape(padArt(l))}</span>`,
       text: padArt(l)
     })), 'cvViewerMuted cvViewerLogoTitle');
-    const badges = sideBox('plateformes', BADGES.map((l) => ({
-      html: `<span class="cvViewerBadge">${escape(l)}</span>`, text: l
+    const badges = sideBox('plateformes', badgeWindow().map((l) => ({
+      html: `<span class="cvViewerBadge cvViewerBadgeRow">${escape(l)}</span>`, text: l
     })));
     // Statut libre (hors cadre) : le texte tapé grandit à chaque
     // tick, un cadre figerait mal son alignement
@@ -586,6 +635,7 @@
       if (spin) spin.textContent = SPIN_FRAMES[tick % SPIN_FRAMES.length];
       if (type) type.textContent = typedText();
       animateLogo();
+      animateBadges();
     }, 110);
   };
 
