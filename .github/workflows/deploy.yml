@@ -5,6 +5,12 @@ on:
     branches: [main]
   workflow_dispatch:
 
+# Moindre privilège : ce workflow n'a besoin d'aucune écriture côté
+# GitHub, uniquement de lire le dépôt et les secrets. Le GITHUB_TOKEN
+# du runner est ainsi inutilisable pour modifier le dépôt.
+permissions:
+  contents: read
+
 # Un seul déploiement à la fois : les pushs successifs s'annulent
 # mutuellement plutôt que de déployer en parallèle
 concurrency:
@@ -22,6 +28,13 @@ jobs:
     steps:
       # actions/checkout v4.2.2 épinglé par SHA (supply-chain)
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+      - name: Syntax check (JS + JSON)
+        run: |
+          for f in src/javascript/*.js; do node --check "$f"; done
+          python3 -c "import json; json.load(open('src/JSON/elements.json'))"
+          xmllint --noout sitemap.xml
       - name: Setup SSH
         run: |
           mkdir -p ~/.ssh && chmod 700 ~/.ssh

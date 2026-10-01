@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex">
+  <title>404 — Aucun fichier ou dossier de ce type</title>
+  <link rel="icon" href="./favicon.ico" type="image/x-icon">
+  <link rel="stylesheet" href="./src/CSS/fonts.css?v=20261002.3">
+  <style>
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #0f172a;
+      color: #e2e8f0;
+      font-family: 'JetBrains Mono', ui-monospace, 'Cascadia Code', Menlo, Consolas, monospace;
+    }
+    .term {
+      max-width: 640px;
+      padding: 2rem;
+      line-height: 1.8;
+      font-size: 15px;
+    }
+    .prompt {
+      margin: 0;
+      color: #94a3b8;
+      word-break: break-all;
+    }
+    .user { color: #22d3ee; }
+    .err {
+      margin: 0 0 2rem;
+      color: #f87171;
+    }
+    h1 {
+      margin: 0 0 2rem;
+      font-size: 1rem;
+      font-weight: 500;
+      color: #e2e8f0;
+    }
+    a {
+      color: #22d3ee;
+      text-decoration: none;
+    }
+    a:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+  <main class="term">
+    <p class="prompt"><span class="user">anonymous@portfolio</span>:~$ cat la-page-demandée</p>
+    <p class="err">bash: la-page-demandée : Aucun fichier ou dossier de ce type</p>
+    <h1>Erreur 404 — cette page n'existe pas (ou plus).</h1>
+    <p class="prompt"><span class="user">anonymous@portfolio</span>:~$ <a href="/">retourner à l'accueil</a></p>
+  </main>
+</body>
+</html>

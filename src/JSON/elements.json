@@ -183,6 +183,202 @@
         "examples": [
           { "cmd": "exit", "desc": "ferme la fenêtre courante ; la principale renvoie vers la pastille rouge" }
         ]
+      },
+      "cat": {
+      "description": "Affiche le contenu d'un fichier du dossier courant. Les fichiers texte s'affichent tels quels ; les fichiers viewer s'affichent en texte brut (même contenu que open, sans l'interface interactive) ; les fichiers binaires doivent être ouverts avec open. Lecture réservée à bastien et anonymous.",
+      "options":         [
+          {
+            "name": "fichier",
+            "usage": "chemin relatif ou absolu du fichier à lire. Exemple : cat README.md"
+          }
+        ],
+      "examples":         [
+          {
+            "cmd": "cat README.md",
+            "desc": "affiche le message d'accueil du terminal"
+          },
+          {
+            "cmd": "cat qui_suis_je.html",
+            "desc": "affiche le contenu du viewer en texte brut"
+          }
+        ]
+      },
+      "cd": {
+      "description": "Change de dossier courant. Sans argument, retourne au dossier personnel (/root). Gère les chemins absolus, relatifs, ainsi que . et ..",
+      "options":         [
+          {
+            "name": "dossier",
+            "usage": "chemin du dossier cible. Exemple : cd presentation, cd /root/competences, cd .."
+          }
+        ],
+      "examples":         [
+          {
+            "cmd": "cd presentation",
+            "desc": "entre dans le dossier de présentation"
+          },
+          {
+            "cmd": "cd ..",
+            "desc": "remonte d'un niveau dans l'arborescence"
+          },
+          {
+            "cmd": "cd /root/competences/ctf",
+            "desc": "saut direct par chemin absolu"
+          }
+        ]
+      },
+      "man": {
+      "description": "Affiche la page de manuel d'une commande : description, options et exemples.",
+      "options":         [
+          {
+            "name": "commande",
+            "usage": "le nom de la commande à documenter. Exemple : man open"
+          }
+        ],
+      "examples":         [
+          {
+            "cmd": "man set",
+            "desc": "affiche les options de la commande set"
+          },
+          {
+            "cmd": "man cat",
+            "desc": "affiche la page de manuel de cat"
+          }
+        ]
+      },
+      "help": {
+      "description": "Affiche la liste des commandes disponibles avec leur description. Pour le détail d'une commande, voir man.",
+      "options":         [
+          {
+            "name": "sans argument",
+            "usage": "cette commande ne possède pas d'argument"
+          }
+        ],
+      "examples":         [
+          {
+            "cmd": "help",
+            "desc": "affiche la liste des commandes du terminal"
+          }
+        ]
+      },
+      "clear": {
+      "description": "Efface le contenu du terminal. Raccourci clavier équivalent : Ctrl+L.",
+      "options":         [
+          {
+            "name": "sans argument",
+            "usage": "cette commande ne possède pas d'argument"
+          }
+        ],
+      "examples":         [
+          {
+            "cmd": "clear",
+            "desc": "nettoie l'écran et rend la main sur le prompt"
+          }
+        ]
+      },
+      "history": {
+      "description": "Affiche l'historique des commandes saisies dans cette fenêtre. Chaque fenêtre de shell possède son propre historique : celle ouverte par bash hérite de l'historique de sa fenêtre parente. Raccourcis : flèches haut/bas pour la navigation, Ctrl+R pour la recherche inversée.",
+      "options":         [
+          {
+            "name": "sans argument",
+            "usage": "cette commande ne possède pas d'argument"
+          }
+        ],
+      "examples":         [
+          {
+            "cmd": "history",
+            "desc": "liste numérotée des commandes de la fenêtre courante"
+          }
+        ]
+      },
+      "whoami": {
+      "description": "Affiche le nom d'utilisateur courant affiché dans le prompt. anonymous par défaut, modifiable avec set username.",
+      "options":         [
+          {
+            "name": "sans argument",
+            "usage": "cette commande ne possède pas d'argument"
+          }
+        ],
+      "examples":         [
+          {
+            "cmd": "whoami",
+            "desc": "affiche par exemple anonymous"
+          }
+        ]
+      },
+      "date": {
+      "description": "Affiche la date et l'heure courantes, au format complet du système.",
+      "options":         [
+          {
+            "name": "sans argument",
+            "usage": "cette commande ne possède pas d'argument"
+          }
+        ],
+      "examples":         [
+          {
+            "cmd": "date",
+            "desc": "affiche la date et l'heure complètes du jour"
+          }
+        ]
+      },
+      "sudo": {
+      "description": "Tente d'élever les privilèges. Ce portfolio n'a pas de root : la commande échoue systématiquement et l'incident est signalé.",
+      "options":         [
+          {
+            "name": "commande",
+            "usage": "toute commande passée après sudo sera refusée, comme avec un vrai fichier sudoers"
+          }
+        ],
+      "examples":         [
+          {
+            "cmd": "sudo whoami",
+            "desc": "spoiler : refus garanti, l'incident sera signalé"
+          }
+        ]
+      },
+      "neofetch": {
+      "description": "Affiche le récapitulatif du portfolio et de ses compétences, à la manière de la commande neofetch : art ASCII, système, uptime, plateformes.",
+      "options":         [
+          {
+            "name": "sans argument",
+            "usage": "cette commande ne possède pas d'argument"
+          }
+        ],
+      "examples":         [
+          {
+            "cmd": "neofetch",
+            "desc": "affiche le panneau d'information du portfolio"
+          }
+        ]
+      },
+      "reboot": {
+      "description": "Redémarre le terminal : recharge complètement la page. L'historique de la fenêtre principale est conservé.",
+      "options":         [
+          {
+            "name": "sans argument",
+            "usage": "cette commande ne possède pas d'argument"
+          }
+        ],
+      "examples":         [
+          {
+            "cmd": "reboot",
+            "desc": "rejoue la séquence de démarrage du terminal"
+          }
+        ]
+      },
+      "show": {
+      "description": "Affiche la liste des projets disponibles, avec leurs liens.",
+      "options":         [
+          {
+            "name": "sans argument",
+            "usage": "cette commande ne possède pas d'argument"
+          }
+        ],
+      "examples":         [
+          {
+            "cmd": "show",
+            "desc": "liste les projets : Nastruire, Bastodoc, Portfolio"
+          }
+        ]
       }
     },
     "tree" : {
@@ -193,7 +389,7 @@
               "presentation": {
                 "type": "directory",
                 "CV.pdf": { "type": "file", "url": "./root/presentation/CV/CV_Bastien_BONORA_2025.pdf", "viewer": "cv" },
-				"qui_suis_je.html": { "type": "file", "url": "https://bastienbonora.fr/", "viewer": "profile" },
+				"qui_suis_je.html": { "type": "file", "url": "./src/HTML/presentation.html", "viewer": "profile" },
                 "releve_bac.pdf": { "type": "file", "url": "./root/presentation/Releve_Note_Bac.pdf" },
                 "projet_orientation.png": { "type": "file", "url": "./root/presentation/Projet_Orientation.png" },
                 "pubkey.asc": { "type": "file", "url": "./root/presentation/pubkey" }
