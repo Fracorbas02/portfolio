@@ -819,6 +819,12 @@ body.is-window-dragging * {
   z-index: 6;
 }
 
+/* Fenêtre réduite (39px) : la barre, ancrée en bas, recouvrirait
+   tout le chrome — pastilles incliquables, drag impossible. */
+.shellContainer.minimized .cvViewerBar {
+  display: none;
+}
+
 .cvViewerKey {
   color: var(--accent);
   font-weight: 700;
