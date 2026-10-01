@@ -14,6 +14,7 @@
  * Exposition globale (pas de système de modules ici) :
  *   window.CV_VIEWER.sections() -> liste des rubriques
  *   window.CV_VIEWER.render(viewerState) -> HTML (2 colonnes)
+ *   window.CV_VIEWER.renderMain(viewerState) -> colonne principale
  *   window.CV_VIEWER.bar(viewerState) -> HTML de la barre bas
  *   window.CV_VIEWER.links(sectionId) -> liens ordonnés de la rubrique
  *   window.CV_VIEWER.startAnimations() / stopAnimations()
@@ -679,18 +680,26 @@
   };
 
   // ── API ──────────────────────────────────────────────────────
-  const render = (viewerState) => {
+  /** Colonne principale seule : appelée à chaque navigation clavier,
+   *  pour ne pas reconstruire le panneau latéral et ses animations. */
+  const renderMain = (viewerState) => {
     if (!viewerState) return '';
-    const main = viewerState.section === null
+    return viewerState.section === null
       ? renderMenu(viewerState.index)
       : renderSection(viewerState.section);
-    return `<div class="cvViewerMain">${main}</div>`
+  };
+
+  /** Rendu complet (première insertion) : colonne principale + panneau. */
+  const render = (viewerState) => {
+    if (!viewerState) return '';
+    return `<div class="cvViewerMain">${renderMain(viewerState)}</div>`
          + `<div class="cvViewerSide">${renderSide()}</div>`;
   };
 
   window.CV_VIEWER = {
     sections: () => SECTIONS.map(({ id, title }) => ({ id, title })),
     render,
+    renderMain,
     bar: barHTML,
     /** Liens ordonnés d'une rubrique (ouvertures clavier 1-8). */
     links: (sectionId) => {
