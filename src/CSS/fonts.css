@@ -1,0 +1,59 @@
+/**
+ * Polices auto-hébergées — Bastien BONORA
+ * -----------------------------------------------------------
+ * JetBrains Mono (400/500/700) et Syne (600/700/800), sous-
+ * ensemble latin (couvre accents français et ponctuation
+ * typographique). Aucune ressource externe : la CSP du site
+ * reste strictement 'self'.
+ *
+ * Chargé par index.html et src/HTML/presentation.html avant
+ * les feuilles de style principales.
+ */
+
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('../asset/fonts/jetbrains_mono/JetBrainsMono-400.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url('../asset/fonts/jetbrains_mono/JetBrainsMono-500.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url('../asset/fonts/jetbrains_mono/JetBrainsMono-700.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Syne';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url('../asset/fonts/syne/Syne-600.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Syne';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url('../asset/fonts/syne/Syne-700.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Syne';
+  font-style: normal;
+  font-weight: 800;
+  font-display: swap;
+  src: url('../asset/fonts/syne/Syne-800.woff2') format('woff2');
+}
