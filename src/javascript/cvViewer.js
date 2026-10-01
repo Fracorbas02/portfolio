@@ -513,8 +513,8 @@
    * Fait défiler le ticker : une ligne de moins par intervalle,
    * la fenêtre glisse sur la liste cyclique des plateformes.
    */
-  const animateBadges = () => {
-    const rows = document.querySelectorAll('.cvViewerBadgeRow');
+  const animateBadges = (scope) => {
+    const rows = scope.querySelectorAll('.cvViewerBadgeRow');
     if (rows.length < BADGE_ROWS) return;
     badgeState.ticks -= 1;
     if (badgeState.ticks > 0) return;
@@ -587,9 +587,9 @@
    * se dessine ligne par ligne (draw). Titre et lignes sont
    * réécrits à LOGO_W caractères pour garder le cadre aligné.
    */
-  const animateLogo = () => {
-    const rows = document.querySelectorAll('.cvViewerLogoRow');
-    const title = document.querySelector('.cvViewerLogoTitle');
+  const animateLogo = (scope) => {
+    const rows = scope.querySelectorAll('.cvViewerLogoRow');
+    const title = scope.querySelector('.cvViewerLogoTitle');
     if (rows.length < LOGO_ROWS || !title) return;
 
     if (logoState.phase === 'hold') {
@@ -622,21 +622,23 @@
     }
   };
 
-  const startAnimations = () => {
+  // `scope` limite les requêtes DOM à la fenêtre de shell qui
+  // affiche le viewer (plusieurs viewers peuvent cohabiter).
+  const startAnimations = (scope = document) => {
     stopAnimations();
     animTimer = setInterval(() => {
       tick += 1;
-      const spin = document.querySelector('.cvViewerSpin');
-      const type = document.querySelector('.cvViewerType');
-      const logoRow = document.querySelector('.cvViewerLogoRow');
+      const spin = scope.querySelector('.cvViewerSpin');
+      const type = scope.querySelector('.cvViewerType');
+      const logoRow = scope.querySelector('.cvViewerLogoRow');
       if (!spin && !type && !logoRow) {
         stopAnimations();
         return;
       }
       if (spin) spin.textContent = SPIN_FRAMES[tick % SPIN_FRAMES.length];
       if (type) type.textContent = typedText();
-      animateLogo();
-      animateBadges();
+      animateLogo(scope);
+      animateBadges(scope);
     }, 110);
   };
 

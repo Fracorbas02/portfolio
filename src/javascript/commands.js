@@ -343,9 +343,14 @@
         return `open : ${escapeHTML(target)} : n'est pas ouvrable`;
       }
 
-      // Viewer interactif : le CV s'ouvre dans une nouvelle fenêtre
-      // de shell navigable au clavier (Ctrl+C pour le PDF)
-      if (node.viewer === 'cv') {
+      // Viewer interactif : le fichier s'ouvre dans une nouvelle
+      // fenêtre de shell navigable au clavier (CV, présentation,
+      // compétences…). Le champ `viewer` désigne le viewer dans le
+      // registre viewerData.js.
+      if (node.viewer) {
+        if (!window.PORTFOLIO_VIEWERS?.[node.viewer]) {
+          return `open : viewer « ${escapeHTML(node.viewer)} » inconnu`;
+        }
         const error = spawnShell({ viewer: node });
         if (error) return error;
         return `ouverture de ${escapeHTML(target)} dans une nouvelle fenêtre...`;
