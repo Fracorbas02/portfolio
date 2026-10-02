@@ -946,6 +946,47 @@ body.is-window-dragging * {
   overflow-y: auto;
 }
 
+/* Éditeur nano : plein écran façon pager — en-tête façon nano,
+   zone d'édition qui prend tout l'espace, barre de raccourcis
+   collée en bas (cvViewerBar). Contre .shellOutput > div, la
+   marge de 0.4rem rogne l'éditeur : elle tombe à zéro, comme
+   l'overlay de lecture. */
+.shellOutput > .nanoEditor {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+}
+
+.nanoHeader {
+  flex-shrink: 0;
+  padding: 0.45rem 1.5rem;
+  font-size: 0.8rem;
+  border-bottom: 1px solid var(--border);
+  color: var(--text-muted);
+}
+
+/* Zone d'édition : transparente, elle prend la police du shell ;
+   le curseur clignote en cyan. Le retour automatique à la ligne
+   reste celui du textarea (soft wrap), comme nano par défaut. */
+.nanoTextarea {
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  border: none;
+  outline: none;
+  resize: none;
+  background: transparent;
+  color: inherit;
+  caret-color: var(--accent);
+  font: inherit;
+  line-height: 1.5;
+  padding: 1.25rem 1.5rem;
+  overflow: auto;
+}
+
 /* Lecture : la sortie n'a plus de padding (l'overlay couvre tout),
    il revient ici — le texte ne colle pas aux bords du shell. Pas
    de sur-padding bas : la barre de statut vit sous la sortie, sur
