@@ -61,6 +61,14 @@
         "description": "Compte les lignes d'un fichier. Exemple : wc -l README.md."
       },
       {
+        "name": "echo",
+        "description": "Affiche un texte et développe les variables ($USER, $PWD, exports). Exemple : echo $USER."
+      },
+      {
+        "name": "export",
+        "description": "Définit ou liste des variables d'environnement. Exemple : export SITE=docs.bastienbonora.fr."
+      },
+      {
         "name": "neofetch",
         "description": "Affiche les informations du portfolio et ses compétences, à la manière de la commande neofetch."
       },
@@ -106,6 +114,32 @@
         "examples": [
           { "cmd": "wc -l README.md", "desc": "affiche le nombre de lignes du README" },
           { "cmd": "wc blog/blog.html", "desc": "affiche lignes, mots et octets d'un fichier viewer (texte brut)" }
+        ]
+      },
+      "echo": {
+        "description": "Affiche ses arguments sur une ligne, en développant les variables d'environnement : $USER (nom d'utilisateur du prompt), $PWD (dossier courant) et celles définies avec export.",
+        "options": [
+          {
+            "name": "none",
+            "usage": "Cette commande ne possède pas d'option"
+          }
+        ],
+        "examples": [
+          { "cmd": "echo Bonjour le monde", "desc": "affiche le texte tel quel" },
+          { "cmd": "echo $USER est dans $PWD", "desc": "affiche le nom d'utilisateur et le dossier courant" }
+        ]
+      },
+      "export": {
+        "description": "Définit des variables d'environnement réutilisables par echo ($NOM), ou liste toutes les variables exportées sans argument, à la manière de export -p.",
+        "options": [
+          {
+            "name": "NOM=valeur",
+            "usage": "définit la variable NOM à valeur. Plusieurs définitions sont possibles sur une même ligne. Exemple : export SITE=docs.bastienbonora.fr METIER=-admin"
+          }
+        ],
+        "examples": [
+          { "cmd": "export SITE=docs.bastienbonora.fr", "desc": "définit la variable SITE" },
+          { "cmd": "echo $SITE", "desc": "affiche la valeur définie juste avant" }
         ]
       },
       "blog": {
