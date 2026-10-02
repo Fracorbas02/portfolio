@@ -932,11 +932,23 @@ body.is-window-dragging * {
   overflow-y: auto;
 }
 
+/* Lecture : la sortie n'a plus de padding (l'overlay couvre tout),
+   il revient ici — le texte ne colle pas aux bords du shell. Pas
+   de sur-padding bas : la barre de statut vit sous la sortie, sur
+   la bande du prompt invisible, elle ne recouvre pas le texte. */
+.manPagerOverlay .manPagerContent {
+  padding: 1.25rem 1.5rem;
+}
+
 /* Mode lecture d'un article du blog : le pager se superpose au
    viewer ouvert. Son DOM n'est pas détruit, la lecture le recouvre
-   simplement, et la barre nano du viewer laisse place au statut. */
+   simplement, et la barre nano du viewer laisse place au statut.
+   Le padding de la sortie tombe à zéro : posé dans la padding box,
+   l'overlay s'arrêterait au-dessus des padding du mode viewer et
+   le texte collerait aux bords du shell. */
 .shellContainer.reading .shellOutput {
   position: relative;
+  padding: 0;
 }
 
 .shellContainer.reading .cvViewerBar:not(.manPagerStatus) {
