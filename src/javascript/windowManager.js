@@ -116,6 +116,7 @@
     let snapAnimTimer = null;   // retire .is-snapping après l'animation
     let snapped = false;        // fenêtre posée par un snap ?
     let preSnap = null;         // taille d'avant snap, rendue au prochain drag
+    let unsnapPending = false;  // clic sur fenêtre snappée : unsnap au 1er déplacement
     const start = {
       pointerX: 0, pointerY: 0,
       left: 0, top: 0,
@@ -174,10 +175,10 @@
       target.classList.remove('is-snapping');
       clearTimeout(snapAnimTimer);
 
-      // Un drag qui commence sur une fenêtre snappée lui rend sa
-      // taille d'avant atterrissage (comme GNOME/Windows) : sinon
-      // une fenêtre pleine hauteur resterait scotchée en haut.
-      if (mode === 'move') unsnap();
+      // Un clic sur la barre d'une fenêtre snappée ne doit pas la
+      // dé-snapper : la taille d'avant atterrissage ne lui est
+      // rendue qu'au premier vrai déplacement (voir onPointerMove).
+      if (mode === 'move') unsnapPending = snapped;
       else snapped = false; // un resize manuel remplace la taille du snap
 
       action     = mode;
@@ -214,6 +215,24 @@
       const vh = window.innerHeight;
 
       if (action === 'move') {
+        // Clic sans déplacement (ou micro-tremblement < 3px) : la
+        // fenêtre snappée reste snappée, on ne bouge rien.
+        if (unsnapPending && Math.abs(dx) <= 3 && Math.abs(dy) <= 3) return;
+        if (unsnapPending) {
+          // Premier vrai déplacement : on rend sa taille à la
+          // fenêtre (comme GNOME/Windows) et on repart de la
+          // géométrie restaurée pour un drag cohérent.
+          unsnap();
+          unsnapPending = false;
+          const rect = target.getBoundingClientRect();
+          start.pointerX = event.clientX;
+          start.pointerY = event.clientY;
+          start.left     = rect.left;
+          start.top      = rect.top;
+          start.width    = rect.width;
+          start.height   = rect.height;
+        }
+
         // Clamp pour ne pas sortir du viewport
         const newLeft = clamp(start.left + dx, 0, vw - start.width);
         const newTop  = clamp(start.top  + dy, 0, vh - start.height);
@@ -287,6 +306,7 @@
     function onPointerUp(event) {
       if (action === 'move' && snapRect) applySnap(snapRect);
       snapRect = null;
+      unsnapPending = false;
       hideSnapPreview();
       action    = null;
       resizeDir = null;
