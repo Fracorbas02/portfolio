@@ -9,6 +9,11 @@
  * ctx : { state, prompt, defaultText, output, root, typewrite,
  *         delay, updatePrompt, updateCursor, spawnShell }
  *
+ * Chaque handler reçoit (args, stdin) : stdin est le texte brut
+ * de la commande précédente au bout d'un pipeline (script.js), ou
+ * null hors pipeline. Seules les commandes qui le peuvent (cat,
+ * grep, wc) le consomment.
+ *
  * Exposé via window.PORTFOLIO_COMMANDS :
  *   create(ctx, extraHandlers) -> { handlers, unknown }
  */
@@ -148,8 +153,13 @@
       return null;
     }
 
-    function cmdCat(args) {
-      if (args.length === 0) return 'cat : veuillez donner un argument';
+    function cmdCat(args, stdin = null) {
+      // Sans argument mais dans un pipeline : l'entrée standard,
+      // comme le vrai cat (commande | cat)
+      if (args.length === 0) {
+        if (stdin === null) return 'cat : veuillez donner un argument';
+        return escapeHTML(stdin);
+      }
 
       const target = args[0];
       const node = lookUpTree(target);
@@ -171,32 +181,42 @@
     }
 
     /**
-     * grep : recherche un motif dans un fichier texte, avec les
-     * options combinables -i (insensible à la casse) et -n
-     * (numéros de ligne). Aucune correspondance → sortie vide,
-     * comme le vrai grep.
+     * grep : recherche un motif dans un fichier texte, ou dans
+     * l'entrée standard au bout d'un pipeline (commande | grep
+     * motif), avec les options combinables -i (insensible à la
+     * casse) et -n (numéros de ligne). Aucune correspondance →
+     * sortie vide, comme le vrai grep.
      */
-    function cmdGrep(args) {
+    function cmdGrep(args, stdin = null) {
       // Options combinables en tête de ligne : -i, -n, -in, -ni...
       let flags = '';
       while (args.length > 0 && /^-[in]+$/.test(args[0])) {
         flags += args.shift().slice(1);
       }
-      if (args.length < 2) return 'usage : grep [-i] [-n] <motif> <fichier>';
-
-      const pattern = args[0];
-      const target = args[1];
-      const node = lookUpTree(target);
-
-      if (node === null) return `grep : ${escapeHTML(target)} : fichier introuvable`;
-      if (isDirectory(node)) return `grep : ${escapeHTML(target)} : est un dossier`;
-      if (!canReadFiles()) {
-        return `grep : ${escapeHTML(target)} : Permission non accordée`;
+      if (args.length === 0) {
+        return 'usage : grep [-i] [-n] <motif> <fichier>  (ou : commande | grep [-i] [-n] <motif>)';
       }
 
-      const text = fileText(node);
-      if (text === null) {
-        return `grep : ${escapeHTML(target)} : fichier binaire (non analysable)`;
+      const pattern = args[0];
+      let text;
+      if (args.length >= 2) {
+        const target = args[1];
+        const node = lookUpTree(target);
+
+        if (node === null) return `grep : ${escapeHTML(target)} : fichier introuvable`;
+        if (isDirectory(node)) return `grep : ${escapeHTML(target)} : est un dossier`;
+        if (!canReadFiles()) {
+          return `grep : ${escapeHTML(target)} : Permission non accordée`;
+        }
+
+        text = fileText(node);
+        if (text === null) {
+          return `grep : ${escapeHTML(target)} : fichier binaire (non analysable)`;
+        }
+      } else if (stdin !== null) {
+        text = stdin; // pipeline : l'entrée standard de la commande
+      } else {
+        return 'usage : grep [-i] [-n] <motif> <fichier>  (ou : commande | grep [-i] [-n] <motif>)';
       }
 
       const insensitive = flags.includes('i');
@@ -217,38 +237,47 @@
     }
 
     /**
-     * wc : compte les lignes (-l) d'un fichier texte, ou par
-     * défaut lignes/mots/octets comme le vrai wc.
+     * wc : compte les lignes (-l) d'un fichier texte, ou de
+     * l'entrée standard au bout d'un pipeline, ou par défaut
+     * lignes/mots/octets comme le vrai wc.
      */
-    function cmdWc(args) {
+    function cmdWc(args, stdin = null) {
       let linesOnly = false;
       if (args[0] === '-l') {
         linesOnly = true;
         args.shift();
       }
-      if (args.length === 0) return 'usage : wc [-l] <fichier>';
 
-      const target = args[0];
-      const node = lookUpTree(target);
+      let text;
+      let suffix = '';
+      if (args.length > 0) {
+        const target = args[0];
+        const node = lookUpTree(target);
 
-      if (node === null) return `wc : ${escapeHTML(target)} : fichier introuvable`;
-      if (isDirectory(node)) return `wc : ${escapeHTML(target)} : est un dossier`;
-      if (!canReadFiles()) {
-        return `wc : ${escapeHTML(target)} : Permission non accordée`;
-      }
+        if (node === null) return `wc : ${escapeHTML(target)} : fichier introuvable`;
+        if (isDirectory(node)) return `wc : ${escapeHTML(target)} : est un dossier`;
+        if (!canReadFiles()) {
+          return `wc : ${escapeHTML(target)} : Permission non accordée`;
+        }
 
-      const text = fileText(node);
-      if (text === null) {
-        return `wc : ${escapeHTML(target)} : fichier binaire (non analysable)`;
+        text = fileText(node);
+        if (text === null) {
+          return `wc : ${escapeHTML(target)} : fichier binaire (non analysable)`;
+        }
+        suffix = ` ${escapeHTML(target)}`;
+      } else if (stdin !== null) {
+        text = stdin; // pipeline : l'entrée standard de la commande
+      } else {
+        return 'usage : wc [-l] <fichier>  (ou : commande | wc [-l])';
       }
 
       // Comme le vrai wc : les lignes sont les caractères \n
       const lines = (text.match(/\n/g) ?? []).length;
-      if (linesOnly) return `${lines} ${escapeHTML(target)}`;
+      if (linesOnly) return `${lines}${suffix}`;
 
       const words = text.split(/\s+/).filter(Boolean).length;
       const bytes = new TextEncoder().encode(text).length;
-      return `${lines} ${words} ${bytes} ${escapeHTML(target)}`;
+      return `${lines} ${words} ${bytes}${suffix}`;
     }
 
     /**

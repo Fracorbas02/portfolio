@@ -99,7 +99,7 @@
     ],
     "manCommands": {
       "grep": {
-        "description": "Recherche les lignes d'un fichier texte contenant un motif, à la manière de la commande grep. Le motif est pris tel quel (sans expression régulière) ; les options -i et -n sont combinables.",
+        "description": "Recherche les lignes d'un fichier texte contenant un motif, à la manière de la commande grep. Le motif est pris tel quel (sans expression régulière) ; les options -i et -n sont combinables. Dans un pipeline, le motif s'applique à l'entrée standard : commande | grep motif.",
         "options": [
           {
             "name": "-i",
@@ -112,7 +112,8 @@
         ],
         "examples": [
           { "cmd": "grep portfolio README.md", "desc": "affiche les lignes du README contenant « portfolio »" },
-          { "cmd": "grep -in bash README.md", "desc": "recherche « bash » sans tenir compte de la casse, avec les numéros de ligne" }
+          { "cmd": "grep -in bash README.md", "desc": "recherche « bash » sans tenir compte de la casse, avec les numéros de ligne" },
+          { "cmd": "cat README.md | grep -i bash | wc -l", "desc": "compte les lignes du README contenant « bash » (pipeline)" }
         ]
       },
       "wc": {
@@ -522,7 +523,7 @@
         "currentDir": "/root",
         "tree": {
             "root": {
-              "README.md": "Bienvenue sur le portfolio de Bastien BONORA !\n\nCe terminal simule un shell bash : tapez 'help' pour la liste des commandes,\n'cd' pour naviguer dans l'arborescence, 'cat' pour lire un fichier texte,\n'open' pour ouvrir un fichier ou un lien dans un nouvel onglet.\n\nPour découvrir mon parcours, commencez par : cd competences\nPour me découvrir en quelques lignes : open presentation/qui_suis_je.html\n\nBonne visite !",
+              "README.md": "Bienvenue sur le portfolio de Bastien BONORA !\n\nCe terminal simule un shell bash : tapez 'help' pour la liste des commandes,\n'cd' pour naviguer dans l'arborescence, 'cat' pour lire un fichier texte,\n'open' pour ouvrir un fichier ou un lien dans un nouvel onglet.\n\nLes pipes sont là : cat README.md | grep -i bash | wc -l\n\nPour découvrir mon parcours, commencez par : cd competences\nPour me découvrir en quelques lignes : open presentation/qui_suis_je.html\n\nBonne visite !",
               "presentation": {
                 "type": "directory",
                 "CV.pdf": { "type": "file", "url": "./root/presentation/CV/CV_Bastien_BONORA_2025.pdf", "viewer": "cv" },

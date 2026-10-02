@@ -41,5 +41,23 @@
     return SAFE_SCHEMES.includes(scheme[1].toLowerCase());
   }
 
-  window.PORTFOLIO_HTML = { escapeHTML, isSafeHref };
+  /**
+   * Convertit le HTML du terminal en texte brut : les balises de
+   * mise en évidence (spans de couleur, <br>) disparaissent, les
+   * entités échappées redeviennent leurs caractères. Utilisé par
+   * les pipelines (`ls | grep`) : la sortie d'une commande devient
+   * l'entrée texte de la suivante. Symétrique d'escapeHTML.
+   */
+  const htmlToText = (html) =>
+    String(html)
+      .replace(/<br\s*\/?>/gi, '\n')
+      .replace(/<[^>]*>/g, '')
+      .replace(/&lt;/g, '<')
+      .replace(/&gt;/g, '>')
+      .replace(/&quot;/g, '"')
+      .replace(/&#39;/g, "'")
+      .replace(/&nbsp;/g, ' ')
+      .replace(/&amp;/g, '&');
+
+  window.PORTFOLIO_HTML = { escapeHTML, isSafeHref, htmlToText };
 })();
