@@ -26,7 +26,15 @@
       },
       {
         "name": "rm",
-        "description": "permet de supprimer un élément"
+        "description": "Supprime vos fichiers et dossiers. Exemple : rm notes.txt (rm -r projets pour un dossier)."
+      },
+      {
+        "name": "touch",
+        "description": "Crée un fichier vide dans votre arborescence (persisté en localStorage). Exemple : touch notes.txt."
+      },
+      {
+        "name": "mkdir",
+        "description": "Crée un dossier vide dans votre arborescence (persisté en localStorage). Exemple : mkdir projets."
       },
       {
         "name": "get",
@@ -353,16 +361,28 @@
         ]
       },
       "rm": {
-        "description": "Utilisée pour supprimer des éléments du terminal.",
+        "description": "Supprime un fichier ou un dossier créé avec touch, mkdir ou nano : votre arborescence vous appartient. Le contenu du portfolio est en lecture seule, rm le refuse.",
         "options" :[
           {
+            "name": "-r",
+            "usage": "supprime un dossier et tout son contenu. Exemple : rm -r projets"
+          },
+          {
             "name": "*",
-            "usage": "suprpime tout ce qu'il y a dans le shell, NE FAITES PAS CA"
+            "usage": "supprime tout ce qu'il y a dans le shell, NE FAITES PAS ÇA"
           }
         ],
         "examples": [
+          { "cmd": "rm notes.txt", "desc": "supprime un fichier créé avec touch" },
+          { "cmd": "rm -r projets", "desc": "supprime un dossier et son contenu" },
           { "cmd": "rm *", "desc": "tente de tout supprimer (spoiler : cela ne se passera pas comme prévu)" }
         ]
+      },
+      "touch": {
+        "description": "Crée un fichier vide dans l'arborescence, à la manière de la commande touch. Le fichier est persisté en localStorage : il survit aux redémarrages du terminal. Sur un fichier existant, touch ne modifie rien."
+      },
+      "mkdir": {
+        "description": "Crée un dossier vide dans l'arborescence, persisté en localStorage. Comme dans le vrai mkdir, le dossier parent doit exister."
       },
       "get": {
         "description": "Permet de récupérer des éléments générés depuis le shell.",

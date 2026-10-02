@@ -1844,6 +1844,11 @@
   state.tree          = portfolioData.tree.tree;
   state.currentDir    = portfolioData.tree.currentDir;
 
+  // Fichiers utilisateur : la surcouche persistée (localStorage)
+  // est appliquée sur l'arbre avant le premier prompt — touch,
+  // mkdir, nano et rm travaillent dessus
+  window.PORTFOLIO_USERFS.applyTo(state.tree);
+
   if (options.boot === false) {
     // Fenêtre ouverte via bash : pas de redémarrage complet, on
     // arrive directement sur un prompt avec le neofetch, comme un
@@ -1875,7 +1880,7 @@
     window.PORTFOLIO_THEME.restore();
 
     try {
-      const response = await fetch('./src/JSON/elements.json?v=20261002.12');
+      const response = await fetch('./src/JSON/elements.json?v=20261002.13');
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
       portfolioData = await response.json();
     } catch (err) {

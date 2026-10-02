@@ -852,21 +852,100 @@
       return `ouverture de ${escapeHTML(target)} dans un nouvel onglet...`;
     }
 
+    /**
+     * touch : crée un fichier vide dans l'arborescence de
+     * l'utilisateur (persisté en localStorage via userfs.js). Sur
+     * un fichier existant — portfolio ou utilisateur — touch ne
+     * modifie rien, comme le vrai touch.
+     */
+    function cmdTouch(args) {
+      if (args.length === 0) return 'touch : opérande manquant. Voir : man touch';
+
+      for (const target of args) {
+        const path = resolvePath(target);
+        if (lookUpTree(target) !== null) continue;
+
+        const result = window.PORTFOLIO_USERFS.write(path, '');
+        if (result === 'missingParent') {
+          return `touch : impossible de toucher « ${escapeHTML(target)} » : aucun fichier ou dossier de ce type`;
+        }
+        if (result !== true) {
+          return `touch : impossible de toucher « ${escapeHTML(target)} » : nom invalide`;
+        }
+      }
+      return null;
+    }
+
+    /**
+     * mkdir : crée un dossier vide dans l'arborescence de
+     * l'utilisateur (persisté en localStorage). Le dossier parent
+     * doit exister, comme dans le vrai mkdir sans -p.
+     */
+    function cmdMkdir(args) {
+      if (args.length === 0) return 'mkdir : opérande manquant. Voir : man mkdir';
+
+      for (const target of args) {
+        const path = resolvePath(target);
+        const result = window.PORTFOLIO_USERFS.makeDir(path);
+        if (result === 'exists') {
+          return `mkdir : impossible de créer le dossier « ${escapeHTML(target)} » : le fichier existe`;
+        }
+        if (result === 'missingParent') {
+          return `mkdir : impossible de créer le dossier « ${escapeHTML(target)} » : aucun fichier ou dossier de ce type`;
+        }
+        if (result !== true) {
+          return `mkdir : impossible de créer le dossier « ${escapeHTML(target)} » : nom invalide`;
+        }
+      }
+      return null;
+    }
+
     async function cmdRm(args) {
-      if (args[0] !== '*') return `rm : argument inconnu « ${escapeHTML(args[0] ?? '')} »`;
+      // Easter egg « rm * » : gardé avant tout le reste
+      if (args[0] === '*') {
+        // Mini scénario : refus de supprimer
+        const defaultText = document.createElement('p');
+        output.appendChild(defaultText);
+        const message = "Je ne vous permet pas de supprimer mon travail_"
+                      + ' Pourquoi faites-vous ça ?'
+                      + '_  ..................................................................................';
 
-      // Mini scénario : refus de supprimer
-      const defaultText = document.createElement('p');
-      output.appendChild(defaultText);
-      const message = "Je ne vous permet pas de supprimer mon travail_"
-                    + ' Pourquoi faites-vous ça ?'
-                    + '_  ..................................................................................';
+        await typewrite(defaultText, message, 70);
+        await delay(2500);
+        output.innerHTML = '';
+        await delay(500);
+        cmdReboot();
+        return null;
+      }
 
-      await typewrite(defaultText, message, 70);
-      await delay(2500);
-      output.innerHTML = '';
-      await delay(500);
-      cmdReboot();
+      // Options combinables : seul -r (-rf/-fr) est reconnu
+      let recursive = false;
+      const targets = [];
+      for (const arg of args) {
+        if (arg === '-r' || arg === '-rf' || arg === '-fr') recursive = true;
+        else if (arg.startsWith('-')) {
+          return `rm : option « ${escapeHTML(arg)} » inconnue. Voir : man rm`;
+        } else {
+          targets.push(arg);
+        }
+      }
+      if (targets.length === 0) return 'rm : opérande manquant. Voir : man rm';
+
+      for (const target of targets) {
+        const result = window.PORTFOLIO_USERFS.remove(resolvePath(target), { recursive });
+        if (result === 'system') {
+          return `rm : impossible de supprimer « ${escapeHTML(target)} » : contenu du portfolio (lecture seule)`;
+        }
+        if (result === 'notFound') {
+          return `rm : impossible de supprimer « ${escapeHTML(target)} » : aucun fichier ou dossier de ce type`;
+        }
+        if (result === 'isDir' || result === 'notEmpty') {
+          return `rm : impossible de supprimer « ${escapeHTML(target)} » : est un dossier (-r pour le vider)`;
+        }
+        if (result !== true) {
+          return `rm : impossible de supprimer « ${escapeHTML(target)} »`;
+        }
+      }
       return null;
     }
 
@@ -1099,6 +1178,8 @@
       set:    cmdSet,
       open:   cmdOpen,
       rm:     cmdRm,
+      touch:  cmdTouch,
+      mkdir:  cmdMkdir,
       get:    cmdGet,
       show:   cmdShow,
       reboot: cmdReboot,
