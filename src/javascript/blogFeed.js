@@ -41,7 +41,43 @@
   // ── Extraction : HTML docusaurus → lignes de texte ───────────
   // Types de lignes : 'h' (titre de section), 'p' (paragraphe),
   // 'li' (puce), 'code' (ligne de bloc de code), 'row' (ligne de
-  // tableau, cellules jointes par ' | ').
+  // tableau, cellules jointes par ' | '). Le code inline d'un
+  // paragraphe est conservé entre backticks, le rendu du mode
+  // lecture le remet en forme (renderArticle).
+  const inlineText = (el) => {
+    let out = '';
+    const walk = (node) => {
+      for (const child of node.childNodes) {
+        if (child.nodeType === Node.TEXT_NODE) {
+          out += child.textContent;
+        } else if (child.nodeType === Node.ELEMENT_NODE) {
+          if (child.tagName === 'BR') out += ' ';
+          else if (child.tagName === 'CODE') out += `\`${child.textContent}\``;
+          else walk(child);
+        }
+      }
+    };
+    walk(el);
+    return out.replace(/\s+/g, ' ').trim();
+  };
+
+  // Bloc de code docusaurus : une div .token-line par ligne (avec
+  // un <br> final qui ne vaut rien dans textContent) — sans ce
+  // traitement, tout le bloc se retrouve collé sur une ligne.
+  const codeLines = (pre) => {
+    const tokenLines = pre.querySelectorAll('.token-line');
+    if (tokenLines.length > 0) {
+      return Array.from(tokenLines, (tl) =>
+        tl.textContent.replace(/\s+$/, ''));
+    }
+    const clone = pre.cloneNode(true);
+    clone.querySelectorAll('br').forEach((br) => br.replaceWith('\n'));
+    return clone.textContent
+      .replace(/\t/g, '  ')
+      .split('\n')
+      .map((l) => l.replace(/\s+$/, ''));
+  };
+
   function extractLines(html) {
     const doc = new DOMParser().parseFromString(html, 'text/html');
     const root = doc.querySelector('article') ?? doc.body;
@@ -57,9 +93,8 @@
       if (el.tagName !== 'PRE' && el.closest('pre')) continue;
 
       if (el.tagName === 'PRE') {
-        const text = el.textContent.replace(/\t/g, '  ');
-        for (const raw of text.split('\n')) {
-          lines.push({ t: 'code', text: raw.replace(/\s+$/, '') });
+        for (const raw of codeLines(el)) {
+          lines.push({ t: 'code', text: raw });
         }
         continue;
       }
@@ -72,7 +107,7 @@
         continue;
       }
 
-      const text = el.textContent.replace(/\s+/g, ' ').trim();
+      const text = inlineText(el);
       if (!text) continue;
       if (el.tagName === 'LI') lines.push({ t: 'li', text });
       else if (/^H[234]$/.test(el.tagName)) lines.push({ t: 'h', text });
@@ -230,6 +265,11 @@
   }
 
   // ── Rendu du mode lecture (pager) ────────────────────────────
+  // Le code inline extrait entre backticks redevient un span
+  // coloré ; les lignes de code consécutives forment un bloc.
+  const inlineHTML = (text) =>
+    escape(text).replace(/`([^`]+)`/g, '<span class="readInline">$1</span>');
+
   function renderArticle(item) {
     const out = [`<span class="cliSection">${escape(item.title)}</span>`];
     const date = longDate(item.pubDate);
@@ -237,23 +277,36 @@
     out.push('');
 
     let previous = null;
+    let codeRun = [];
+    const flushCode = () => {
+      if (codeRun.length === 0) return;
+      out.push(`<div class="readCodeBlock">${escape(codeRun.join('\n'))}</div>`);
+      codeRun = [];
+    };
+
     for (const line of item.lines ?? []) {
-      // Séparateur entre blocs de natures différentes : le code et
-      // les lignes de tableau restent serrés entre eux.
-      if (previous !== null && previous !== line.t) out.push('');
+      // Séparateur entre blocs de natures différentes : le code
+      // d'un même bloc reste serré.
+      if (previous !== null && previous !== line.t) {
+        flushCode();
+        out.push('');
+      }
       if (line.t === 'code') {
-        out.push(`<span class="readCode">${escape(line.text) || ' '}</span>`);
-      } else if (line.t === 'h') {
-        out.push(`<span class="cliSection">${escape(line.text)}</span>`);
-      } else if (line.t === 'li') {
-        out.push(`  • ${escape(line.text)}`);
-      } else if (line.t === 'row') {
-        out.push(`<span class="cvViewerMuted">  ${escape(line.text)}</span>`);
+        codeRun.push(line.text);
       } else {
-        out.push(escape(line.text));
+        if (line.t === 'h') {
+          out.push(`<span class="cliSection">${escape(line.text)}</span>`);
+        } else if (line.t === 'li') {
+          out.push(`  • ${inlineHTML(line.text)}`);
+        } else if (line.t === 'row') {
+          out.push(`<span class="cvViewerMuted">  ${escape(line.text)}</span>`);
+        } else {
+          out.push(inlineHTML(line.text));
+        }
       }
       previous = line.t;
     }
+    flushCode();
     return out.join('\n');
   }
 

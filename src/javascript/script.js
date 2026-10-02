@@ -439,17 +439,22 @@
       url: page.url ?? null,
       overlay,
       content: null,
-      saved: overlay ? null : SHELL_OUTPUT.innerHTML
+      saved: overlay ? null : SHELL_OUTPUT.innerHTML,
+      savedScroll: overlay ? SHELL_OUTPUT.scrollTop : null
     };
     root.classList.add('viewerMode');
     if (overlay) {
       const el = document.createElement('div');
       el.className = 'manPager manPagerOverlay';
-      el.innerHTML = `<div class="manPagerContent">${page.html}</div>`;
+      // La barre de statut vit DANS l'overlay : quoi qu'il arrive
+      // au défilement du viewer derrière, elle reste collée en bas
+      // de la zone visible.
+      el.innerHTML = `<div class="manPagerContent">${page.html}</div>`
+        + '<div class="cvViewerBar manPagerStatus"></div>';
       SHELL_OUTPUT.appendChild(el);
-      const bar = document.createElement('div');
-      bar.className = 'cvViewerBar manPagerStatus';
-      SHELL_OUTPUT.appendChild(bar);
+      // Le viewer derrière peut être défilé : l'overlay et sa
+      // barre se placent sur la zone visible, pas sur le contenu.
+      SHELL_OUTPUT.scrollTop = 0;
       state.pager.content = el.querySelector('.manPagerContent');
       root.classList.add('reading');
     } else {
@@ -489,9 +494,11 @@
     if (bar) bar.remove();
     if (state.pager?.overlay) {
       // Lecture par-dessus un viewer : on rend la main au viewer,
-      // dont le DOM et ses animations sont restés intacts.
+      // dont le DOM et ses animations sont restés intacts. Son
+      // défilement d'avant lecture est restitué.
       root.classList.remove('reading');
       SHELL_OUTPUT.querySelector('.manPagerOverlay')?.remove();
+      SHELL_OUTPUT.scrollTop = state.pager.savedScroll ?? 0;
       state.pager = null;
       COMMAND_INPUT.focus();
       return;
