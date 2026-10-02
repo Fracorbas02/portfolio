@@ -987,6 +987,18 @@ body.is-window-dragging * {
   color: var(--accent-strong);
 }
 
+/* Coloration syntaxique des blocs de code lus : les tokens Prism
+   du flux RSS sont réduits à six familles, teintées par la
+   palette du shell (mots-clés cyan, chaînes vert, nombres ambre,
+   commentaires gris italic, fonctions cyan clair, variables et
+   propriétés gris clair). */
+.readTok--cmt { color: var(--text-muted); font-style: italic; }
+.readTok--str { color: var(--success); }
+.readTok--kw  { color: var(--accent); }
+.readTok--fn  { color: var(--accent-strong); }
+.readTok--num { color: var(--warning); }
+.readTok--var { color: var(--text-secondary); }
+
 /* Message de restauration après le melt de sudo rm -rf / : la
    trame ░ a déjà tout recouvert, il ne reste que ce message. */
 .meltOverlay {

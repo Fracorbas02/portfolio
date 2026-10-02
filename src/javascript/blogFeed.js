@@ -9,7 +9,9 @@
  *
  * Chaque article est réduit en lignes de texte brut : titres, bou-
  * ticks, listes, code — de quoi remplir le mode lecture du pager
- * sans dépendre du rendu du site d'origine.
+ * sans dépendre du rendu du site d'origine. Les lignes de code
+ * gardent en plus les tokens Prism du flux : le pager colore,
+ * le snapshot les restitue tels quels.
  *
  * window.PORTFOLIO_BLOG_FEED :
  *   load()               -> Promise<items>  (flux live, sinon instantané)
@@ -26,7 +28,7 @@
   'use strict';
 
   const FEED_URL     = 'https://docs.hexanibble.fr/blog/rss.xml';
-  const SNAPSHOT_URL = './src/JSON/articles.json?v=1';
+  const SNAPSHOT_URL = './src/JSON/articles.json?v=2';
 
   const escape = window.PORTFOLIO_HTML.escapeHTML;
   const isSafeHref = window.PORTFOLIO_HTML.isSafeHref;
@@ -61,18 +63,35 @@
   // Bloc de code docusaurus : une div .token-line par ligne (avec
   // un <br> final qui ne vaut rien dans textContent) — sans ce
   // traitement, tout le bloc se retrouve collé sur une ligne.
+  // Le flux fournit aussi la coloration Prism : chaque ligne garde
+  // ses segments colorés [classe brute, position] — les segments
+  // neutres (« token plain ») ne sont pas stockés, le texte brut
+  // suffit à les restituer (codeLineHTML).
+  const codeLine = (lineEl) => {
+    const text = lineEl.textContent.replace(/\s+$/, '');
+    const tok = [];
+    let pos = 0;
+    for (const span of lineEl.children) {
+      const cls = (span.className || '').replace(/^token\s+/, '').trim();
+      const chunk = span.textContent;
+      if (cls && cls !== 'plain') tok.push([cls, pos]);
+      pos += chunk.length;
+    }
+    return { text, tok };
+  };
+
   const codeLines = (pre) => {
     const tokenLines = pre.querySelectorAll('.token-line');
     if (tokenLines.length > 0) {
-      return Array.from(tokenLines, (tl) =>
-        tl.textContent.replace(/\s+$/, ''));
+      return Array.from(tokenLines, codeLine);
     }
     const clone = pre.cloneNode(true);
     clone.querySelectorAll('br').forEach((br) => br.replaceWith('\n'));
     return clone.textContent
       .replace(/\t/g, '  ')
       .split('\n')
-      .map((l) => l.replace(/\s+$/, ''));
+      .map((l) => l.replace(/\s+$/, ''))
+      .map((text) => ({ text, tok: [] }));
   };
 
   function extractLines(html) {
@@ -91,7 +110,9 @@
 
       if (el.tagName === 'PRE') {
         for (const raw of codeLines(el)) {
-          lines.push({ t: 'code', text: raw });
+          const entry = { t: 'code', text: raw.text };
+          if (raw.tok.length > 0) entry.tok = raw.tok;
+          lines.push(entry);
         }
         continue;
       }
@@ -152,6 +173,14 @@
   }
 
   // ── Chargement : flux live, sinon instantané local ───────────
+  // Une ligne du snapshot est gardée si son type est reconnu :
+  // un texte brut pour tout ce que le mode lecture sait rendre ;
+  // les tokens du code sont validés au rendu.
+  const validLine = (l) => {
+    if (!l || typeof l.t !== 'string') return false;
+    return typeof l.text === 'string';
+  };
+
   async function fetchSnapshot() {
     const res = await fetch(SNAPSHOT_URL);
     if (!res.ok) throw new Error(`snapshot http ${res.status}`);
@@ -163,7 +192,7 @@
       pubDate: item.pubDate ?? '',
       description: item.description ?? '',
       lines: Array.isArray(item.lines)
-        ? item.lines.filter((l) => l && typeof l.text === 'string')
+        ? item.lines.filter(validLine)
         : []
     }));
   }
@@ -245,9 +274,59 @@
 
   // ── Rendu du mode lecture (pager) ────────────────────────────
   // Le code inline extrait entre backticks redevient un span
-  // coloré ; les lignes de code consécutives forment un bloc.
+  // coloré ; les lignes de code consécutives forment un bloc,
+  // colorées quand le flux a fourni ses tokens Prism.
   const inlineHTML = (text) =>
     escape(text).replace(/`([^`]+)`/g, '<span class="readInline">$1</span>');
+
+  // Familles de couleurs : les classes Prism du flux, parfois
+  // composées (« token string variable »), sont réduites à la
+  // première famille reconnue. Les classes restantes (plain,
+  // operator, punctuation) gardent la couleur du texte.
+  const TOKEN_FAMILIES = [
+    ['cmt', ['comment', 'docstring']],
+    ['str', ['string', 'char', 'boolean', 'scalar']],
+    ['kw', ['keyword', 'instruction', 'atrule', 'important',
+            'macro', 'directive', 'shebang', 'section']],
+    ['fn', ['function', 'builtin', 'class-name']],
+    ['num', ['number', 'unit', 'constant']],
+    ['var', ['property', 'attr-name', 'attr-value', 'key',
+             'assign-left', 'variable', 'parameter', 'namespace',
+             'selector', 'section-name', 'symbol', 'options']]
+  ];
+  const tokenClass = (raw) => {
+    for (const [family, words] of TOKEN_FAMILIES) {
+      if (words.some((w) => raw.includes(w))) return family;
+    }
+    return '';
+  };
+
+  // Une ligne de code : texte brut échappé, ou segments colorés
+  // quand les tokens sont là. Chaque token couvre de sa position
+  // à celle du suivant — le rendu ne dépend jamais de l'intégrité
+  // du snapshot : un token hors bornes est ignoré.
+  const codeLineHTML = (line) => {
+    const marks = (Array.isArray(line.tok) ? line.tok : [])
+      .filter((t) => Array.isArray(t) && typeof t[0] === 'string'
+        && Number.isInteger(t[1]) && t[1] >= 0 && t[1] <= line.text.length)
+      .sort((a, b) => a[1] - b[1]);
+    if (marks.length === 0) return escape(line.text);
+    let html = '';
+    let pos = 0;
+    for (let i = 0; i < marks.length; i++) {
+      const [cls, off] = marks[i];
+      if (off < pos) continue;
+      const end = i + 1 < marks.length ? marks[i + 1][1] : line.text.length;
+      html += escape(line.text.slice(pos, off));
+      const seg = escape(line.text.slice(off, end));
+      const family = tokenClass(cls);
+      html += family
+        ? `<span class="readTok readTok--${family}">${seg}</span>`
+        : seg;
+      pos = end;
+    }
+    return html + escape(line.text.slice(pos));
+  };
 
   function renderArticle(item) {
     const out = [`<span class="cliSection">${escape(item.title)}</span>`];
@@ -259,7 +338,7 @@
     let codeRun = [];
     const flushCode = () => {
       if (codeRun.length === 0) return;
-      out.push(`<div class="readCodeBlock">${escape(codeRun.join('\n'))}</div>`);
+      out.push(`<div class="readCodeBlock">${codeRun.map(codeLineHTML).join('\n')}</div>`);
       codeRun = [];
     };
 
@@ -271,7 +350,7 @@
         out.push('');
       }
       if (line.t === 'code') {
-        codeRun.push(line.text);
+        codeRun.push(line);
       } else {
         if (line.t === 'h') {
           out.push(`<span class="cliSection">${escape(line.text)}</span>`);
