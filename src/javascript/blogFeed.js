@@ -27,9 +27,6 @@
 
   const FEED_URL     = 'https://docs.hexanibble.fr/blog/rss.xml';
   const SNAPSHOT_URL = './src/JSON/articles.json?v=1';
-  // Articles affichés dans la section « récents » : le clavier n'ouvre
-  // que les liens 1-9, au-delà on clique (ou on ouvre les archives).
-  const RECENT_COUNT = 9;
 
   const escape = window.PORTFOLIO_HTML.escapeHTML;
   const isSafeHref = window.PORTFOLIO_HTML.isSafeHref;
@@ -195,72 +192,54 @@
     return loading;
   }
 
-  // ── Sections du viewer : articles récents + archives ─────────
-  function articleLink(item, index, width) {
-    const title = item.title.length > width
-      ? item.title.slice(0, width - 1) + '…'
-      : item.title;
-    return { label: shortDate(item.pubDate), value: title, href: item.link, read: index };
-  }
-
-  function articlesSections() {
-    const recent = items.slice(0, RECENT_COUNT);
-    const older = items.slice(RECENT_COUNT);
-
-    const sections = [];
-    if (recent.length > 0) {
-      sections.push({
-        id: 'articles',
-        title: 'Les derniers articles',
-        entries: [
-          {
-            heading: 'Lus sans quitter le shell',
-            lines: [
-              'Entrée ou un chiffre ouvre l\'article ici, dans un',
-              'mode lecture façon less — pas de navigation.',
-              'Dans la lecture, ^C l\'ouvre dans le navigateur.'
-            ]
-          },
-          {
-            heading: 'Les plus récents',
-            links: recent.map((item, i) => articleLink(item, i, 40))
-          }
-        ]
-      });
-    }
-    if (older.length > 0) {
-      sections.push({
-        id: 'archives',
-        title: 'Les archives',
-        entries: [
-          {
-            heading: 'Articles plus anciens',
-            lines: older.map((item, i) => ({
-              text: `${shortDate(item.pubDate)}  ${item.title}`,
-              href: item.link,
-              read: RECENT_COUNT + i
-            }))
-          }
-        ]
-      });
-    }
-    return sections;
+  // ── Section articles du viewer ───────────────────────────────
+  // Tous les articles du flux dans une liste navigable : ↑↓
+  // déplacent la sélection (docViewer navList), ⏎ lit l'article
+  // sélectionné, 1-9 ouvrent les neuf premiers.
+  function articlesSection() {
+    const truncate = (title, width) =>
+      title.length > width ? title.slice(0, width - 1) + '…' : title;
+    return {
+      id: 'articles',
+      title: 'Les articles',
+      entries: [
+        {
+          heading: 'Lus sans quitter le shell',
+          lines: [
+            'Entrée ou un chiffre ouvre l\'article ici, dans un',
+            'mode lecture façon less — pas de navigation.',
+            'Dans la lecture, ^C l\'ouvre dans le navigateur.',
+            'Les flèches ↑↓ parcourent toute la liste.'
+          ]
+        }
+      ],
+      listHeading: 'Tous les articles du flux',
+      articleList: items.map((item, i) => ({
+        label: shortDate(item.pubDate),
+        value: truncate(item.title, 40),
+        href: item.link,
+        read: i
+      }))
+    };
   }
 
   /**
-   * Reconstruit la config du viewer blog : sections articles et
-   * archives issues du flux, write-ups et plateforme conservés
-   * depuis la config de base (viewerData.js).
+   * Reconstruit la config du viewer blog : section articles issue
+   * du flux, write-ups et plateforme conservés depuis la config de
+   * base (viewerData.js).
    */
   function buildViewerConfig(base) {
     if (items.length === 0) return base;
     const keep = (base.sections ?? []).filter(
       (s) => s.id !== 'articles' && s.id !== 'archives'
     );
-    const fresh = articlesSections();
     const writeupsAt = keep.findIndex((s) => s.id === 'writeups');
     const insertAt = writeupsAt === -1 ? 0 : writeupsAt;
-    const sections = [...keep.slice(0, insertAt), ...fresh, ...keep.slice(insertAt)];
+    const sections = [
+      ...keep.slice(0, insertAt),
+      articlesSection(),
+      ...keep.slice(insertAt)
+    ];
     return { ...base, sections };
   }
 
@@ -312,7 +291,6 @@
 
   window.PORTFOLIO_BLOG_FEED = {
     FEED_URL,
-    RECENT_COUNT,
     load,
     parseFeed,
     buildViewerConfig,
