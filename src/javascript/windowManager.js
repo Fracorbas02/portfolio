@@ -117,6 +117,7 @@
     let snapped = false;        // fenêtre posée par un snap ?
     let preSnap = null;         // taille d'avant snap, rendue au prochain drag
     let unsnapPending = false;  // clic sur fenêtre snappée : unsnap au 1er déplacement
+    let maximized = false;      // plein écran via double-clic sur la barre ?
     const start = {
       pointerX: 0, pointerY: 0,
       left: 0, top: 0,
@@ -145,6 +146,7 @@
     function unsnap() {
       if (!snapped) return;
       snapped = false;
+      maximized = false;
       // Retour au CSS centré (passage sous le seuil mobile) :
       // il n'y a rien à retailler.
       if (!hasTakenControl) return;
@@ -179,7 +181,10 @@
       // dé-snapper : la taille d'avant atterrissage ne lui est
       // rendue qu'au premier vrai déplacement (voir onPointerMove).
       if (mode === 'move') unsnapPending = snapped;
-      else snapped = false; // un resize manuel remplace la taille du snap
+      else { // un resize manuel remplace la taille du snap/plein écran
+        snapped = false;
+        maximized = false;
+      }
 
       action     = mode;
       resizeDir  = direction;
@@ -291,6 +296,7 @@
       const before = target.getBoundingClientRect();
       preSnap = { width: before.width, height: before.height };
       snapped = true;
+      maximized = false; // un atterrissage draggé n'est pas un plein écran
       target.classList.add('is-snapping');
       target.style.left   = `${rect.left}px`;
       target.style.top    = `${rect.top}px`;
@@ -319,6 +325,27 @@
 
     // ── 6. Branchement des handlers ─────────────────────────────
     handle.addEventListener('pointerdown', (e) => onPointerDown(e, 'move'));
+
+    // Double-clic sur la barre : plein écran / retour, comme un
+    // gestionnaire classique. Un drag qui suit un plein écran lui
+    // rend sa taille d'avant (unsnap, même chaîne que le snapping).
+    handle.addEventListener('dblclick', (event) => {
+      if (event.button !== 0) return;
+      if (event.target.closest('button, a, input, select, textarea')) return;
+      if (target.classList.contains('minimized')) return;
+      takeControl();
+      if (maximized) {
+        unsnap();
+      } else {
+        applySnap({
+          left: 0, top: 0,
+          width: window.innerWidth,
+          height: window.innerHeight
+        });
+        maximized = true;
+      }
+    });
+
     for (const dir of DIRECTIONS) {
       handles[dir].addEventListener('pointerdown', (e) => {
         onPointerDown(e, 'resize', dir);
