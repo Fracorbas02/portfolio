@@ -33,7 +33,11 @@ jobs:
       - name: Syntax check (JS + JSON + XML)
         run: |
           for f in src/javascript/*.js; do node --check "$f"; done
-          python3 -c "import json; json.load(open('src/JSON/elements.json'))"
+          # Tous les JSON chargés par le shell : arborescence et
+          # instantanés du blog / de la doc
+          for j in src/JSON/*.json; do
+            python3 -c "import json; json.load(open('$j'))"
+          done
           # xmllint n'est pas préinstallé sur le runner : validation XML
           # via la bibliothèque standard Python, zéro dépendance
           python3 -c "import xml.etree.ElementTree as ET; ET.parse('sitemap.xml')"

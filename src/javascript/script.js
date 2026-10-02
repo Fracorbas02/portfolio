@@ -151,10 +151,15 @@
     pager: null,
     variables: {},
     // Alias persistés (localStorage) : chargés ici, écrits par les
-    // commandes alias/unalias (commands.js) via la même clé
+    // commandes alias/unalias (commands.js) via la même clé. Une
+    // valeur corrompue (chaîne, nombre, tableau) est ignorée : un
+    // objet est attendu, jamais autre chose.
     aliases: (() => {
-      try { return JSON.parse(localStorage.getItem('portfolioShellAliases')) ?? {}; }
-      catch { return {}; }
+      try {
+        const stored = JSON.parse(localStorage.getItem('portfolioShellAliases'));
+        return (typeof stored === 'object' && stored !== null && !Array.isArray(stored))
+          ? stored : {};
+      } catch { return {}; }
     })()
   };
 

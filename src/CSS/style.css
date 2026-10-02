@@ -1027,17 +1027,6 @@ body.is-window-dragging * {
   font-weight: 600;
 }
 
-/* Diagrammes mermaid des articles lus : boîtes et flèches ASCII.
-   Cadres atténués, flèches en accent, libellés par défaut. */
-.readDiagram {
-  white-space: pre;
-  overflow-x: auto;
-  margin: 0.15rem 0;
-}
-
-.readDiagramBox   { color: var(--text-muted); }
-.readDiagramArrow { color: var(--accent); }
-
 /* Image d'un article (capture, schéma) : sans URL connue, un
    espace signale sa place et son contenu. */
 .readImg {
