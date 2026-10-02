@@ -14,12 +14,74 @@
  *
  * Le module injecte lui-même les 8 poignées de resize
  * (4 bords + 4 coins) à l'intérieur de `target`.
+ *
+ * Snapping : pendant un drag, un bord du viewport met en
+ * surbrillance la zone d'atterrissage (moitié ou quart de
+ * l'écran, à la GNOME/Windows) ; au relâcher, la fenêtre
+ * s'y glisse avec une courte animation.
  */
 
 (() => {
   'use strict';
 
   const DIRECTIONS = ['n', 'e', 's', 'w', 'ne', 'nw', 'se', 'sw'];
+
+  // Distance (px) au bord du viewport au-delà de laquelle le
+  // snapping se déclenche pendant un drag.
+  const SNAP_ZONE = 24;
+  // Durée (ms) de l'animation d'atterrissage (classe .is-snapping).
+  const SNAP_ANIM_MS = 260;
+
+  /**
+   * Zone d'atterrissage selon la position du pointeur :
+   *   - un bord           → moitié de l'écran ancrée à ce bord
+   *   - deux bords (coin) → quart de l'écran ancré à ce coin
+   * Retourne null si le pointeur est loin des bords.
+   */
+  function snapRectFor(x, y, vw, vh) {
+    const nearL = x <= SNAP_ZONE;
+    const nearR = x >= vw - SNAP_ZONE;
+    const nearT = y <= SNAP_ZONE;
+    const nearB = y >= vh - SNAP_ZONE;
+
+    if (nearT && nearL) return { left: 0,            top: 0,           width: vw / 2, height: vh / 2 };
+    if (nearT && nearR) return { left: vw / 2,       top: 0,           width: vw / 2, height: vh / 2 };
+    if (nearB && nearL) return { left: 0,            top: vh / 2,      width: vw / 2, height: vh / 2 };
+    if (nearB && nearR) return { left: vw / 2,       top: vh / 2,      width: vw / 2, height: vh / 2 };
+    if (nearL)           return { left: 0,            top: 0,           width: vw / 2, height: vh };
+    if (nearR)           return { left: vw / 2,       top: 0,           width: vw / 2, height: vh };
+    if (nearT)           return { left: 0,            top: 0,           width: vw,     height: vh / 2 };
+    if (nearB)           return { left: 0,            top: vh / 2,      width: vw,     height: vh / 2 };
+    return null;
+  }
+
+  /**
+   * Aperçu partagé (un seul pour tout le document) : le rectangle
+   * translucide qui montre où la fenêtre atterrira si on relâche.
+   */
+  function snapPreviewEl() {
+    let el = document.querySelector('.shellSnapPreview');
+    if (!el) {
+      el = document.createElement('div');
+      el.className = 'shellSnapPreview';
+      document.body.appendChild(el);
+    }
+    return el;
+  }
+
+  function showSnapPreview(rect) {
+    const el = snapPreviewEl();
+    el.style.left   = `${rect.left}px`;
+    el.style.top    = `${rect.top}px`;
+    el.style.width  = `${rect.width}px`;
+    el.style.height = `${rect.height}px`;
+    el.classList.add('shellSnapPreview--visible');
+  }
+
+  function hideSnapPreview() {
+    document.querySelector('.shellSnapPreview')
+      ?.classList.remove('shellSnapPreview--visible');
+  }
 
   function initWindowManager({
     target,
@@ -50,6 +112,10 @@
     // ── 2. État de l'interaction ────────────────────────────────
     let action = null;          // 'move' | 'resize'
     let resizeDir = null;       // 'n' | 'ne' | 'e' | ...
+    let snapRect = null;        // zone d'atterrissage si on relâche
+    let snapAnimTimer = null;   // retire .is-snapping après l'animation
+    let snapped = false;        // fenêtre posée par un snap ?
+    let preSnap = null;         // taille d'avant snap, rendue au prochain drag
     const start = {
       pointerX: 0, pointerY: 0,
       left: 0, top: 0,
@@ -70,6 +136,26 @@
       hasTakenControl = true;
     }
 
+    /**
+     * Unsnap : rendre la taille d'avant atterrissage à une fenêtre
+     * snappée qu'on attrape. Le coin haut-gauche est ajusté pour
+     * que la fenêtre retaillée reste dans le viewport.
+     */
+    function unsnap() {
+      if (!snapped) return;
+      snapped = false;
+      // Retour au CSS centré (passage sous le seuil mobile) :
+      // il n'y a rien à retailler.
+      if (!hasTakenControl) return;
+      const vw = window.innerWidth;
+      const vh = window.innerHeight;
+      target.style.width  = `${preSnap.width}px`;
+      target.style.height = `${preSnap.height}px`;
+      target.style.left = `${clamp(parseFloat(target.style.left), 0, Math.max(0, vw - preSnap.width))}px`;
+      target.style.top  = `${clamp(parseFloat(target.style.top), 0, Math.max(0, vh - preSnap.height))}px`;
+      snapped = false;
+    }
+
     // ── 3. Démarrage d'un drag ou d'un resize ───────────────────
     function onPointerDown(event, mode, direction = null) {
       // Ignorer le clic droit / molette
@@ -82,6 +168,17 @@
 
       event.preventDefault();
       takeControl();
+
+      // Un nouveau geste interrompt un atterrissage en cours :
+      // la fenêtre doit suivre le pointeur sans transition.
+      target.classList.remove('is-snapping');
+      clearTimeout(snapAnimTimer);
+
+      // Un drag qui commence sur une fenêtre snappée lui rend sa
+      // taille d'avant atterrissage (comme GNOME/Windows) : sinon
+      // une fenêtre pleine hauteur resterait scotchée en haut.
+      if (mode === 'move') unsnap();
+      else snapped = false; // un resize manuel remplace la taille du snap
 
       action     = mode;
       resizeDir  = direction;
@@ -122,6 +219,14 @@
         const newTop  = clamp(start.top  + dy, 0, vh - start.height);
         target.style.left = `${newLeft}px`;
         target.style.top  = `${newTop}px`;
+
+        // Snapping : une fenêtre réduite reste une fenêtre
+        // réduite — pas de moitié d'écran sur un pli de 39px.
+        snapRect = target.classList.contains('minimized')
+          ? null
+          : snapRectFor(event.clientX, event.clientY, vw, vh);
+        if (snapRect) showSnapPreview(snapRect);
+        else hideSnapPreview();
         return;
       }
 
@@ -158,7 +263,31 @@
     }
 
     // ── 5. Fin de l'interaction ─────────────────────────────────
+    /**
+     * Atterrissage : la fenêtre glisse vers sa zone avec une
+     * courte transition (classe .is-snapping), puis rend la
+     * main pour drag/resize normaux.
+     */
+    function applySnap(rect) {
+      const before = target.getBoundingClientRect();
+      preSnap = { width: before.width, height: before.height };
+      snapped = true;
+      target.classList.add('is-snapping');
+      target.style.left   = `${rect.left}px`;
+      target.style.top    = `${rect.top}px`;
+      target.style.width  = `${rect.width}px`;
+      target.style.height = `${rect.height}px`;
+      clearTimeout(snapAnimTimer);
+      snapAnimTimer = setTimeout(
+        () => target.classList.remove('is-snapping'),
+        SNAP_ANIM_MS
+      );
+    }
+
     function onPointerUp(event) {
+      if (action === 'move' && snapRect) applySnap(snapRect);
+      snapRect = null;
+      hideSnapPreview();
       action    = null;
       resizeDir = null;
       document.body.classList.remove(
