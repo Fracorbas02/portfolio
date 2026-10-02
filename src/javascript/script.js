@@ -446,14 +446,19 @@
     if (overlay) {
       const el = document.createElement('div');
       el.className = 'manPager manPagerOverlay';
-      // La barre de statut vit DANS l'overlay : quoi qu'il arrive
-      // au défilement du viewer derrière, elle reste collée en bas
-      // de la zone visible.
-      el.innerHTML = `<div class="manPagerContent">${page.html}</div>`
-        + '<div class="cvViewerBar manPagerStatus"></div>';
+      el.innerHTML = `<div class="manPagerContent">${page.html}</div>`;
       SHELL_OUTPUT.appendChild(el);
-      // Le viewer derrière peut être défilé : l'overlay et sa
-      // barre se placent sur la zone visible, pas sur le contenu.
+      // La barre de statut vit dans la fenêtre (root), pas dans
+      // l'overlay : l'overlay s'arrête au bas de la sortie, au-des-
+      // sus de la ligne de prompt invisible (opacity: 0, elle garde
+      // le focus clavier) — collée dans l'overlay, la barre flotte-
+      // rait au-dessus de cette zone. Dans root, elle s'ancre au
+      // bas de la fenêtre comme la barre des pages man.
+      const bar = document.createElement('div');
+      bar.className = 'cvViewerBar manPagerStatus';
+      root.appendChild(bar);
+      // Le viewer derrière peut être défilé : l'overlay se place sur
+      // la zone visible, pas sur le contenu.
       SHELL_OUTPUT.scrollTop = 0;
       state.pager.content = el.querySelector('.manPagerContent');
       root.classList.add('reading');
