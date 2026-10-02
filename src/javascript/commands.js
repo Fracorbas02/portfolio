@@ -94,13 +94,27 @@
     const isDirectory  = window.PORTFOLIO_FS.isDirectory;
     const isOpenable   = window.PORTFOLIO_FS.isOpenable;
 
-    function cmdHelp() {
+    function cmdHelp(args) {
+      if (args.length > 0 && args[0] !== '--full') {
+        return `help : option « ${escapeHTML(args[0])} » inconnue. La liste complète : help --full`;
+      }
+      // Par défaut : les commandes principales seulement, le
+      // reste se découvre avec --full — la liste complète est
+      // devenue trop longue pour être lisible d'un coup
+      const full = args[0] === '--full';
+      const commands = full
+        ? state.commands
+        : state.commands.filter((cmd) => cmd.featured);
+
       // Rendu CLI : nom aligné sur le plus long, description à droite
-      const width = Math.max(...state.commands.map((cmd) => cmd.name.length)) + 2;
-      return state.commands
-        .map((cmd) =>
-          `<span class="helpCommand">${escapeHTML(cmd.name.padEnd(width))}</span>${escapeHTML(cmd.description)}`)
-        .join('\n');
+      const width = Math.max(...commands.map((cmd) => cmd.name.length)) + 2;
+      const lines = commands.map((cmd) =>
+        `<span class="helpCommand">${escapeHTML(cmd.name.padEnd(width))}</span>${escapeHTML(cmd.description)}`);
+      if (!full) {
+        lines.push('',
+          '<span style="color:var(--text-muted);">help --full : la liste complète des commandes</span>');
+      }
+      return lines.join('\n');
     }
 
     function cmdClear() {

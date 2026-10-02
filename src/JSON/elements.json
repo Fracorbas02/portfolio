@@ -2,11 +2,13 @@
     "commands": [
       {
         "name": "show",
+        "featured": true,
         "description": "Affiche la liste des projets disponibles."
       },
       {
         "name": "help",
-        "description": "Affiche la liste des commandes disponibles."
+        "featured": true,
+        "description": "Affiche les commandes principales. Liste complète : help --full."
       },
       {
         "name": "set",
@@ -14,10 +16,12 @@
       },
       {
         "name": "man",
+        "featured": true,
         "description": "Permet d'afficher les détails d'utilisation d'une commande. Exemple : man set."
       },
       {
         "name": "open",
+        "featured": true,
         "description": "Permet d'ouvrir un fichier local ou un lien externe du dossier courant. Exemple : open CV.pdf"
       },
       {
@@ -38,6 +42,7 @@
       },
       {
         "name": "nano",
+        "featured": true,
         "description": "Éditeur de texte plein écran. Exemple : nano notes.txt (Ctrl+O écrit, Ctrl+X quitte)."
       },
       {
@@ -46,6 +51,7 @@
       },
       {
         "name": "ls",
+        "featured": true,
         "description": "permet d'afficher les éléments qui sont présent dans notre dossier actuel"
       },
       {
@@ -58,10 +64,12 @@
       },
       {
         "name": "cd",
+        "featured": true,
         "description": "Permet de changer de dossier courant. Exemple : cd presentation, cd .., cd /root."
       },
       {
         "name": "cat",
+        "featured": true,
         "description": "Permet d'afficher le contenu d'un fichier. Exemple : cat README.md."
       },
       {
@@ -110,14 +118,17 @@
       },
       {
         "name": "neofetch",
+        "featured": true,
         "description": "Affiche les informations du portfolio et ses compétences, à la manière de la commande neofetch."
       },
       {
         "name": "blog",
+        "featured": true,
         "description": "Ouvre le blog bastodoc dans un viewer interactif : articles, write-ups et documentation."
       },
       {
         "name": "docs",
+        "featured": true,
         "description": "Ouvre la documentation bastodoc dans un viewer interactif : navigation dans toutes les pages de la doc."
       },
       {
@@ -130,6 +141,7 @@
       },
       {
         "name": "tree",
+        "featured": true,
         "description": "Affiche l'arborescence complète depuis un dossier, branches comprises. Exemple : tree, tree -a."
       },
       {
@@ -644,18 +656,19 @@
         ]
       },
       "help": {
-      "description": "Affiche la liste des commandes disponibles avec leur description. Pour le détail d'une commande, voir man.",
+      "description": "Affiche les commandes principales du terminal avec leur description ; la liste complète (39 commandes) s'obtient avec --full. Pour le détail d'une commande, voir man.",
       "options":         [
           {
-            "name": "sans argument",
-            "usage": "cette commande ne possède pas d'argument"
+            "name": "--full",
+            "usage": "affiche toutes les commandes, pas seulement les principales. Exemple : help --full"
           }
         ],
       "examples":         [
           {
             "cmd": "help",
-            "desc": "affiche la liste des commandes du terminal"
-          }
+            "desc": "affiche les commandes principales du terminal"
+          },
+          { "cmd": "help --full", "desc": "affiche la liste complète des commandes" }
         ]
       },
       "clear": {
