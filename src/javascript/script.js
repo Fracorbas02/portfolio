@@ -818,6 +818,23 @@
     const dirPart = slash === -1 ? '' : lastWord.slice(0, slash + 1);
     const prefix = slash === -1 ? lastWord : lastWord.slice(slash + 1);
 
+    // Options : « ls - », « grep - », « wc - »... Pool dédié pour
+    // ls, sinon options lues depuis la page man de la commande.
+    if (lastWord.startsWith('-')) {
+      const optionPool = command === 'ls' ? ['-a', '-l', '-la'] : null;
+      const pool = optionPool
+        ?? (state.manCommands?.[command]?.options ?? [])
+          .map((opt) => opt.name)
+          .filter((name) => name.startsWith('-'));
+      if (pool.length > 0) {
+        return {
+          candidates: pool.filter((name) => name.startsWith(prefix)),
+          dirNode: null,
+          dirPart: ''
+        };
+      }
+    }
+
     let pool = [];
     let dirNode = null;
     switch (command) {
@@ -852,7 +869,6 @@
       case 'man':  pool = Object.keys(state.manCommands ?? {}); break;
       case 'set':  pool = ['username']; break;
       case 'get':  pool = ['sha']; break;
-      case 'ls':   pool = ['-a', '-l', '-la']; break;
       case 'rm':   pool = ['*']; break;
       case 'alias':
       case 'unalias': pool = Object.keys(state.aliases ?? {}); break;
