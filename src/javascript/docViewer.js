@@ -24,6 +24,8 @@
  *   typedPhrases: [string],   — texte tapé dans le statut
  *   statusLabel: string,      — texte du spinner (défaut :
  *                               'scan du périmètre...')
+ *   readLabel: string,        — libellé du ⏎ des listes d'articles
+ *                               (défaut : 'lire l'article')
  *   ctrlLabel: string         — libellé du ^C dans la barre bas
  * }
  */
@@ -90,7 +92,8 @@
       const {
         title, subtitle, sections,
         logos = [], platforms = [], typedPhrases = [],
-        statusLabel = 'scan du périmètre...', ctrlLabel = 'quitter'
+        statusLabel = 'scan du périmètre...', ctrlLabel = 'quitter',
+        readLabel = 'lire l\'article'
       } = config;
 
       // ── Écran menu : cartouche titre + rubriques ─────────────
@@ -539,7 +542,7 @@
         if (section?.articleList) {
           return [
             key('↑↓', 'choisir'),
-            key('⏎', 'lire l\'article'),
+            key('⏎', readLabel),
             key('1-9', 'raccourcis'),
             key('^C', ctrlLabel),
             key('q', 'quitter')

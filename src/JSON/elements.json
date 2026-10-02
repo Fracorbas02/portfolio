@@ -85,6 +85,10 @@
         "description": "Ouvre le blog bastodoc dans un viewer interactif : articles, write-ups et documentation."
       },
       {
+        "name": "docs",
+        "description": "Ouvre la documentation bastodoc dans un viewer interactif : navigation dans toutes les pages de la doc."
+      },
+      {
         "name": "bash",
         "description": "Ouvre une nouvelle fenêtre de shell interactive."
       },
@@ -185,6 +189,18 @@
         ],
         "examples": [
           { "cmd": "blog", "desc": "ouvre le viewer du blog dans une nouvelle fenêtre de shell" }
+        ]
+      },
+      "docs": {
+        "description": "Ouvre la documentation bastodoc dans un viewer interactif : une rubrique par catégorie du site (protocoles, systèmes, debug, hacking), chaque page lisible en mode lecture. Équivalent à open docs/docs.html depuis n'importe quel dossier.",
+        "options": [
+          {
+            "name": "none",
+            "usage": "Cette commande ne possède pas d'argument"
+          }
+        ],
+        "examples": [
+          { "cmd": "docs", "desc": "ouvre le viewer de la documentation dans une nouvelle fenêtre de shell" }
         ]
       },
       "set": {
@@ -518,6 +534,10 @@
               "blog": {
                 "type": "directory",
                 "blog.html": { "type": "file", "url": "https://docs.bastienbonora.fr/", "viewer": "blog" }
+              },
+              "docs": {
+                "type": "directory",
+                "docs.html": { "type": "file", "url": "https://docs.bastienbonora.fr/", "viewer": "docs" }
               },
               "certifications": {
                 "type": "directory",

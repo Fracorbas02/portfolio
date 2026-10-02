@@ -655,6 +655,7 @@
     FEED_URL,
     load,
     parseFeed,
+    extractLines,
     buildViewerConfig,
     renderArticle,
     get items() { return items; },
