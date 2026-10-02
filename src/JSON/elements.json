@@ -57,6 +57,10 @@
         "description": "Affiche les informations du portfolio et ses compétences, à la manière de la commande neofetch."
       },
       {
+        "name": "blog",
+        "description": "Ouvre le blog bastodoc dans un viewer interactif : articles, write-ups et documentation."
+      },
+      {
         "name": "bash",
         "description": "Ouvre une nouvelle fenêtre de shell interactive."
       },
@@ -66,6 +70,18 @@
       }
     ],
     "manCommands": {
+      "blog": {
+        "description": "Ouvre le blog bastodoc dans un viewer interactif : derniers articles, write-ups de CTF et présentation de la plateforme. Équivalent à open blog/blog.html depuis n'importe quel dossier.",
+        "options": [
+          {
+            "name": "none",
+            "usage": "Cette commande ne possède pas d'argument"
+          }
+        ],
+        "examples": [
+          { "cmd": "blog", "desc": "ouvre le viewer du blog dans une nouvelle fenêtre de shell" }
+        ]
+      },
       "set": {
         "description": "Définit des variables dans le terminal : le nom d'utilisateur affiché dans le prompt, ou le thème de couleurs de toute l'interface.",
         "options":[
@@ -393,6 +409,10 @@
                 "releve_bac.pdf": { "type": "file", "url": "./root/presentation/Releve_Note_Bac.pdf" },
                 "projet_orientation.png": { "type": "file", "url": "./root/presentation/Projet_Orientation.png", "viewer": "orientation" },
                 "pubkey.asc": { "type": "file", "url": "./root/presentation/pubkey" }
+              },
+              "blog": {
+                "type": "directory",
+                "blog.html": { "type": "file", "url": "https://docs.bastienbonora.fr/", "viewer": "blog" }
               },
               "certifications": {
                 "type": "directory",

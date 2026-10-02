@@ -429,6 +429,19 @@
     }
 
     /**
+     * blog : raccourci vers le viewer du blog (bastodoc), même
+     * comportement que `open blog/blog.html` depuis n'importe où.
+     */
+    function cmdBlog() {
+      const node = lookUpTree('/root/blog/blog.html');
+      if (!node) return 'blog : viewer introuvable — essayez : open blog/blog.html';
+      if (!canReadFiles()) return 'blog : Permission non accordée';
+      const error = spawnShell({ viewer: node, seedHistory: state.history.slice() });
+      if (error) return error;
+      return 'ouverture du blog dans une nouvelle fenêtre...';
+    }
+
+    /**
      * Easter egg : on ne devient pas root sur ce portfolio.
      * Refus systématique, à la manière du vrai sudo.
      */
@@ -493,6 +506,7 @@
       cd:     cmdCd,
       cat:    cmdCat,
       sudo:   cmdSudo,
+      blog:   cmdBlog,
       bash:   cmdBash,
       exit:   cmdExit,
       ...extra
