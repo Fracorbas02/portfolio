@@ -148,6 +148,7 @@
     historyIndex: -1,
     sessionStart: Date.now(),
     viewer: null,
+    pager: null,
     variables: {},
     // Alias persistés (localStorage) : chargés ici, écrits par les
     // commandes alias/unalias (commands.js) via la même clé
@@ -408,6 +409,81 @@
     scrollToBottom();
   };
 
+  // ──────────────────────────────────────────────────────────────
+  // Pager des pages man : plein écran façon less, q pour quitter.
+  // L'écran du shell est sauvegardé au moment d'entrer et restitué
+  // à la sortie, comme l'écran alternatif du vrai less.
+  // ──────────────────────────────────────────────────────────────
+  function enterPager(page) {
+    state.pager = {
+      title: page.title,
+      content: null,
+      saved: SHELL_OUTPUT.innerHTML
+    };
+    root.classList.add('viewerMode');
+    SHELL_OUTPUT.classList.add('booting');
+    SHELL_OUTPUT.innerHTML =
+      `<div class="manPager"><div class="manPagerContent">${page.html}</div></div>`
+      + '<div class="cvViewerBar manPagerStatus"></div>';
+    state.pager.content = SHELL_OUTPUT.querySelector('.manPagerContent');
+    COMMAND_INPUT.value = '';
+    resizeInput();
+    updatePagerStatus();
+    COMMAND_INPUT.focus();
+  }
+
+  /** Barre du bas : titre, position, rappel des touches. */
+  function updatePagerStatus() {
+    const bar = root.querySelector('.manPagerStatus');
+    const content = state.pager?.content;
+    if (!bar || !content) return;
+
+    const max = content.scrollHeight - content.clientHeight;
+    const atEnd = max <= 0 || content.scrollTop >= max - 2;
+    bar.innerHTML = `Manuel <span class="helpCommand">${escapeHTML(state.pager.title)}</span> — `
+      + (atEnd ? '(FIN)' : `${Math.round((content.scrollTop / max) * 100)}%`)
+      + `&nbsp;&nbsp;↑↓ défiler · PgUp/PgDn page · <span class="helpCommand">q</span> quitter`;
+  }
+
+  /** Quitte le pager et restitue l'écran du shell. */
+  function quitPager() {
+    const bar = root.querySelector('.manPagerStatus');
+    if (bar) bar.remove();
+    root.classList.remove('viewerMode');
+    SHELL_OUTPUT.innerHTML = state.pager?.saved ?? '';
+    state.pager = null;
+    showPrompt();
+    scrollToBottom();
+    COMMAND_INPUT.focus();
+  }
+
+  /** Clavier du pager : flèches, pages, g/G, q ou Échap. */
+  function handlePagerKey(event) {
+    const content = state.pager?.content;
+    if (!content) return;
+
+    const pageStep = Math.max(40, content.clientHeight - 40);
+    let handled = true;
+    switch (event.key) {
+      case 'ArrowDown': content.scrollTop += 20; break;
+      case 'ArrowUp':   content.scrollTop -= 20; break;
+      case 'PageDown':
+      case ' ':         content.scrollTop += pageStep; break;
+      case 'PageUp':    content.scrollTop -= pageStep; break;
+      case 'Home':
+      case 'g':          content.scrollTop = 0; break;
+      case 'End':
+      case 'G':          content.scrollTop = content.scrollHeight; break;
+      case 'q':
+      case 'Escape':    quitPager(); break;
+      default: handled = false;
+    }
+    if (handled) {
+      event.preventDefault();
+      updatePagerStatus();
+    }
+  }
+
   /** Clavier du viewer : flèches, Entrée, Échap, q, Ctrl+C. */
   const handleViewerKey = (event) => {
     const viewer = state.viewer;
@@ -612,6 +688,12 @@
     } catch (err) {
       console.error(err);
       output = `<span style="color:#f87171;">Une erreur est survenue lors de l'exécution.</span>`;
+    }
+
+    // Page man : le pager plein écran remplace l'écho classique
+    if (output && typeof output === 'object' && output.__pager) {
+      enterPager(output);
+      return;
     }
 
     const promptHTML = `${escapeHTML(promptBefore)}${escapeHTML(trimmed)}`;
@@ -978,6 +1060,12 @@
     COMMAND_INPUT.addEventListener('focus', updateCursor);
 
     COMMAND_INPUT.addEventListener('keydown', async (event) => {
+      // Pager man actif : toutes les touches lui sont capturées
+      if (state.pager) {
+        handlePagerKey(event);
+        return;
+      }
+
       // Viewer de CV actif : toutes les touches lui sont capturées
       if (state.viewer) {
         event.preventDefault();
