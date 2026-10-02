@@ -163,6 +163,16 @@
     })()
   };
 
+  // Nom d'utilisateur persisté (set username) : la fenêtre démarre
+  // avec le dernier nom choisi, comme un profil conservé d'une
+  // visite à l'autre — même clé que set username (commands.js)
+  try {
+    const savedUsername = localStorage.getItem('portfolioShellUsername');
+    if (typeof savedUsername === 'string' && savedUsername !== '') {
+      DEFAULT_BEGIN_SHELL.textContent = `${savedUsername}@portfolio:/root> `;
+    }
+  } catch { /* localStorage indisponible : prompt par défaut */ }
+
   // État de la recherche inversée (Ctrl+R)
   const search = {
     active: false,
@@ -2315,7 +2325,7 @@
     window.PORTFOLIO_THEME.restore();
 
     try {
-      const response = await fetch('./src/JSON/elements.json?v=20261002.21');
+      const response = await fetch('./src/JSON/elements.json?v=20261002.22');
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
       portfolioData = await response.json();
     } catch (err) {

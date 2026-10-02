@@ -1201,6 +1201,9 @@
         // Reconstitue le nom (autorise les espaces -> remplacés par _)
         const username = rest.join('_').slice(0, 32); // garde-fou de longueur
         prompt.textContent = `${username}@portfolio:${state.currentDir}> `;
+        // Le nom survit au rechargement (localStorage), comme les
+        // alias : chaque fenêtre démarrera avec ce profil
+        try { localStorage.setItem('portfolioShellUsername', username); } catch { /* quota */ }
         // Même recalage que updatePrompt : le prompt vient de changer
         // de largeur
         updateCursor();
