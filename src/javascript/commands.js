@@ -949,6 +949,51 @@
       return null;
     }
 
+    /**
+     * nano : ouvre l'éditeur plein écran (script.js) via le
+     * marqueur { __editor }, qui traverse le dispatcher comme une
+     * page man. Un fichier inexistant ouvre un éditeur vierge (le
+     * dossier parent doit exister), un fichier utilisateur se
+     * modifie et se persiste, un fichier du portfolio s'ouvre en
+     * lecture seule.
+     */
+    function cmdNano(args) {
+      if (args.length === 0) return 'nano : veuillez donner un nom de fichier. Voir : man nano';
+
+      const target = args[0];
+      const path = resolvePath(target);
+      const node = lookUpTree(target);
+
+      if (isDirectory(node)) {
+        return `nano : ${escapeHTML(target)} : est un dossier`;
+      }
+
+      // Nouveau fichier : éditeur vierge, la création n'arrive
+      // qu'à l'écriture (^O) — le dossier parent doit exister
+      if (node === null) {
+        const parent = navigateTree(
+          window.PORTFOLIO_FS.resolve(state.currentDir, `${target}/..`));
+        if (parent === null || !isDirectory(parent)) {
+          return `nano : ${escapeHTML(target)} : aucun fichier ou dossier de ce type`;
+        }
+        return { __editor: true, path, title: path, content: '', readonly: false };
+      }
+
+      if (!canReadFiles()) {
+        return `nano : ${escapeHTML(target)} : Permission non accordée`;
+      }
+
+      // Fichier utilisateur : édition persistée (userfs.js) ;
+      // fichier du portfolio : lecture seule, comme un nano sans
+      // les droits d'écriture
+      const own = window.PORTFOLIO_USERFS.owns(path);
+      const text = own ? window.PORTFOLIO_USERFS.read(path) : fileText(node);
+      if (text === null) {
+        return `nano : ${escapeHTML(target)} : fichier binaire (non éditable). Essayez : open`;
+      }
+      return { __editor: true, path, title: path, content: text, readonly: !own };
+    }
+
     async function cmdGet(args) {
       if (args.length === 0) return 'get : veuillez donner un argument';
 
@@ -1180,6 +1225,7 @@
       rm:     cmdRm,
       touch:  cmdTouch,
       mkdir:  cmdMkdir,
+      nano:   cmdNano,
       get:    cmdGet,
       show:   cmdShow,
       reboot: cmdReboot,

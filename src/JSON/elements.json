@@ -37,6 +37,10 @@
         "description": "Crée un dossier vide dans votre arborescence (persisté en localStorage). Exemple : mkdir projets."
       },
       {
+        "name": "nano",
+        "description": "Éditeur de texte plein écran. Exemple : nano notes.txt (Ctrl+O écrit, Ctrl+X quitte)."
+      },
+      {
         "name": "get",
         "description": "permet de récupérer un élément généré depuis le shell"
       },
@@ -383,6 +387,23 @@
       },
       "mkdir": {
         "description": "Crée un dossier vide dans l'arborescence, persisté en localStorage. Comme dans le vrai mkdir, le dossier parent doit exister."
+      },
+      "nano": {
+        "description": "Éditeur de texte plein écran, à la manière du vrai nano : tout l'écran du terminal devient une zone d'édition. Les fichiers du portfolio s'ouvrent en lecture seule ; vos fichiers (touch, mkdir) se modifient et se persistent en localStorage. Un fichier inexistant est créé au premier enregistrement.",
+        "options": [
+          {
+            "name": "Ctrl+O",
+            "usage": "écrit le fichier dans votre arborescence"
+          },
+          {
+            "name": "Ctrl+X",
+            "usage": "quitte l'éditeur (confirme l'enregistrement si des modifications sont en attente)"
+          }
+        ],
+        "examples": [
+          { "cmd": "nano notes.txt", "desc": "édite (ou crée) notes.txt dans le dossier courant" },
+          { "cmd": "mkdir projets && nano projets/ideas.txt", "desc": "un dossier, puis un fichier dedans" }
+        ]
       },
       "get": {
         "description": "Permet de récupérer des éléments générés depuis le shell.",

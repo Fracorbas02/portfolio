@@ -789,6 +789,165 @@
     }
   }
 
+  // ──────────────────────────────────────────────────────────────
+  // Éditeur nano : plein écran, ^O écrit, ^X quitte — l'écran du
+  // shell est sauvegardé à l'entrée et restitué à la sortie, comme
+  // le pager des pages man. Le fichier du portfolio s'ouvre en
+  // lecture seule ; les fichiers de l'utilisateur (userfs.js) se
+  // modifient et se persistent en localStorage à chaque ^O.
+  // ──────────────────────────────────────────────────────────────
+  function enterEditor(request) {
+    state.editor = {
+      path: request.path,
+      title: request.title,
+      readonly: request.readonly,
+      dirty: false,
+      confirm: null,           // null | 'quit' : confirmation ^X
+      saved: SHELL_OUTPUT.innerHTML,
+      savedScroll: SHELL_OUTPUT.scrollTop,
+      textarea: null
+    };
+
+    // L'easter egg « 42 » ne se déclenche pas pendant l'édition :
+    // ses frappes vont au textarea, pas à l'input du shell
+    if (bootedShellApi?.root === root) bootedShellApi.editorOpen = true;
+
+    root.classList.add('viewerMode');
+    SHELL_OUTPUT.classList.add('booting');
+    SHELL_OUTPUT.innerHTML =
+      `<div class="nanoEditor">`
+      + `<div class="nanoHeader">GNU nano 7.2&nbsp;&nbsp;&nbsp;&nbsp;<span class="helpCommand">${escapeHTML(request.title)}</span></div>`
+      + `<textarea class="nanoTextarea" spellcheck="false"${request.readonly ? ' readonly' : ''}></textarea>`
+      + `</div>`
+      + '<div class="cvViewerBar nanoStatus"></div>';
+    state.editor.textarea = SHELL_OUTPUT.querySelector('.nanoTextarea');
+    state.editor.textarea.value = request.content;
+    state.editor.textarea.addEventListener('input', () => {
+      state.editor.dirty = true;
+      state.editor.confirm = null;
+      updateEditorStatus();
+    });
+    state.editor.textarea.addEventListener('keydown', handleEditorKey);
+    COMMAND_INPUT.value = '';
+    resizeInput();
+    updateEditorStatus();
+    state.editor.textarea.focus();
+  }
+
+  /** Barre du bas : indicateurs, rappel des touches, messages. */
+  function updateEditorStatus(message = null) {
+    const bar = root.querySelector('.nanoStatus');
+    if (!bar || !state.editor) return;
+
+    if (message !== null) {
+      bar.innerHTML = `<span style="color:var(--text-muted);">${escapeHTML(message)}</span>`;
+      return;
+    }
+    const editor = state.editor;
+    if (editor.confirm === 'quit') {
+      bar.innerHTML = 'Enregistrer les modifications ? '
+        + `<span class="helpCommand">o</span>ui&nbsp;·&nbsp;<span class="helpCommand">n</span>on&nbsp;·&nbsp;toute autre touche annule`;
+      return;
+    }
+    const flags = editor.readonly
+      ? '— lecture seule'
+      : editor.dirty ? '— modifié' : '';
+    bar.innerHTML = '<span class="helpCommand">^O</span> écrire&nbsp;&nbsp;&nbsp;'
+      + `<span class="helpCommand">^X</span> quitter&nbsp;&nbsp;&nbsp;${flags}`;
+  }
+
+  /** ^O : écrit le contenu dans l'arbre utilisateur (userfs.js). */
+  function saveEditorFile() {
+    const editor = state.editor;
+    if (editor.readonly) {
+      updateEditorStatus('lecture seule : le contenu du portfolio ne se modifie pas');
+      return;
+    }
+    const content = editor.textarea.value;
+    const result = window.PORTFOLIO_USERFS.write(editor.path, content);
+    if (result !== true) {
+      const detail = result === 'missingParent'
+        ? 'dossier parent introuvable'
+        : result === 'tooLarge'
+          ? 'fichier trop volumineux (100 Ko maximum)'
+          : result === 'invalidName'
+            ? 'nom de fichier invalide'
+            : 'contenu du portfolio (lecture seule)';
+      updateEditorStatus(`erreur d'écriture : ${detail}`);
+      return;
+    }
+    editor.dirty = false;
+    const lines = content === '' ? 0 : content.split('\n').length;
+    updateEditorStatus(`« ${editor.title} » — ${lines} ligne(s) écrite(s)`);
+  }
+
+  /** Quitte l'éditeur et restitue l'écran du shell. */
+  function quitEditor() {
+    if (bootedShellApi?.root === root) bootedShellApi.editorOpen = false;
+    root.classList.remove('viewerMode');
+    SHELL_OUTPUT.innerHTML = state.editor?.saved ?? '';
+    SHELL_OUTPUT.scrollTop = state.editor?.savedScroll ?? 0;
+    state.editor = null;
+    showPrompt();
+    scrollToBottom();
+    COMMAND_INPUT.focus();
+  }
+
+  /** Clavier de l'éditeur : ^O écrit, ^X quitte (confirmation). */
+  function handleEditorKey(event) {
+    const editor = state.editor;
+    if (!editor) return;
+
+    // Confirmation de sortie : o enregistre et quitte, n quitte
+    // sans enregistrer, toute autre touche annule
+    if (editor.confirm === 'quit') {
+      event.preventDefault();
+      const key = event.key.toLowerCase();
+      if (key === 'o') {
+        saveEditorFile();
+        if (editor.dirty) {
+          editor.confirm = null;
+          updateEditorStatus();
+        } else {
+          quitEditor();
+        }
+      } else if (key === 'n') {
+        quitEditor();
+      } else {
+        editor.confirm = null;
+        updateEditorStatus();
+      }
+      return;
+    }
+
+    if (event.key === 'Tab') {
+      // Une tabulation sort du textarea par défaut : elle devient
+      // une vraie tabulation dans le texte, comme dans nano
+      event.preventDefault();
+      const area = editor.textarea;
+      const { selectionStart, selectionEnd, value } = area;
+      area.value = `${value.slice(0, selectionStart)}\t${value.slice(selectionEnd)}`;
+      area.selectionStart = area.selectionEnd = selectionStart + 1;
+      editor.dirty = true;
+      updateEditorStatus();
+      return;
+    }
+    if (event.ctrlKey && event.key.toLowerCase() === 'o') {
+      event.preventDefault();
+      saveEditorFile();
+      return;
+    }
+    if (event.ctrlKey && event.key.toLowerCase() === 'x') {
+      event.preventDefault();
+      if (editor.dirty && !editor.readonly) {
+        editor.confirm = 'quit';
+        updateEditorStatus();
+      } else {
+        quitEditor();
+      }
+    }
+  }
+
   /** Clavier du viewer : flèches, Entrée, Échap, q, Ctrl+C. */
   const handleViewerKey = (event) => {
     const viewer = state.viewer;
@@ -1120,6 +1279,13 @@
         stdin = window.PORTFOLIO_HTML.htmlToText(result.html ?? '');
         continue;
       }
+      // Éditeur nano : dernière commande → plein écran ; au milieu
+      // du pipeline il refuse de s'insérer, rien n'arrive à le
+      // traverser en texte
+      if (result && typeof result === 'object' && result.__editor) {
+        if (i === segments.length - 1) return { editor: result, ok: true };
+        return { output: 'nano : ne peut pas s\'insérer dans un pipeline', ok: false };
+      }
       stdin = typeof result === 'string'
         ? window.PORTFOLIO_HTML.htmlToText(result)
         : null;
@@ -1163,9 +1329,13 @@
       if (job.gate === '&&' && !previousOk) continue;
       if (job.gate === '||' && previousOk) continue;
 
-      const { output, ok, pager } = await runPipeline(job.segments);
+      const { output, ok, pager, editor } = await runPipeline(job.segments);
       if (pager) {
         enterPager(pager);
+        return;
+      }
+      if (editor) {
+        enterEditor(editor);
         return;
       }
       if (typeof output === 'string' && output !== '') {
@@ -1292,7 +1462,7 @@
     let sequence = '';
     document.addEventListener('keydown', (event) => {
       const api = bootedShellApi;
-      if (!api || api.input.value !== '') {
+      if (!api || api.input.value !== '' || api.editorOpen) {
         sequence = '';
         return;
       }
@@ -1880,7 +2050,7 @@
     window.PORTFOLIO_THEME.restore();
 
     try {
-      const response = await fetch('./src/JSON/elements.json?v=20261002.13');
+      const response = await fetch('./src/JSON/elements.json?v=20261002.14');
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
       portfolioData = await response.json();
     } catch (err) {
