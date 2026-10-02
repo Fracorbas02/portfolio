@@ -299,6 +299,69 @@
       return null;
     }
 
+    // Clé localStorage partagée avec le chargement (script.js)
+    const ALIAS_STORAGE_KEY = 'portfolioShellAliases';
+
+    function persistAliases() {
+      try {
+        localStorage.setItem(ALIAS_STORAGE_KEY, JSON.stringify(state.aliases ?? {}));
+      } catch {
+        // Stockage indisponible : les alias restent en mémoire
+      }
+    }
+
+    /**
+     * alias : définit un alias de commande (persisté en localStorage)
+     * ou les liste sans argument, à la manière de bash. La valeur
+     * peut être entre guillemets simples ou doubles.
+     */
+    function cmdAlias(args) {
+      if (args.length === 0) {
+        const entries = Object.entries(state.aliases ?? {});
+        if (entries.length === 0) return null;
+        return entries
+          .map(([name, value]) => `alias ${escapeHTML(name)}='${escapeHTML(value)}'`)
+          .join('\n');
+      }
+
+      const joined = args.join(' ');
+      const match = /^([A-Za-z_][A-Za-z0-9_]*)=(.*)$/.exec(joined);
+
+      // alias <nom> : affiche la définition existante
+      if (!match) {
+        if (args.length === 1 && Object.hasOwn(state.aliases, args[0])) {
+          return `alias ${escapeHTML(args[0])}='${escapeHTML(state.aliases[args[0]])}'`;
+        }
+        return 'alias : usage : alias NOM=\'commande\' (ou alias sans argument pour lister)';
+      }
+
+      let value = match[2];
+      const quoted = value.length > 1
+        && ((value.startsWith("'") && value.endsWith("'"))
+          || (value.startsWith('"') && value.endsWith('"')));
+      if (quoted) value = value.slice(1, -1);
+
+      state.aliases[match[1]] = value;
+      persistAliases();
+      return null;
+    }
+
+    /**
+     * unalias : supprime un alias défini au préalable.
+     */
+    function cmdUnalias(args) {
+      if (args.length === 0) return 'unalias : veuillez donner un nom d\'alias';
+
+      for (const name of args) {
+        if (!Object.hasOwn(state.aliases, name)) {
+          return `unalias : ${escapeHTML(name)} : alias introuvable`;
+        }
+        delete state.aliases[name];
+      }
+      persistAliases();
+      return null;
+    }
+
     /**
      * Permissions façon ls -l : dossier, lien symbolique ou fichier.
      */
@@ -647,6 +710,8 @@
       wc:     cmdWc,
       echo:   cmdEcho,
       export: cmdExport,
+      alias:  cmdAlias,
+      unalias: cmdUnalias,
       sudo:   cmdSudo,
       blog:   cmdBlog,
       bash:   cmdBash,
