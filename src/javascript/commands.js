@@ -281,6 +281,62 @@
     }
 
     /**
+     * tree : arborescence du dossier courant ou d'un chemin donné,
+     * avec les branches ├── └── canoniques — l'arbre JSON rend
+     * trivial le parcours récursif. Les éléments masqués (les
+     * fichiers « . ») n'apparaissent qu'avec -a, comme ls.
+     */
+    function cmdTree(args) {
+      let showAll = false;
+      const rest = [];
+      for (const arg of args) {
+        if (arg === '-a') showAll = true;
+        else if (arg.startsWith('-')) {
+          return `tree : option « ${escapeHTML(arg)} » inconnue. Voir : man tree`;
+        } else {
+          rest.push(arg);
+        }
+      }
+      if (rest.length > 1) return 'tree : un seul dossier attendu. Voir : man tree';
+
+      const target = rest[0] ?? '';
+      const path = target === '' ? state.currentDir : resolvePath(target);
+      const node = navigateTree(path);
+      if (node === null) return `tree : ${escapeHTML(target)} : dossier introuvable`;
+      if (!isDirectory(node)) return `tree : ${escapeHTML(target)} : n'est pas un dossier`;
+
+      const lines = [`<span class="lsDir">${escapeHTML(path)}</span>`];
+      let dirs = 0;
+      let files = 0;
+
+      const walk = (dirNode, prefix) => {
+        const keys = Object.keys(dirNode)
+          .filter((key) => key !== 'type' && (showAll || !key.startsWith('.')))
+          .sort((a, b) => a.localeCompare(b, 'fr', { sensitivity: 'base' }));
+        keys.forEach((key, index) => {
+          const child = dirNode[key];
+          const isLast = index === keys.length - 1;
+          const branch = isLast ? '└── ' : '├── ';
+          const label = isDirectory(child)
+            ? `<span class="lsDir">${escapeHTML(key)}</span>`
+            : escapeHTML(key);
+          lines.push(`${prefix}${branch}${label}`);
+          if (isDirectory(child)) {
+            dirs += 1;
+            walk(child, `${prefix}${isLast ? '    ' : '│   '}`);
+          } else {
+            files += 1;
+          }
+        });
+      };
+      walk(node, '');
+
+      lines.push('');
+      lines.push(`<span style="color:var(--text-muted);">${dirs} dossier(s), ${files} fichier(s)</span>`);
+      return lines.join('\n');
+    }
+
+    /**
      * Valeur d'une variable d'environnement : USER et PWD sont
      * vivantes (lues depuis le prompt et le dossier courant), les
      * autres viennent de `export` (state.variables).
@@ -854,6 +910,7 @@
       cat:    cmdCat,
       grep:   cmdGrep,
       wc:     cmdWc,
+      tree:   cmdTree,
       echo:   cmdEcho,
       export: cmdExport,
       alias:  cmdAlias,
