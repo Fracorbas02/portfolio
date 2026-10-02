@@ -99,6 +99,18 @@
       {
         "name": "tree",
         "description": "Affiche l'arborescence complète depuis un dossier, branches comprises. Exemple : tree, tree -a."
+      },
+      {
+        "name": "find",
+        "description": "Recherche des fichiers dans l'arborescence. Exemple : find . -name \"*.pdf\"."
+      },
+      {
+        "name": "ping",
+        "description": "Sonde un hôte à la manière d'ICMP (simulation locale, aucun paquet réseau). Exemple : ping bastienbonora.fr."
+      },
+      {
+        "name": "dig",
+        "description": "Interroge le DNS du portfolio (simulation locale). Exemple : dig bastienbonora.fr."
       }
     ],
     "manCommands": {
@@ -146,18 +158,53 @@
           }
         ],
         "examples": [
+          { "cmd": "tree", "desc": "arborescence du dossier courant" },
+          { "cmd": "tree -a", "desc": "avec les fichiers masqués" },
+          { "cmd": "tree | grep ctf", "desc": "ne garde que les branches contenant « ctf »" }
+        ]
+      },
+      "find": {
+        "description": "Recherche des entrées dans l'arborescence du portfolio, à la manière de la commande find : chemin de départ, motif de nom avec jokers, type d'entrée. Aucun résultat : sortie vide, comme le vrai find.",
+        "options": [
           {
-            "cmd": "tree",
-            "desc": "arborescence du dossier courant"
+            "name": "-name motif",
+            "usage": "nom à chercher, avec les jokers * et ?. Exemple : find . -name \"*.pdf\""
           },
           {
-            "cmd": "tree -a",
-            "desc": "avec les fichiers masqués"
-          },
-          {
-            "cmd": "tree | grep ctf",
-            "desc": "ne garde que les branches contenant « ctf »"
+            "name": "-type f|d",
+            "usage": "ne garde que les fichiers (f) ou les dossiers (d). Exemple : find . -type d"
           }
+        ],
+        "examples": [
+          { "cmd": "find . -name \"*.pdf\"", "desc": "tous les PDF du portfolio" },
+          { "cmd": "find /root -type d", "desc": "tous les dossiers depuis la racine personnelle" },
+          { "cmd": "find . -name \"*CTF*\"", "desc": "les entrées dont le nom contient CTF" }
+        ]
+      },
+      "ping": {
+        "description": "Sonde un hôte à la manière d'ICMP : une ligne par paquet, puis les statistiques de la sonde. La simulation est entièrement locale — aucun paquet ne quitte le navigateur, la cible répond toujours.",
+        "options": [
+          {
+            "name": "-c nombre",
+            "usage": "nombre de paquets envoyés (1 à 64, 4 par défaut). Exemple : ping -c 2 localhost"
+          }
+        ],
+        "examples": [
+          { "cmd": "ping bastienbonora.fr", "desc": "sonde le domaine du portfolio" },
+          { "cmd": "ping -c 2 localhost", "desc": "deux paquets vers la boucle locale" }
+        ]
+      },
+      "dig": {
+        "description": "Interroge le DNS d'un domaine, à la manière de la commande dig : section question, section réponse, temps de réponse. La résolution est simulée localement — aucune requête réseau n'est émise.",
+        "options": [
+          {
+            "name": "domaine",
+            "usage": "nom de domaine à résoudre. Exemple : dig bastienbonora.fr"
+          }
+        ],
+        "examples": [
+          { "cmd": "dig bastienbonora.fr", "desc": "résout le domaine du portfolio (avec son enregistrement TXT)" },
+          { "cmd": "dig docs.bastienbonora.fr", "desc": "résout le domaine de la documentation" }
         ]
       },
       "echo": {

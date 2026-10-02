@@ -454,6 +454,9 @@
       url: page.url ?? null,
       overlay,
       content: null,
+      // Recherche « / » : null = pas de recherche, { active }
+      // = saisie du motif en cours, hits = occurrences surlignées
+      search: null,
       saved: overlay ? null : SHELL_OUTPUT.innerHTML,
       savedScroll: overlay ? SHELL_OUTPUT.scrollTop : null
     };
@@ -490,21 +493,50 @@
     COMMAND_INPUT.focus();
   }
 
+  /**
+   * Titres de section du pager : h lines des articles en lecture,
+   * sections NOM/DESCRIPTION… des pages man — de quoi dessiner le
+   * sommaire (touche s).
+   */
+  const pagerHeadings = () =>
+    state.pager?.content
+      ? [...state.pager.content.querySelectorAll('.cliSection')]
+      : [];
+
   /** Barre du bas : titre, position, rappel des touches. */
   function updatePagerStatus() {
     const bar = root.querySelector('.manPagerStatus');
     const content = state.pager?.content;
     if (!bar || !content) return;
 
+    // Saisie d'un motif de recherche (/) : la barre devient la
+    // ligne de saisie du motif, comme la ligne basse du vrai less
+    const search = state.pager.search;
+    if (search?.active) {
+      bar.innerHTML = `/<span class="helpCommand">${escapeHTML(search.query)}</span>`
+        + '&nbsp;&nbsp;⏎ chercher · ⎋ annuler · retour arrière efface';
+      return;
+    }
+
     const max = content.scrollHeight - content.clientHeight;
     const atEnd = max <= 0 || content.scrollTop >= max - 2;
     const label = state.pager.label ?? 'Manuel';
     let html = `${label} <span class="helpCommand">${escapeHTML(state.pager.title)}</span> — `
       + (atEnd ? '(FIN)' : `${Math.round((content.scrollTop / max) * 100)}%`);
+    if (search && search.hits.length > 0) {
+      html += `&nbsp;&nbsp;/${escapeHTML(search.query)} : ${search.hits.length} occurrence(s)`
+        + '&nbsp;&nbsp;<span class="helpCommand">n</span>/<span class="helpCommand">N</span> suivante/précédente';
+    } else if (search) {
+      html += `&nbsp;&nbsp;/${escapeHTML(search.query)} : aucune occurrence`;
+    }
     if (state.pager.url) {
       html += '&nbsp;&nbsp;^C ouvrir dans le navigateur';
     }
-    html += `&nbsp;&nbsp;↑↓ défiler · PgUp/PgDn page · <span class="helpCommand">q</span> quitter`;
+    html += '&nbsp;&nbsp;↑↓ défiler · PgUp/PgDn page · / rechercher';
+    if (pagerHeadings().length >= 2) {
+      html += `&nbsp;&nbsp;<span class="helpCommand">s</span> sommaire`;
+    }
+    html += `&nbsp;&nbsp;<span class="helpCommand">q</span> quitter`;
     bar.innerHTML = html;
   }
 
@@ -531,10 +563,176 @@
     COMMAND_INPUT.focus();
   }
 
+  // ──────────────────────────────────────────────────────────────
+  // Recherche « / » du pager — les nœuds texte portent les
+  // surlignages, le DOM existant (images, code coloré) n'est
+  // jamais reconstruit.
+  // ──────────────────────────────────────────────────────────────
+
+  /** Retire les surlignages d'une recherche précédente. */
+  function clearSearchHighlights(content) {
+    content.querySelectorAll('span.readSearchHit').forEach((span) => {
+      const parent = span.parentNode;
+      parent.replaceChild(document.createTextNode(span.textContent), span);
+      parent.normalize();
+    });
+  }
+
+  /**
+   * Surligne chaque occurrence du motif, sans tenir compte de la
+   * casse (plus permissif que less, pour une lecture détendue).
+   * Chaque occurrence est enveloppée d'un span dans l'ordre du
+   * document ; renvoie la liste des occurrences trouvées.
+   */
+  function highlightMatches(content, query) {
+    const needle = query.toLowerCase();
+    const walker = document.createTreeWalker(content, NodeFilter.SHOW_TEXT);
+    const textNodes = [];
+    while (walker.nextNode()) textNodes.push(walker.currentNode);
+
+    const hits = [];
+    for (const node of textNodes) {
+      const haystack = node.textContent.toLowerCase();
+      if (!haystack.includes(needle)) continue;
+      const text = node.textContent;
+      const fragment = document.createDocumentFragment();
+      let pos = 0;
+      let index = haystack.indexOf(needle);
+      while (index !== -1) {
+        fragment.appendChild(document.createTextNode(text.slice(pos, index)));
+        const span = document.createElement('span');
+        span.className = 'readSearchHit';
+        span.textContent = text.slice(index, index + needle.length);
+        fragment.appendChild(span);
+        hits.push(span);
+        pos = index + needle.length;
+        index = haystack.indexOf(needle, pos);
+      }
+      fragment.appendChild(document.createTextNode(text.slice(pos)));
+      node.parentNode.replaceChild(fragment, node);
+    }
+    return hits;
+  }
+
+  /** Saute à l'occurrence suivante (n) ou précédente (N). */
+  function jumpToSearchHit(delta) {
+    const search = state.pager?.search;
+    if (!search || search.hits.length === 0) return;
+    search.current = (search.current + delta + search.hits.length) % search.hits.length;
+    search.hits.forEach((span, i) =>
+      span.classList.toggle('readSearchHit--current', i === search.current));
+    search.hits[search.current].scrollIntoView({ block: 'center' });
+    updatePagerStatus();
+  }
+
+  /** Valide le motif saisi et lance la recherche dans le pager. */
+  function executePagerSearch() {
+    const pager = state.pager;
+    pager.search.active = false;
+    clearSearchHighlights(pager.content);
+    pager.search.hits = pager.search.query === ''
+      ? []
+      : highlightMatches(pager.content, pager.search.query);
+    pager.search.current = -1;
+    if (pager.search.hits.length > 0) {
+      jumpToSearchHit(1);   // amène directement à la première occurrence
+    } else {
+      updatePagerStatus();
+    }
+  }
+
+  // ──────────────────────────────────────────────────────────────
+  // Sommaire du pager (touche s) : titres cliquables de la page —
+  // ⏎ sur un titre saute à la section correspondante.
+  // ──────────────────────────────────────────────────────────────
+
+  /** Amène le pager sur le titre d'indice donné (data-idx). */
+  const jumpToHeading = (index) => {
+    const target = pagerHeadings()[Number(index)];
+    if (target) target.scrollIntoView({ block: 'start' });
+  };
+
+  /** Ouvre le sommaire, ou le referme s'il est déjà affiché. */
+  function togglePagerToc() {
+    const existing = root.querySelector('.readToc');
+    if (existing) {
+      existing.remove();
+      updatePagerStatus();
+      return;
+    }
+    // Un sommaire n'a de sens qu'à partir de deux titres
+    if (pagerHeadings().length < 2) return;
+
+    const toc = document.createElement('div');
+    toc.className = 'readToc';
+    toc.innerHTML = pagerHeadings()
+      .map((el, i) => `<div class="readTocItem" data-idx="${i}">${escapeHTML(el.textContent)}</div>`)
+      .join('');
+    state.pager.content.parentElement.appendChild(toc);
+    toc.querySelector('.readTocItem')?.classList.add('readTocItem--selected');
+    COMMAND_INPUT.focus();
+  }
+
+  /** Clavier du sommaire : ↑↓ sélectionnent, ⏎ saute, ⎋ referme. */
+  function handlePagerTocKey(event, tocEl) {
+    event.preventDefault();
+    const items = [...tocEl.querySelectorAll('.readTocItem')];
+    const current = items.findIndex((el) =>
+      el.classList.contains('readTocItem--selected'));
+    const select = (index) => {
+      items.forEach((el, i) => el.classList.toggle('readTocItem--selected', i === index));
+      items[index]?.scrollIntoView({ block: 'nearest' });
+    };
+
+    if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+      const delta = event.key === 'ArrowDown' ? 1 : -1;
+      select((current + delta + items.length) % items.length);
+      return;
+    }
+    if (event.key === 'Enter') {
+      jumpToHeading(items[current]?.dataset.idx);
+      tocEl.remove();
+      updatePagerStatus();
+      return;
+    }
+    if (event.key === 'Escape' || event.key === 'q' || event.key === 's') {
+      tocEl.remove();
+      updatePagerStatus();
+    }
+  }
+
   /** Clavier du pager : flèches, pages, g/G, q ou Échap. */
   function handlePagerKey(event) {
     const content = state.pager?.content;
     if (!content) return;
+
+    // Saisie du motif de recherche (/) : toutes les touches lui
+    // appartiennent jusqu'à ⏎ ou ⎋
+    if (state.pager.search?.active) {
+      event.preventDefault();
+      const search = state.pager.search;
+      if (event.key === 'Enter') {
+        executePagerSearch();
+      } else if (event.key === 'Escape') {
+        state.pager.search = null;
+        updatePagerStatus();
+      } else if (event.key === 'Backspace') {
+        search.query = search.query.slice(0, -1);
+        updatePagerStatus();
+      } else if (event.key.length === 1
+          && !event.ctrlKey && !event.metaKey && !event.altKey) {
+        search.query += event.key;
+        updatePagerStatus();
+      }
+      return;
+    }
+
+    // Sommaire affiché : le clavier lui appartient
+    const tocEl = root.querySelector('.readToc');
+    if (tocEl) {
+      handlePagerTocKey(event, tocEl);
+      return;
+    }
 
     // ^C dans une lecture : ouvre l'article original dans le
     // navigateur, comme le ^C du viewer ouvre le site du blog
@@ -543,6 +741,29 @@
       event.preventDefault();
       window.open(state.pager.url, '_blank', 'noopener,noreferrer');
       quitPager();
+      return;
+    }
+
+    // « / » : saisie du motif de recherche, façon less
+    if (event.key === '/' && !event.ctrlKey && !event.metaKey && !event.altKey) {
+      event.preventDefault();
+      state.pager.search = { active: true, query: '', hits: [], current: -1 };
+      updatePagerStatus();
+      return;
+    }
+
+    // n/N : occurrence suivante / précédente de la recherche
+    if ((event.key === 'n' || event.key === 'N') && !event.ctrlKey
+        && (state.pager.search?.hits?.length ?? 0) > 0) {
+      event.preventDefault();
+      jumpToSearchHit(event.key === 'n' ? 1 : -1);
+      return;
+    }
+
+    // « s » : sommaire des titres (sections d'article, page man)
+    if (event.key === 's' && !event.ctrlKey && !event.metaKey && !event.altKey) {
+      event.preventDefault();
+      togglePagerToc();
       return;
     }
 
@@ -1179,7 +1400,8 @@
       case 'cat':
       case 'grep':
       case 'wc':
-      case 'tree': {
+      case 'tree':
+      case 'find': {
         const dir = navigateTree(dirPart
           ? window.PORTFOLIO_FS.resolve(state.currentDir, dirPart)
           : state.currentDir);
@@ -1187,7 +1409,7 @@
 
         // Les dossiers sont complétés aussi : étapes du chemin,
         // même quand la commande les refuserait en argument final
-        const wanted = command === 'cd' || command === 'tree'
+        const wanted = command === 'cd' || command === 'tree' || command === 'find'
           ? isDirectory
           : command === 'open'
             ? (node) => isDirectory(node) || isOpenable(node)
@@ -1300,6 +1522,38 @@
       if (readAnchor) {
         e.preventDefault();
         enterReadMode(state.viewer?.node?.viewer, Number(readAnchor.dataset.read));
+        return;
+      }
+      // Sommaire du pager : un titre cliqué saute à sa section
+      const tocItem = e.target.closest('.readTocItem');
+      if (tocItem) {
+        e.preventDefault();
+        jumpToHeading(tocItem.dataset.idx);
+        root.querySelector('.readToc')?.remove();
+        updatePagerStatus();
+        return;
+      }
+      // Image d'un article en lecture : un clic l'ouvre en grand
+      // dans un onglet — même validation que son rendu (http(s) du
+      // site d'origine, ou image inline du flux, jamais un href
+      // arbitraire)
+      const img = e.target.closest('img.readImgReal');
+      if (img) {
+        const src = img.getAttribute('src') || '';
+        if (/^data:image\/(?:png|jpe?g|gif|webp);base64,[A-Za-z0-9+/=]+$/.test(src)) {
+          // Image inline : navigation par ancre, window.open
+          // refuse les URL data:
+          const anchor = document.createElement('a');
+          anchor.href = src;
+          anchor.target = '_blank';
+          anchor.rel = 'noopener noreferrer';
+          anchor.style.display = 'none';
+          document.body.appendChild(anchor);
+          anchor.click();
+          anchor.remove();
+        } else if (/^https?:/.test(src)) {
+          window.open(src, '_blank', 'noopener,noreferrer');
+        }
         return;
       }
       // Ne pas voler le focus si on clique sur un bouton ou lien

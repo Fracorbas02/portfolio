@@ -929,8 +929,10 @@ body.is-window-dragging * {
 
 /* Pager des pages man : la page occupe tout l'espace du shell et
    défile en interne, la barre de statut reste collée en bas.
-   flex-shrink est réactivé (les div de sortie l'annulent). */
+   flex-shrink est réactivé (les div de sortie l'annulent). Le
+   positionnement sert d'ancre au sommaire (readToc). */
 .shellOutput > .manPager {
+  position: relative;
   flex: 1 1 auto;
   min-height: 0;
   display: flex;
@@ -1036,7 +1038,8 @@ body.is-window-dragging * {
 
 /* La vraie image, chargée à la volée depuis le site d'origine au
    moment de la lecture (l'affichage <img> ignore le CORS) —
-   bornée à la largeur de la zone de lecture, cadre atténué. */
+   bornée à la largeur de la zone de lecture, cadre atténué. Un
+   clic l'ouvre en grand dans un onglet (script.js). */
 .readImgFigure {
   margin: 0.4rem 0;
 }
@@ -1046,6 +1049,55 @@ body.is-window-dragging * {
   max-width: 100%;
   height: auto;
   border: 1px solid var(--text-muted);
+  cursor: pointer;
+}
+
+.readImgReal:hover {
+  border-color: var(--accent);
+}
+
+/* Recherche « / » du pager : les occurrences sont surlignées
+   dans le texte (enveloppe de span), l'occurrence courante —
+   celle où n/N amène — porte l'accent plein. */
+.readSearchHit {
+  background: var(--accent-dim);
+  color: var(--bg-base);
+  border-radius: 2px;
+}
+
+.readSearchHit--current {
+  background: var(--accent);
+}
+
+/* Sommaire du pager (touche s) : la liste des titres couvre la
+   zone de lecture, même fond que le pager — le titre sélectionné
+   porte le marqueur ► et l'accent, comme les menus du viewer. */
+.readToc {
+  position: absolute;
+  inset: 0;
+  z-index: 6;
+  background: var(--bg-surface);
+  padding: 1.25rem 1.5rem;
+  overflow-y: auto;
+  white-space: pre-wrap;
+}
+
+.readTocItem {
+  cursor: pointer;
+  padding: 0.15rem 0;
+  color: var(--text-secondary);
+}
+
+.readTocItem:hover {
+  color: var(--accent-strong);
+}
+
+.readTocItem--selected {
+  color: var(--accent-strong);
+}
+
+.readTocItem--selected::before {
+  content: '► ';
 }
 
 /* Attente visible d'une commande qui requête le site en direct
