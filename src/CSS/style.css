@@ -827,19 +827,44 @@ body.is-window-dragging * {
   font-weight: 700;
 }
 
-/* Frise « toute l'histoire » : lignes révélées une par une,
-   connecteurs (│ ▼) en couleur d'accent */
+/* Frise « toute l'histoire » : une ère (période) à la fois, façon
+   caméra — le contenu se construit de bas en haut, se dissout en
+   trame ░, puis l'ère suivante prend le relais */
+.cvViewerEra {
+  display: none;
+}
+
+.cvViewerEra--active {
+  display: block;
+}
+
 .cvViewerJourneyLine {
   visibility: hidden;
 }
 
-.cvViewerJourneyLine--shown {
+.cvViewerJourneyLine--shown,
+.cvViewerJourneyLine--wiped {
   visibility: visible;
+}
+
+.cvViewerJourneyLine--wiped {
+  color: var(--text-muted);
+  opacity: 0.55;
 }
 
 .cvViewerJourneyPath {
   color: var(--accent);
 }
+
+.cvViewerTimeline {
+  color: var(--accent-strong);
+}
+
+.cvViewerEraTitle {
+  color: var(--text-primary);
+  font-weight: 700;
+}
+
 
 .cvViewerType {
   color: var(--accent-strong);
