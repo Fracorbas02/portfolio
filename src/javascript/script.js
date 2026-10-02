@@ -757,16 +757,38 @@
   const unknownCommandMessage = commandsApi.unknown;
 
   /**
-   * Découpe la ligne en segments de pipeline : les « | » hors
-   * guillemets simples et doubles séparent les commandes — un
-   * motif cité ne coupe pas la ligne. Découpage volontairement
-   * naïf : pas de substitution ni de sous-shell. Renvoie
-   * { segments } ou { error }.
+   * Découpe la ligne en jobs de commandes : les opérateurs « | »
+   * (pipeline), « && » / « || » (enchaînement conditionnel) et
+   * « ; » (enchaînement systématique) sont reconnus hors guille-
+   * mets simples et doubles — un motif cité ne coupe pas la
+   * ligne. Découpage volontairement naïf : pas de substitution ni
+   * de sous-shell. Renvoie { jobs } ou { error } :
+   *   jobs : [{ gate: null | '&&' | '||' | ';' , segments: [...] }]
    */
-  function parsePipeline(line) {
-    const segments = [];
+  function parseCommandLine(line) {
+    const jobs = [];
+    let segments = [];
     let current = '';
     let quote = null;
+    let gate = null;
+    let expectingSegment = false;
+
+    // Clôture d'un segment de commande ; un segment vide (opérateur
+    // en trop) est une erreur de syntaxe, comme dans bash
+    const endSegment = (operator) => {
+      const text = current.trim();
+      current = '';
+      if (text === '') return { error: operator };
+      segments.push(text);
+      expectingSegment = false;
+      return null;
+    };
+    const endJob = () => {
+      if (segments.length === 0) return;
+      jobs.push({ gate, segments });
+      segments = [];
+      gate = null;
+    };
 
     for (let i = 0; i < line.length; i++) {
       const char = line[i];
@@ -780,19 +802,39 @@
         current += char;
         continue;
       }
-      if (char === '|') {
-        const text = current.trim();
-        current = '';
-        if (text === '') return { error: '|' };
-        segments.push(text);
+      if (char === '|' || char === '&' || char === ';') {
+        let operator = char;
+        if ((char === '|' || char === '&') && line[i + 1] === char) {
+          operator += char;
+          i += 1;
+        } else if (char === '&') {
+          return { error: operator };
+        }
+        const error = endSegment(operator);
+        if (error) return error;
+        if (operator !== '|') {
+          endJob();
+          gate = operator;
+        } else {
+          expectingSegment = true;
+        }
         continue;
       }
       current += char;
     }
     if (quote !== null) return { error: 'guillemet non fermé' };
-    if (current.trim() === '') return { error: '|' };
-    segments.push(current.trim());
-    return { segments };
+    // Clôture du dernier segment avant les contrôles : une ligne
+    // bien terminée ne doit jamais ressembler à un opérateur
+    // orphelin. Après endJob, gate ne survit que si aucun job n'a
+    // pu être clôturé (opérateur orphelin en fin de ligne)
+    if (current.trim() !== '') {
+      segments.push(current.trim());
+      expectingSegment = false;
+    }
+    endJob();
+    if (gate !== null) return { error: gate };
+    if (expectingSegment) return { error: '|' };
+    return { jobs };
   }
 
   /**
@@ -809,6 +851,20 @@
   };
 
   /**
+   * Réussite d'une commande pour les enchaînements && / || : tous
+   * les messages d'erreur du shell commencent par « <nom> : »
+   * (cat : fichier introuvable…), sortie vide ou null = succès.
+   * Un fichier dont le contenu commencerait exactement par
+   * « cat : » serait pris pour un échec — garde-fou suffisant
+   * pour un portfolio.
+   */
+  const commandSucceeded = (name, result) => {
+    if (typeof result !== 'string' || result === '') return true;
+    return !window.PORTFOLIO_HTML.htmlToText(result)
+      .startsWith(`${name} :`);
+  };
+
+  /**
    * Exécute un pipeline : chaque commande reçoit en entrée standard
    * la sortie du précédent (le HTML du terminal redevient du
    * texte brut pour traverser le tube). Seule la sortie du
@@ -818,15 +874,16 @@
   const runPipeline = async (segments) => {
     let stdin = null;
     let result = null;
+    let name = '';
 
     for (let i = 0; i < segments.length; i++) {
       const effective = expandAlias(segments[i]);
       const [rawName, ...args] = effective.split(/\s+/);
-      const name = rawName.toLowerCase();
+      name = rawName.toLowerCase();
       const handler = handlers[name];
 
       if (!handler) {
-        return { output: unknownCommandMessage(rawName) };
+        return { output: unknownCommandMessage(rawName), ok: false };
       }
       try {
         result = await handler(args, stdin);
@@ -838,7 +895,7 @@
       // Page man : dernière commande → pager ; au milieu du
       // pipeline, son texte traverse le tube comme toute sortie
       if (result && typeof result === 'object' && result.__pager) {
-        if (i === segments.length - 1) return { pager: result };
+        if (i === segments.length - 1) return { pager: result, ok: true };
         stdin = window.PORTFOLIO_HTML.htmlToText(result.html ?? '');
         continue;
       }
@@ -847,12 +904,15 @@
         : null;
     }
 
-    return { output: typeof result === 'string' ? result : null };
+    return {
+      output: typeof result === 'string' ? result : null,
+      ok: commandSucceeded(name, result)
+    };
   };
 
   /**
-   * Exécute la ligne saisie : écho du prompt, puis pipeline dont
-   * seule la sortie finale s'affiche.
+   * Exécute la ligne saisie : écho du prompt, puis jobs de
+   * pipeline dans l'ordre, chaque sortie suivant la précédente.
    */
   const executeCommand = async (rawCommand) => {
     const trimmed = rawCommand.trim();
@@ -869,19 +929,28 @@
     // les sorties suivent l'écho, dans l'ordre des commandes
     printOutput(`${escapeHTML(DEFAULT_BEGIN_SHELL.textContent)}${escapeHTML(trimmed)}`);
 
-    const parsed = parsePipeline(trimmed);
+    const parsed = parseCommandLine(trimmed);
     if (parsed.error) {
       printOutput(`bash : erreur de syntaxe près du symbole inattendu « ${escapeHTML(parsed.error)} »`);
       return;
     }
 
-    const { output, pager } = await runPipeline(parsed.segments);
-    if (pager) {
-      enterPager(pager);
-      return;
-    }
-    if (typeof output === 'string' && output !== '') {
-      printOutput(output);
+    // La gate du job décide de son exécution : « && » exige la
+    // réussite du précédent, « || » son échec, « ; »/null rien
+    let previousOk = true;
+    for (const job of parsed.jobs) {
+      if (job.gate === '&&' && !previousOk) continue;
+      if (job.gate === '||' && previousOk) continue;
+
+      const { output, ok, pager } = await runPipeline(job.segments);
+      if (pager) {
+        enterPager(pager);
+        return;
+      }
+      if (typeof output === 'string' && output !== '') {
+        printOutput(output);
+      }
+      previousOk = ok;
     }
   };
 
