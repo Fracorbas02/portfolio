@@ -1441,26 +1441,69 @@
   }
 
   /**
+   * Dernier segment de commande de la ligne : le texte qui suit le
+   * dernier opérateur (|, ||, ;, &&), hors guillemets simples et
+   * doubles — comme parseCommandLine, un motif cité ne coupe pas.
+   * C'est ce segment que la complétion regarde : la commande en
+   * cours de saisie est celle du dernier pipe, pas celle du début
+   * de ligne. Le « & » seul n'est pas un opérateur ici : le
+   * dispatcher le refuserait de toute façon.
+   */
+  function lastCommandSegment(line) {
+    let quote = null;
+    let start = 0;
+    for (let i = 0; i < line.length; i++) {
+      const char = line[i];
+      if (quote) {
+        if (char === quote) quote = null;
+        continue;
+      }
+      if (char === "'" || char === '"') {
+        quote = char;
+        continue;
+      }
+      if (char === '|' || char === ';') {
+        const doubled = char === '|' && line[i + 1] === char;
+        start = i + (doubled ? 2 : 1);
+        if (doubled) i += 1;
+      } else if (char === '&' && line[i + 1] === '&') {
+        start = i + 2;
+        i += 1;
+      }
+    }
+    return line.slice(start);
+  }
+
+  /**
    * Complétion au Tab : le nom de commande s'il n'y a pas encore
-   * d'argument, sinon le dernier argument de la commande.
+   * d'argument, sinon le dernier argument de la commande. La
+   * complétion porte sur le segment actif — après un pipe ou un
+   * enchaînement, c'est la commande qui suit l'opérateur qui est
+   * complétée, à la manière de bash.
    */
   function tabComplete() {
     const value = COMMAND_INPUT.value;
+    const raw = lastCommandSegment(value);
+    const segment = raw.trim();
 
-    // Premier mot : complétion du nom de commande, alias compris
-    if (!/\s/.test(value)) {
+    // Premier mot du segment : complétion du nom de commande,
+    // alias compris ; le texte devant le segment est conservé tel
+    // quel (prompt, pipes, enchaînements déjà saisis)
+    if (!/\s/.test(segment) && !/\s$/.test(raw)) {
       const candidates = [...new Set([
         ...Object.keys(handlers),
         ...Object.keys(state.aliases ?? {})
       ])]
-        .filter((name) => name.startsWith(value.toLowerCase()));
-      applyCompletion(candidates, value, '');
+        .filter((name) => name.startsWith(segment.toLowerCase()));
+      const before = value.slice(0, value.length - segment.length);
+      applyCompletion(candidates, segment, before);
       return;
     }
 
-    // Sinon : complétion du dernier argument
-    const [command, ...rest] = value.split(/\s+/);
-    const lastWord = rest[rest.length - 1] ?? '';
+    // Sinon : complétion du dernier argument de la commande active
+    const tokens = segment.split(/\s+/);
+    const command = tokens[0];
+    const lastWord = /\s$/.test(raw) ? '' : tokens[tokens.length - 1];
     const before = value.slice(0, value.length - lastWord.length);
     const { candidates, dirNode, dirPart } = argumentCandidates(command.toLowerCase(), lastWord);
     applyCompletion(candidates, lastWord, before, dirNode, dirPart);
