@@ -1381,6 +1381,126 @@
   };
 
   /**
+   * Positions des substitutions « $(cmd) » d'une ligne, hors
+   * guillemets : { spans: [{ start, inner, end }] } — start du
+   * « $ », inner la commande imbriquée, end la parenthèse fermante.
+   * Les guillemets et la profondeur des parenthèses sont suivis à
+   * l'intérieur du motif ; une parenthèse non fermée renvoie
+   * { error: true }.
+   */
+  function substitutionSpans(line) {
+    const spans = [];
+    let quote = null;
+    let i = 0;
+    while (i < line.length) {
+      const char = line[i];
+      if (quote) {
+        if (char === quote) quote = null;
+        i += 1;
+        continue;
+      }
+      if (char === "'" || char === '"') {
+        quote = char;
+        i += 1;
+        continue;
+      }
+      if (char === '$' && line[i + 1] === '(') {
+        let depth = 1;
+        let innerQuote = null;
+        let j = i + 2;
+        while (j < line.length && depth > 0) {
+          const c = line[j];
+          if (innerQuote) {
+            if (c === innerQuote) innerQuote = null;
+          } else if (c === "'" || c === '"') {
+            innerQuote = c;
+          } else if (c === '(') {
+            depth += 1;
+          } else if (c === ')') {
+            depth -= 1;
+          }
+          if (depth > 0) j += 1;
+        }
+        if (depth > 0) return { error: true, spans };
+        spans.push({ start: i, inner: line.slice(i + 2, j), end: j });
+        i = j + 1;
+        continue;
+      }
+      i += 1;
+    }
+    return { spans };
+  }
+
+  /**
+   * Sortie d'une substitution « $(cmd) » : la commande interne
+   * s'exécute sans écho ni historique. Les retours à la ligne
+   * deviennent des espaces (découpage en mots du vrai bash) ; une
+   * commande en échec affiche son message — façon stderr — et
+   * remplace le motif par du vide, comme dans bash.
+   */
+  const runSubstitution = async (inner) => {
+    const parsed = parseCommandLine(inner);
+    if (parsed.error) {
+      printOutput(`bash : erreur de syntaxe près du symbole inattendu « ${escapeHTML(parsed.error)} »`);
+      return { abort: true };
+    }
+
+    let previousOk = true;
+    let lastOutput = '';
+    for (const job of parsed.jobs) {
+      if (job.gate === '&&' && !previousOk) continue;
+      if (job.gate === '||' && previousOk) continue;
+
+      const { output, ok, pager, editor } = await runPipeline(job.segments);
+      if (editor) {
+        printOutput('nano : ne peut pas s\'insérer dans une substitution');
+        return { abort: true };
+      }
+      // Une page man substituée devient son texte, le pager ne
+      // s'ouvre pas au milieu d'une substitution
+      lastOutput = pager
+        ? (pager.html ?? '')
+        : (output ?? '');
+      previousOk = ok;
+    }
+    if (!previousOk) {
+      if (typeof lastOutput === 'string' && lastOutput !== '') printOutput(lastOutput);
+      return { text: '' };
+    }
+    return {
+      text: window.PORTFOLIO_HTML.htmlToText(lastOutput)
+        .replace(/\s*\n+\s*/g, ' ')
+        .trim()
+    };
+  };
+
+  /**
+   * Développe les substitutions « $(cmd) » d'une ligne avant son
+   * analyse, comme dans bash. Renvoie la ligne développée, ou
+   * null si une substitution interrompt tout (erreur de syntaxe).
+   */
+  const expandSubstitutions = async (line) => {
+    const { error, spans } = substitutionSpans(line);
+    if (error) {
+      printOutput('bash : substitution « $( » non fermée');
+      return null;
+    }
+    if (spans.length === 0) return line;
+
+    let out = '';
+    let cursor = 0;
+    for (const span of spans) {
+      out += line.slice(cursor, span.start);
+      const result = await runSubstitution(span.inner);
+      if (result.abort) return null;
+      out += result.text ?? '';
+      cursor = span.end + 1;
+    }
+    out += line.slice(cursor);
+    return out;
+  };
+
+  /**
    * Exécute la ligne saisie : écho du prompt, puis jobs de
    * pipeline dans l'ordre, chaque sortie suivant la précédente.
    */
@@ -1399,7 +1519,13 @@
     // les sorties suivent l'écho, dans l'ordre des commandes
     printOutput(`${escapeHTML(DEFAULT_BEGIN_SHELL.textContent)}${escapeHTML(trimmed)}`);
 
-    const parsed = parseCommandLine(trimmed);
+    // Substitutions « $(cmd) » : développées avant l'analyse, en
+    // une seule passe — l'historique garde la ligne telle que
+    // saisie, les substitutions ne s'imbriquent pas
+    const expanded = await expandSubstitutions(trimmed);
+    if (expanded === null) return;
+
+    const parsed = parseCommandLine(expanded);
     if (parsed.error) {
       printOutput(`bash : erreur de syntaxe près du symbole inattendu « ${escapeHTML(parsed.error)} »`);
       return;
@@ -2133,7 +2259,7 @@
     window.PORTFOLIO_THEME.restore();
 
     try {
-      const response = await fetch('./src/JSON/elements.json?v=20261002.15');
+      const response = await fetch('./src/JSON/elements.json?v=20261002.16');
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
       portfolioData = await response.json();
     } catch (err) {
