@@ -60,6 +60,8 @@
     }
     const external = /^https?:/.test(line.href);
     return `  • <a class="cvViewerLink" href="${escape(line.href)}"${
+      line.read !== undefined ? ` data-read="${Number(line.read)}"` : ''
+    }${
       external ? ' target="_blank" rel="noopener noreferrer"' : ''
     }">${textHTML(line.text)}</a>`;
   };
@@ -159,10 +161,14 @@
               const external = /^https?:/.test(link.href);
               const prefix = `  ${linkIndex} `;
               const labelHTML = `${textHTML(link.label.padEnd(10))} ${textHTML(link.value)}`;
-              // Schéma hors liste blanche : texte brut, pas de lien
+              // Schéma hors liste blanche : texte brut, pas de lien.
+              // Lien « read » : un attribut data-read pointe vers
+              // l'article du flux — le shell l'ouvre en mode lecture
+              // au lieu de naviguer (voir script.js).
               const anchor = window.PORTFOLIO_HTML.isSafeHref(link.href)
                 ? `<a class="cvViewerLink" href="${escape(link.href)}"${
-                    external ? ' target="_blank" rel="noopener noreferrer"' : ''
+                    link.read !== undefined ? ` data-read="${Number(link.read)}"` : ''
+                  }${external ? ' target="_blank" rel="noopener noreferrer"' : ''
                   }>${labelHTML}</a>`
                 : labelHTML;
               lines.push(`${prefix}${anchor}`);

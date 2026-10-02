@@ -311,6 +311,20 @@
     }
   };
 
+  /** Ouvre l'article #index du flux blog en mode lecture (pager). */
+  const enterReadMode = (index) => {
+    const feed = window.PORTFOLIO_BLOG_FEED;
+    const item = feed?.items?.[index];
+    if (!item) return;
+    enterPager({
+      title: item.title,
+      label: 'Lecture',
+      url: item.link,
+      overlay: true,
+      html: feed.renderArticle(item)
+    });
+  };
+
   /** Redessine l'écran courant du viewer (menu ou rubrique). */
   const renderViewer = () => {
     const api = state.viewer?.api;
@@ -415,17 +429,36 @@
   // à la sortie, comme l'écran alternatif du vrai less.
   // ──────────────────────────────────────────────────────────────
   function enterPager(page) {
+    // Mode lecture (page.overlay) : le pager se superpose au viewer
+    // ouvert sans détruire son DOM — les animations du panneau
+    // latéral continuent leur vie derrière la lecture.
+    const overlay = !!page.overlay;
     state.pager = {
       title: page.title,
+      label: page.label ?? 'Manuel',
+      url: page.url ?? null,
+      overlay,
       content: null,
-      saved: SHELL_OUTPUT.innerHTML
+      saved: overlay ? null : SHELL_OUTPUT.innerHTML
     };
     root.classList.add('viewerMode');
-    SHELL_OUTPUT.classList.add('booting');
-    SHELL_OUTPUT.innerHTML =
-      `<div class="manPager"><div class="manPagerContent">${page.html}</div></div>`
-      + '<div class="cvViewerBar manPagerStatus"></div>';
-    state.pager.content = SHELL_OUTPUT.querySelector('.manPagerContent');
+    if (overlay) {
+      const el = document.createElement('div');
+      el.className = 'manPager manPagerOverlay';
+      el.innerHTML = `<div class="manPagerContent">${page.html}</div>`;
+      SHELL_OUTPUT.appendChild(el);
+      const bar = document.createElement('div');
+      bar.className = 'cvViewerBar manPagerStatus';
+      SHELL_OUTPUT.appendChild(bar);
+      state.pager.content = el.querySelector('.manPagerContent');
+      root.classList.add('reading');
+    } else {
+      SHELL_OUTPUT.classList.add('booting');
+      SHELL_OUTPUT.innerHTML =
+        `<div class="manPager"><div class="manPagerContent">${page.html}</div></div>`
+        + '<div class="cvViewerBar manPagerStatus"></div>';
+      state.pager.content = SHELL_OUTPUT.querySelector('.manPagerContent');
+    }
     COMMAND_INPUT.value = '';
     resizeInput();
     updatePagerStatus();
@@ -440,15 +473,29 @@
 
     const max = content.scrollHeight - content.clientHeight;
     const atEnd = max <= 0 || content.scrollTop >= max - 2;
-    bar.innerHTML = `Manuel <span class="helpCommand">${escapeHTML(state.pager.title)}</span> — `
-      + (atEnd ? '(FIN)' : `${Math.round((content.scrollTop / max) * 100)}%`)
-      + `&nbsp;&nbsp;↑↓ défiler · PgUp/PgDn page · <span class="helpCommand">q</span> quitter`;
+    const label = state.pager.label ?? 'Manuel';
+    let html = `${label} <span class="helpCommand">${escapeHTML(state.pager.title)}</span> — `
+      + (atEnd ? '(FIN)' : `${Math.round((content.scrollTop / max) * 100)}%`);
+    if (state.pager.url) {
+      html += '&nbsp;&nbsp;^C ouvrir dans le navigateur';
+    }
+    html += `&nbsp;&nbsp;↑↓ défiler · PgUp/PgDn page · <span class="helpCommand">q</span> quitter`;
+    bar.innerHTML = html;
   }
 
   /** Quitte le pager et restitue l'écran du shell. */
   function quitPager() {
     const bar = root.querySelector('.manPagerStatus');
     if (bar) bar.remove();
+    if (state.pager?.overlay) {
+      // Lecture par-dessus un viewer : on rend la main au viewer,
+      // dont le DOM et ses animations sont restés intacts.
+      root.classList.remove('reading');
+      SHELL_OUTPUT.querySelector('.manPagerOverlay')?.remove();
+      state.pager = null;
+      COMMAND_INPUT.focus();
+      return;
+    }
     root.classList.remove('viewerMode');
     SHELL_OUTPUT.innerHTML = state.pager?.saved ?? '';
     state.pager = null;
@@ -461,6 +508,16 @@
   function handlePagerKey(event) {
     const content = state.pager?.content;
     if (!content) return;
+
+    // ^C dans une lecture : ouvre l'article original dans le
+    // navigateur, comme le ^C du viewer ouvre le site du blog
+    if (event.ctrlKey && event.key.toLowerCase() === 'c' && state.pager.url
+        && window.PORTFOLIO_HTML.isSafeHref(state.pager.url)) {
+      event.preventDefault();
+      window.open(state.pager.url, '_blank', 'noopener,noreferrer');
+      quitPager();
+      return;
+    }
 
     const pageStep = Math.max(40, content.clientHeight - 40);
     let handled = true;
@@ -545,7 +602,11 @@
       }
       if (/^[1-9]$/.test(event.key)) {
         const link = viewer.api.links(viewer.section)[Number(event.key) - 1];
-        if (link) openViewerLink(link.href);
+        if (!link) return;
+        // Lien « read » : l'article s'ouvre en mode lecture dans le
+        // pager, pas dans un onglet
+        if (link.read !== undefined) enterReadMode(link.read);
+        else openViewerLink(link.href);
         return;
       }
     }
@@ -1039,6 +1100,14 @@
     // Un clic dans cette fenêtre rend le focus à son input ; les
     // autres fenêtres gardent le leur (multi-shells)
     root.addEventListener('click', (e) => {
+      // Lien « read » d'un article du blog : mode lecture dans le
+      // pager, pas de navigation hors du shell
+      const readAnchor = e.target.closest('a[data-read]');
+      if (readAnchor) {
+        e.preventDefault();
+        enterReadMode(Number(readAnchor.dataset.read));
+        return;
+      }
       // Ne pas voler le focus si on clique sur un bouton ou lien
       if (e.target.closest('button, a, .menuContent')) return;
       COMMAND_INPUT.focus();
