@@ -146,6 +146,41 @@
           return `<div class="cvViewerSection" data-eras="1">${boxTop}\n${erasHTML}</div>`;
         }
 
+        // ── Rubrique « liste d'articles » : tous les items du flux
+        // d'un coup. ↑↓ déplacent la sélection (navList), ⏎ lit
+        // l'article sélectionné (selectedRead, script.js), les
+        // touches 1-9 ouvrent les neuf premiers (links).
+        if (section.articleList) {
+          const items = section.articleList;
+          const lines = [];
+          for (const entry of section.entries ?? []) {
+            lines.push(headingHTML(entry.heading));
+            if (entry.sub) lines.push(subHTML(entry.sub));
+            if (entry.lines) {
+              for (const line of entry.lines) lines.push(lineHTML(line));
+            }
+            lines.push('');
+          }
+          if (section.listHeading) lines.push(headingHTML(section.listHeading));
+          items.forEach((item, i) => {
+            const marker = i === listState.index ? '► ' : '  ';
+            const num = i < 9 ? `${i + 1} ` : '  ';
+            const cls = i === listState.index
+              ? 'cvViewerItemSelected' : 'cvViewerItem';
+            const content = `<span class="${cls}">${
+              escape((item.label ?? '').padEnd(8))} ${escape(item.value ?? '')}</span>`;
+            const anchor = window.PORTFOLIO_HTML.isSafeHref(item.href)
+              ? `<a class="cvViewerLink" href="${escape(item.href)}"${
+                  item.read !== undefined ? ` data-read="${Number(item.read)}"` : ''
+                } target="_blank" rel="noopener noreferrer">${content}</a>`
+              : content;
+            lines.push(`${marker}${num}${anchor}`);
+          });
+
+          const body = [boxTop, '', ...lines.map((l) => `  ${l}`)].join('\n');
+          return `<div class="cvViewerSection" data-list="1">${body}</div>`;
+        }
+
         const lines = [];
         let linkIndex = 0; // numérotation globale : touches 1-9
         for (const entry of section.entries ?? []) {
@@ -193,6 +228,9 @@
       // sont complétées à LOGO_W pour garder le cadre aligné.
       const logoState = { i: 0, phase: 'hold', ticks: LOGO_HOLD_TICKS, row: 0 };
       const badgeState = { offset: 0, ticks: BADGE_SCROLL_TICKS };
+      // Sélection de la rubrique « liste d'articles » : un index par
+      // instance, les flèches le déplacent (navList) comme le menu.
+      const listState = { index: 0 };
 
       const badgeWindow = () => {
         if (platforms.length === 0) return [];
@@ -497,6 +535,16 @@
             key('q', 'quitter')
           ].join(sep);
         }
+        // Rubrique « liste d'articles » : flèches + Entrée pour lire
+        if (section?.articleList) {
+          return [
+            key('↑↓', 'choisir'),
+            key('⏎', 'lire l\'article'),
+            key('1-9', 'raccourcis'),
+            key('^C', ctrlLabel),
+            key('q', 'quitter')
+          ].join(sep);
+        }
         const hasLinks = section?.entries?.some((entry) => entry.links?.length > 0);
         if (hasLinks) {
           return [
@@ -536,7 +584,36 @@
         for (const entry of section.entries ?? []) {
           if (entry.links) result.push(...entry.links);
         }
+        // Liste d'articles : les touches 1-9 ouvrent les neufs
+        // premiers items, dans l'ordre affiché
+        if (section.articleList) result.push(...section.articleList);
         return result;
+      };
+
+      // Navigation dans une liste d'articles (flèches ↑↓) : la
+      // sélection boucle, seule la colonne principale est
+      // re-rendue et l'item sélectionné reste visible.
+      const navList = (container, sectionId, delta) => {
+        const section = sections.find((s) => s.id === sectionId);
+        if (!section?.articleList || !container) return false;
+        const items = section.articleList;
+        if (items.length === 0) return false;
+        listState.index = (listState.index + delta + items.length) % items.length;
+        const main = container.querySelector('.cvViewerMain');
+        if (main) {
+          main.innerHTML = renderSection(sectionId);
+          main.querySelector('.cvViewerItemSelected')
+            ?.scrollIntoView({ block: 'nearest' });
+        }
+        return true;
+      };
+
+      // Index `read` de l'article sélectionné — null si la rubrique
+      // n'est pas une liste d'articles (script.js : ⏎ lit).
+      const selectedRead = (sectionId) => {
+        const section = sections.find((s) => s.id === sectionId);
+        if (!section?.articleList) return null;
+        return section.articleList[listState.index]?.read ?? null;
       };
 
       // Navigation manuelle entre les ères (flèches ↑↓) : prend la
@@ -602,6 +679,11 @@
               }
             }
           }
+          if (section.articleList) {
+            for (const item of section.articleList) {
+              out.push(`  - ${item.label ?? ''} : ${item.value ?? ''} — ${item.href}`);
+            }
+          }
           out.push('');
         }
         return out.join('\n').trim() + '\n';
@@ -616,6 +698,8 @@
         bar: barHTML,
         links,
         navEra,
+        navList,
+        selectedRead,
         toText,
         startAnimations,
         stopAnimations

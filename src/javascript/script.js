@@ -586,19 +586,36 @@
         return;
       }
     } else {
-      // Rubrique : ↑↓ défilent — sauf rubrique « ères », où elles
-      // naviguent entre les étapes. Entrée/Échap retournent au
-      // menu, un chiffre ouvre le lien correspondant.
+      // Rubrique : ↑↓ défilent — sauf rubriques « ères » et
+      // « liste d'articles », où elles déplacent la sélection.
+      // Entrée ouvre l'article sélectionné (ou revient au menu),
+      // Échap retourne au menu, un chiffre ouvre le lien correspondant.
       if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
         const view = SHELL_OUTPUT.querySelector('.cvViewer');
+        const delta = event.key === 'ArrowDown' ? 1 : -1;
         if (viewer.api.navEra && viewer.api.navEra(
-          view, viewer.section, event.key === 'ArrowDown' ? 1 : -1)) {
+          view, viewer.section, delta)) {
           return;
         }
-        SHELL_OUTPUT.scrollTop += event.key === 'ArrowDown' ? 40 : -40;
+        if (viewer.api.navList && viewer.api.navList(
+          view, viewer.section, delta)) {
+          return;
+        }
+        SHELL_OUTPUT.scrollTop += delta * 40;
         return;
       }
-      if (event.key === 'Enter' || event.key === 'Escape') {
+      if (event.key === 'Escape') {
+        viewer.section = null;
+        renderViewer();
+        return;
+      }
+      if (event.key === 'Enter') {
+        // Liste d'articles : Entrée lit l'article sélectionné
+        const selected = viewer.api.selectedRead?.(viewer.section);
+        if (selected !== null && selected !== undefined) {
+          enterReadMode(selected);
+          return;
+        }
         viewer.section = null;
         renderViewer();
         return;
