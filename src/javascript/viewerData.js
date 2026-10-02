@@ -689,6 +689,146 @@
     ]
   };
 
+  // ── Viewer « orientation » ────────────────────────────────────
+  // Le projet d'orientation post-bac de terminale : le plan tel
+  // qu'il figurait sur le schéma d'époque (un diagramme Whimsical,
+  // encore ouvert tel quel via ^C), et ce qui s'est réellement
+  // passé. Ouvre via `open projet_orientation.png` depuis
+  // /root/presentation.
+  const ORIENTATION = {
+    title: 'ORIENTATION POST-BAC',
+    subtitle: 'le plan de terminale · ce qui en est sorti',
+    statusLabel: 'cartographie des parcours',
+    ctrlLabel: "l'image originale",
+    logos: [LOGO_TERMINAL, LOGO_CISCO, LOGO_TUX],
+    platforms: PLATFORM_LINES,
+    typedPhrases: [
+      'Bac Maths & NSI',
+      'BUT R&T — cybersécurité',
+      'EPSM en alternance',
+      'objectif Bac+5 cyber',
+      'red team / blue team'
+    ],
+    sections: [
+      {
+        id: 'depart',
+        title: 'Le point de départ',
+        entries: [
+          {
+            heading: 'Terminale, lycée Guillaume Fichet',
+            lines: [
+              'Bonneville (74), année du grand schéma.',
+              'Spécialités Mathématiques et NSI.',
+              'Option Mathématiques expertes.',
+              'Section Euro — anglais certifié B2.'
+            ]
+          },
+          {
+            heading: 'La question de terminale',
+            lines: [
+              'École d\u2019ingénieur, BUT, licence ou BTS ?',
+              'Le schéma d\u2019époque (celui que ^C ouvre en image)',
+              'dessinait toutes les voies possibles, avec leurs',
+              'années, leurs débouchés et leurs compromises.'
+            ]
+          }
+        ]
+      },
+      {
+        id: 'voies',
+        title: 'Les voies envisagées',
+        entries: [
+          {
+            heading: 'Écoles d\u2019ingénieurs — Bac+5 en 5 ans',
+            lines: [
+              'GEPI Polytech Chambéry : cycle prépa intégré (PEIP),',
+              '2 ans de maths-info avant le cycle ingénieur.',
+              'Prépas des INP : Valence, Grenoble (ENSIMAG).'
+            ]
+          },
+          {
+            heading: 'BUT R&T — Bac+3 en 3 ans',
+            lines: [
+              'Voie B, en alternance : IUT d\u2019Annecy — formation',
+              'certifiée SecNumEdu par l\u2019ANSSI.',
+              'Voie C, formation initiale : IUT de Valence.'
+            ]
+          },
+          {
+            heading: 'Licences et autres pistes',
+            lines: [
+              'Licence informatique : Savoie Mont-Blanc, Grenoble',
+              'Alpes, Lyon 1 (L1 MISPO puis parcours info).',
+              'BUT développement : IUT Grenoble, Annecy, Roanne.',
+              'BTS SIO : Cluses, Annecy — puis licence.'
+            ]
+          }
+        ]
+      },
+      {
+        id: 'fait',
+        title: 'Ce que j\u2019ai réellement fait',
+        entries: [
+          {
+            heading: 'Le choix final',
+            lines: [
+              'BUT Réseaux & Télécoms à l\u2019IUT d\u2019Annecy —',
+              'la voie B, en alternance.',
+              'Parcours cybersécurité en 2e et 3e année.'
+            ]
+          },
+          {
+            heading: 'L\u2019alternance',
+            sub: 'EPSM La Roche-sur-Foron — service info, 2022 → 2025',
+            lines: [
+              'Bastion réseau supervisé avec la stack ELK.',
+              'Migration de sites externes dans un MPLS.',
+              'Pare-feu Stormshield : VPN, NAT, filtrage.'
+            ]
+          },
+          {
+            heading: 'Bien plus que prévu',
+            lines: [
+              'CCNA 1 & 2, certifications Stormshield CSNA/CSNE.',
+              'TryHackMe [0xA] Wizard, Root-Me, write-ups.',
+              'Ce portfolio, bastodoc, un home-lab complet.'
+            ]
+          }
+        ]
+      },
+      {
+        id: 'apres',
+        title: 'Et maintenant ?',
+        entries: [
+          {
+            heading: 'La suite du schéma',
+            lines: [
+              'Le plan d\u2019époque prévoyait un Bac+5 après le BUT :',
+              'ENSIMAG Grenoble, ISTIC Rennes, École 2400,',
+              'masters cybersécurité (systèmes & réseaux, SSI).'
+            ]
+          },
+          {
+            heading: 'Côté défense',
+            lines: [
+              'Marine Nationale : COM Cyber (Paris/Toulon), DRM,',
+              'CSC Brest — et la Bourse Cyber Marine.',
+              'Côté privé : blue team / red team, admin réseau.'
+            ]
+          },
+          {
+            heading: 'En vrai',
+            lines: [
+              'Le schéma n\u2019est pas fermé : il se redessine au',
+              'fil des rencontres et des opportunités.',
+              'La constante : les systèmes, le réseau, la sécurité.'
+            ]
+          }
+        ]
+      }
+    ]
+  };
+
   // Source unique des logos ASCII du panneau latéral : le viewer CV
   // (cvViewer.js) pointe ici plutôt que de porter sa propre copie
   window.PORTFOLIO_VIEWER_LOGOS = {
@@ -706,6 +846,7 @@
     profile: window.PORTFOLIO_DOC_VIEWER.create(PROFILE),
     reseaux: window.PORTFOLIO_DOC_VIEWER.create(RESEAUX),
     cyber: window.PORTFOLIO_DOC_VIEWER.create(CYBER),
-    dev: window.PORTFOLIO_DOC_VIEWER.create(DEV)
+    dev: window.PORTFOLIO_DOC_VIEWER.create(DEV),
+    orientation: window.PORTFOLIO_DOC_VIEWER.create(ORIENTATION)
   };
 })();
