@@ -10,7 +10,7 @@
       },
       {
         "name": "set",
-        "description": "Permet de définir un élément dans le shell. Exemple : set username bastien."
+        "description": "Permet de définir un élément dans le shell (username conservé entre les visites). Exemple : set username bastien."
       },
       {
         "name": "man",
@@ -436,7 +436,7 @@
         ]
       },
       "set": {
-        "description": "Définit des variables dans le terminal : le nom d'utilisateur affiché dans le prompt, ou le thème de couleurs de toute l'interface.",
+        "description": "Définit des variables dans le terminal : le nom d'utilisateur affiché dans le prompt (conservé d'une visite à l'autre, comme les alias), ou le thème de couleurs de toute l'interface.",
         "options":[
           {
             "name": "username",
