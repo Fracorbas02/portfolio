@@ -1292,6 +1292,19 @@
     return typeof result === 'string' ? window.PORTFOLIO_HTML.htmlToText(result) : '';
   };
 
+  /**
+   * Développe les jokers (* et ?) des arguments, comme le shell :
+   * les correspondances de l'arbre remplacent le mot, un mot sans
+   * correspondance reste tel quel. Les mots cités ne sont jamais
+   * développés — le motif de find (« "*.pdf" ») et le « * » de rm
+   * passent tels quels à leur commande.
+   */
+  const expandGlobs = (args) => args.flatMap((arg) => {
+    if (!/[*?]/.test(arg) || /['"]/.test(arg)) return [arg];
+    const matches = window.PORTFOLIO_FS.globPaths(state.tree, state.currentDir, arg);
+    return matches.length > 0 ? matches : [arg];
+  });
+
   const runPipeline = async (segments) => {
     let stdin = null;
     let result = null;
@@ -1319,13 +1332,16 @@
       }
 
       const effective = expandAlias(segments[i]);
-      const [rawName, ...args] = effective.split(/\s+/);
+      const [rawName, ...rawArgs] = effective.split(/\s+/);
       name = rawName.toLowerCase();
       const handler = handlers[name];
 
       if (!handler) {
         return { output: unknownCommandMessage(rawName), ok: false };
       }
+      // Jokers du shell : « rm * » garde son easter egg, ses
+      // arguments ne sont jamais développés
+      const args = name === 'rm' ? rawArgs : expandGlobs(rawArgs);
       try {
         result = await handler(args, stdin);
       } catch (err) {
@@ -2259,7 +2275,7 @@
     window.PORTFOLIO_THEME.restore();
 
     try {
-      const response = await fetch('./src/JSON/elements.json?v=20261002.16');
+      const response = await fetch('./src/JSON/elements.json?v=20261002.17');
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
       portfolioData = await response.json();
     } catch (err) {

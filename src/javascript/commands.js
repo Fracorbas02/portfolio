@@ -161,23 +161,28 @@
         return escapeHTML(stdin);
       }
 
-      const target = args[0];
-      const node = lookUpTree(target);
+      // Plusieurs fichiers (souvent issus d'un joker) : tous
+      // affichés à la suite, chacun avec la même validation
+      const contents = [];
+      for (const target of args) {
+        const node = lookUpTree(target);
 
-      if (node === null) {
-        return `cat : ${escapeHTML(target)} : fichier introuvable`;
+        if (node === null) {
+          return `cat : ${escapeHTML(target)} : fichier introuvable`;
+        }
+        if (isDirectory(node)) {
+          return `cat : ${escapeHTML(target)} : est un dossier`;
+        }
+        if (!canReadFiles()) {
+          return `cat : ${escapeHTML(target)} : Permission non accordée`;
+        }
+        const text = fileText(node);
+        if (text === null) {
+          return `cat : ${escapeHTML(target)} : fichier binaire (non affichable). Essayez : open`;
+        }
+        contents.push(text);
       }
-      if (isDirectory(node)) {
-        return `cat : ${escapeHTML(target)} : est un dossier`;
-      }
-      if (!canReadFiles()) {
-        return `cat : ${escapeHTML(target)} : Permission non accordée`;
-      }
-      const text = fileText(node);
-      if (text === null) {
-        return `cat : ${escapeHTML(target)} : fichier binaire (non affichable). Essayez : open`;
-      }
-      return escapeHTML(text);
+      return escapeHTML(contents.join('\n'));
     }
 
     /**
@@ -194,45 +199,54 @@
         flags += args.shift().slice(1);
       }
       if (args.length === 0) {
-        return 'usage : grep [-i] [-n] <motif> <fichier>  (ou : commande | grep [-i] [-n] <motif>)';
+        return 'usage : grep [-i] [-n] <motif> <fichier...>  (ou : commande | grep [-i] [-n] <motif>)';
       }
 
       const pattern = args[0];
-      let text;
+      let sources;
       if (args.length >= 2) {
-        const target = args[1];
-        const node = lookUpTree(target);
+        // Plusieurs fichiers (souvent issus d'un joker) : le nom
+        // de chacun est préfixé à ses correspondances, comme grep
+        sources = [];
+        for (const target of args.slice(1)) {
+          const node = lookUpTree(target);
 
-        if (node === null) return `grep : ${escapeHTML(target)} : fichier introuvable`;
-        if (isDirectory(node)) return `grep : ${escapeHTML(target)} : est un dossier`;
-        if (!canReadFiles()) {
-          return `grep : ${escapeHTML(target)} : Permission non accordée`;
-        }
+          if (node === null) return `grep : ${escapeHTML(target)} : fichier introuvable`;
+          if (isDirectory(node)) return `grep : ${escapeHTML(target)} : est un dossier`;
+          if (!canReadFiles()) {
+            return `grep : ${escapeHTML(target)} : Permission non accordée`;
+          }
 
-        text = fileText(node);
-        if (text === null) {
-          return `grep : ${escapeHTML(target)} : fichier binaire (non analysable)`;
+          const text = fileText(node);
+          if (text === null) {
+            return `grep : ${escapeHTML(target)} : fichier binaire (non analysable)`;
+          }
+          sources.push({ target, text });
         }
       } else if (stdin !== null) {
-        text = stdin; // pipeline : l'entrée standard de la commande
+        sources = [{ target: null, text: stdin }]; // pipeline : l'entrée standard
       } else {
-        return 'usage : grep [-i] [-n] <motif> <fichier>  (ou : commande | grep [-i] [-n] <motif>)';
+        return 'usage : grep [-i] [-n] <motif> <fichier...>  (ou : commande | grep [-i] [-n] <motif>)';
       }
 
       const insensitive = flags.includes('i');
       const showLineNumbers = flags.includes('n');
       const needle = insensitive ? pattern.toLowerCase() : pattern;
+      const prefixNames = sources.length > 1;
 
       const matches = [];
-      text.split('\n').forEach((line, index) => {
-        const haystack = insensitive ? line.toLowerCase() : line;
-        if (haystack.includes(needle)) {
-          const number = showLineNumbers
-            ? `<span style="color:var(--text-muted);">${index + 1}:</span> `
-            : '';
-          matches.push(number + escapeHTML(line));
-        }
-      });
+      for (const { target, text } of sources) {
+        text.split('\n').forEach((line, index) => {
+          const haystack = insensitive ? line.toLowerCase() : line;
+          if (haystack.includes(needle)) {
+            const number = showLineNumbers
+              ? `<span style="color:var(--text-muted);">${index + 1}:</span> `
+              : '';
+            const name = prefixNames ? `${escapeHTML(target)}:` : '';
+            matches.push(name + number + escapeHTML(line));
+          }
+        });
+      }
       return matches.join('\n');
     }
 
@@ -381,12 +395,11 @@
       if (!isDirectory(node)) return `find : ${escapeHTML(start)} : n'est pas un dossier`;
 
       // Jokers du motif : * → n'importe quelle suite, ? → un
-      // caractère ; le reste est pris littéralement
-      const matcher = pattern === null ? null : new RegExp(
-        `^${pattern
-          .replace(/[.+^${}()|[\]\\]/g, '\\$&')
-          .replace(/\*/g, '.*')
-          .replace(/\?/g, '.')}$`);
+      // caractère ; la construction est partagée avec le
+      // développement des jokers du shell
+      const matcher = pattern === null
+        ? null
+        : window.PORTFOLIO_FS.globToRegExp(pattern);
 
       const results = [];
       const startDisplay = start.replace(/\/+$/, '') || '/';
