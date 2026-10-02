@@ -148,7 +148,13 @@
     historyIndex: -1,
     sessionStart: Date.now(),
     viewer: null,
-    variables: {}
+    variables: {},
+    // Alias persistés (localStorage) : chargés ici, écrits par les
+    // commandes alias/unalias (commands.js) via la même clé
+    aliases: (() => {
+      try { return JSON.parse(localStorage.getItem('portfolioShellAliases')) ?? {}; }
+      catch { return {}; }
+    })()
   };
 
   // État de la recherche inversée (Ctrl+R)
@@ -584,7 +590,15 @@
     state.historyIndex = state.history.length;
     persistHistory();
 
-    const [name, ...args] = trimmed.split(/\s+/);
+    // Développement de l'alias du premier mot, à la bash : la
+    // définition remplace le mot, le reste de la ligne suit. Une
+    // seule passe : pas de récursion possible.
+    const firstWord = trimmed.split(/\s+/)[0];
+    const aliasValue = state.aliases?.[firstWord];
+    const effective = aliasValue !== undefined
+      ? `${aliasValue}${trimmed.slice(firstWord.length)}`
+      : trimmed;
+    const [name, ...args] = effective.split(/\s+/);
     const handler = handlers[name.toLowerCase()];
 
     // Le prompt doit être capturé AVANT l'exécution : une commande
@@ -840,6 +854,8 @@
       case 'get':  pool = ['sha']; break;
       case 'ls':   pool = ['-a', '-l', '-la']; break;
       case 'rm':   pool = ['*']; break;
+      case 'alias':
+      case 'unalias': pool = Object.keys(state.aliases ?? {}); break;
       default: break;
     }
     return {
@@ -856,9 +872,12 @@
   function tabComplete() {
     const value = COMMAND_INPUT.value;
 
-    // Premier mot : complétion du nom de commande
+    // Premier mot : complétion du nom de commande, alias compris
     if (!/\s/.test(value)) {
-      const candidates = Object.keys(handlers)
+      const candidates = [...new Set([
+        ...Object.keys(handlers),
+        ...Object.keys(state.aliases ?? {})
+      ])]
         .filter((name) => name.startsWith(value.toLowerCase()));
       applyCompletion(candidates, value, '');
       return;
@@ -1192,7 +1211,7 @@
     window.PORTFOLIO_THEME.restore();
 
     try {
-      const response = await fetch('./src/JSON/elements.json?v=20261002.9');
+      const response = await fetch('./src/JSON/elements.json?v=20261002.10');
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
       portfolioData = await response.json();
     } catch (err) {

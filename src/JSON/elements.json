@@ -69,6 +69,14 @@
         "description": "Définit ou liste des variables d'environnement. Exemple : export SITE=docs.bastienbonora.fr."
       },
       {
+        "name": "alias",
+        "description": "Définit ou liste des alias de commande, persistés d'une visite à l'autre. Exemple : alias ll='ls -l'."
+      },
+      {
+        "name": "unalias",
+        "description": "Supprime un alias défini avec la commande alias. Exemple : unalias ll."
+      },
+      {
         "name": "neofetch",
         "description": "Affiche les informations du portfolio et ses compétences, à la manière de la commande neofetch."
       },
@@ -140,6 +148,31 @@
         "examples": [
           { "cmd": "export SITE=docs.bastienbonora.fr", "desc": "définit la variable SITE" },
           { "cmd": "echo $SITE", "desc": "affiche la valeur définie juste avant" }
+        ]
+      },
+      "alias": {
+        "description": "Définit un alias de commande : le premier mot tapé est remplacé par sa définition avant l'exécution, comme en bash. Sans argument, liste les alias définis. Les alias sont persistés dans le navigateur (localStorage) et survivent donc aux rechargements de la page.",
+        "options": [
+          {
+            "name": "NOM='commande'",
+            "usage": "définit l'alias NOM. La valeur peut être entre guillemets simples ou doubles pour contenir des espaces. Exemple : alias ll='ls -l'"
+          }
+        ],
+        "examples": [
+          { "cmd": "alias ll='ls -l'", "desc": "crée l'alias ll, utilisable ensuite comme une commande" },
+          { "cmd": "alias", "desc": "liste les alias définis" }
+        ]
+      },
+      "unalias": {
+        "description": "Supprime un alias défini avec la commande alias. Renvoie une erreur si l'alias n'existe pas.",
+        "options": [
+          {
+            "name": "NOM",
+            "usage": "nom de l'alias à supprimer. Exemple : unalias ll"
+          }
+        ],
+        "examples": [
+          { "cmd": "unalias ll", "desc": "supprime l'alias ll" }
         ]
       },
       "blog": {
