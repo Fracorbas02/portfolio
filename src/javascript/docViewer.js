@@ -117,9 +117,27 @@
         const section = sections.find((s) => s.id === sectionId);
         if (!section) return renderMenu(0);
 
+        const header = `  ${section.title.toUpperCase()}`;
+        const boxTop =
+          `┌─${escape(header)}─${'─'.repeat(Math.max(0, WIDTH - header.length - 3))}┐`;
+
+        // ── Rubrique « chemin » : frise ASCII révélée ligne par
+        // ligne (une par tick d'animation, voir animateJourney).
+        // Les connecteurs (│ ▼) prennent la couleur d'accent.
+        if (section.journey) {
+          const rows = section.journey.map((line) => {
+            const cls = /^[ │▼╰╮└┐┌┤├]/.test(line)
+              ? 'cvViewerJourneyLine cvViewerJourneyPath'
+              : 'cvViewerJourneyLine';
+            return `<span class="${cls}">${escape(line) || '&nbsp;'}</span>`;
+          });
+          const body = [boxTop, '', ...rows.map((r) => `  ${r}`)].join('\n');
+          return `<div class="cvViewerSection">${body}</div>`;
+        }
+
         const lines = [];
         let linkIndex = 0; // numérotation globale : touches 1-9
-        for (const entry of section.entries) {
+        for (const entry of section.entries ?? []) {
           lines.push(headingHTML(entry.heading));
           if (entry.sub) lines.push(subHTML(entry.sub));
           if (entry.lines) {
@@ -145,9 +163,8 @@
         }
         lines.pop(); // dernier saut de ligne superflu
 
-        const header = `  ${section.title.toUpperCase()}`;
         const body = [
-          `┌─${escape(header)}─${'─'.repeat(Math.max(0, WIDTH - header.length - 3))}┐`,
+          boxTop,
           '',
           ...lines.map((l) => `  ${l}`)
         ].join('\n');
@@ -184,6 +201,15 @@
         badgeState.offset = (badgeState.offset + 1) % platforms.length;
         const win = badgeWindow();
         rows.forEach((row, i) => { row.textContent = win[i]; });
+      };
+
+      // Chemin animé : chaque tick dévoile la ligne suivante.
+      // L'état vit dans le DOM (classe --shown) : ré-afficher la
+      // rubrique rejoue l'animation depuis le début.
+      const animateJourney = (scope) => {
+        const next = scope.querySelector(
+          '.cvViewerJourneyLine:not(.cvViewerJourneyLine--shown)');
+        if (next) next.classList.add('cvViewerJourneyLine--shown');
       };
 
       const animateLogo = (scope) => {
@@ -303,6 +329,7 @@
           if (type) type.textContent = typedText();
           animateLogo(scope);
           animateBadges(scope);
+          animateJourney(scope);
         }, 110);
       };
 
@@ -329,7 +356,7 @@
           ].join(sep);
         }
         const section = sections.find((s) => s.id === viewerState.section);
-        const hasLinks = section?.entries.some((entry) => entry.links?.length > 0);
+        const hasLinks = section?.entries?.some((entry) => entry.links?.length > 0);
         if (hasLinks) {
           return [
             key('1-9', 'ouvrir un lien'),
@@ -365,7 +392,7 @@
         const section = sections.find((s) => s.id === sectionId);
         if (!section) return [];
         const result = [];
-        for (const entry of section.entries) {
+        for (const entry of section.entries ?? []) {
           if (entry.links) result.push(...entry.links);
         }
         return result;
@@ -378,7 +405,11 @@
         const out = [title.toUpperCase(), subtitle, ''];
         for (const section of sections) {
           out.push(`== ${section.title} ==`);
-          for (const entry of section.entries) {
+          if (section.journey) {
+            out.push('', ...section.journey.map((l) => `  ${l}`));
+            continue;
+          }
+          for (const entry of section.entries ?? []) {
             out.push('', entry.heading);
             if (entry.sub) out.push(entry.sub);
             if (entry.lines) {

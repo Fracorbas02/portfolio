@@ -695,6 +695,37 @@
   // encore ouvert tel quel via ^C), et ce qui s'est réellement
   // passé. Ouvre via `open projet_orientation.png` depuis
   // /root/presentation.
+
+  // Frise « toute l'histoire » : du lycée à aujourd'hui, révélée
+  // ligne par ligne par docViewer.js (section `journey`). Les
+  // connecteurs (│ ▼) sont colorés par le viewer, les lignes de
+  // détail ne doivent pas commencer par un espace pour rester
+  // en couleur de texte normale. 54 caractères max par ligne.
+  const stepLine = (year, label) =>
+    `${year} ══ ${label} `.padEnd(54, '═');
+  const journeyPath = ' '.repeat(24);
+  const ORIENTATION_JOURNEY = [
+    stepLine('2021', 'Lycée Guillaume Fichet'),
+    'Maths & NSI · maths expertes · Euro anglais B2',
+    journeyPath + '│',
+    journeyPath + '▼',
+    stepLine('2022', 'BUT R&T — IUT d\u2019Annecy, voie B'),
+    'SecNumEdu ANSSI · parcours cybersécurité',
+    journeyPath + '│',
+    journeyPath + '▼',
+    stepLine('2022\u20132025', 'Alternance EPSM'),
+    'bastion ELK · MPLS · pare-feu Stormshield',
+    journeyPath + '│',
+    journeyPath + '▼',
+    stepLine('2025', 'DIPLÔMÉ BAC+3 — BUT R&T'),
+    'CCNA · CSNA/CSNE · THM & Root-Me · home-lab',
+    journeyPath + '│',
+    journeyPath + '▼',
+    stepLine('AUJOURD\u2019HUI', 'Alpes Networks'),
+    'admin sys & réseaux chez un opérateur',
+    'bastodoc : articles, write-ups, documentation'
+  ];
+
   const ORIENTATION = {
     title: 'ORIENTATION POST-BAC',
     subtitle: 'le plan de terminale · ce qui en est sorti',
@@ -706,7 +737,7 @@
       'Bac Maths & NSI',
       'BUT R&T — cybersécurité',
       'EPSM en alternance',
-      'objectif Bac+5 cyber',
+      'Alpes Networks',
       'red team / blue team'
     ],
     sections: [
@@ -801,30 +832,46 @@
         title: 'Et maintenant ?',
         entries: [
           {
-            heading: 'La suite du schéma',
+            heading: 'Pas de Bac+5 (pour l\u2019instant)',
             lines: [
-              'Le plan d\u2019époque prévoyait un Bac+5 après le BUT :',
-              'ENSIMAG Grenoble, ISTIC Rennes, École 2400,',
-              'masters cybersécurité (systèmes & réseaux, SSI).'
+              'Le schéma d\u2019époque prévoyait de continuer vers un',
+              'master ou une école d\u2019ingénieurs. En vrai, je me',
+              'suis arrêté en Bac+3 : diplômé du BUT R&T,',
+              'et le volet scolaire s\u2019arrête là.'
+            ]
+          },
+          {
+            heading: 'Alpes Networks',
+            sub: 'aujourd\u2019hui — admin systèmes & réseaux',
+            lines: [
+              'Un opérateur internet de petite taille : petite',
+              'structure, donc on touche à tout.',
+              'Administration système et réseau au quotidien,',
+              'au plus près de la production.'
             ]
           },
           {
             heading: 'Côté défense',
             lines: [
-              'Marine Nationale : COM Cyber (Paris/Toulon), DRM,',
-              'CSC Brest — et la Bourse Cyber Marine.',
-              'Côté privé : blue team / red team, admin réseau.'
+              'La Marine Nationale n\u2019est pas abandonnée —',
+              'mais presque. La cyber vit quand même : CTF,',
+              'TryHackMe, Root-Me, home-lab, write-ups.'
             ]
           },
           {
-            heading: 'En vrai',
+            heading: 'Toujours en apprentissage',
             lines: [
-              'Le schéma n\u2019est pas fermé : il se redessine au',
-              'fil des rencontres et des opportunités.',
-              'La constante : les systèmes, le réseau, la sécurité.'
+              'Je continue d\u2019apprendre en continu, et je',
+              'documente tout : articles et documentation sur',
+              'bastodoc, write-ups de CTF, ce portfolio.'
             ]
           }
         ]
+      },
+      {
+        id: 'histoire',
+        title: 'Toute l\u2019histoire',
+        journey: ORIENTATION_JOURNEY
       }
     ]
   };

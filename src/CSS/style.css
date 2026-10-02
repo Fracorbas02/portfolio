@@ -827,6 +827,20 @@ body.is-window-dragging * {
   font-weight: 700;
 }
 
+/* Frise « toute l'histoire » : lignes révélées une par une,
+   connecteurs (│ ▼) en couleur d'accent */
+.cvViewerJourneyLine {
+  visibility: hidden;
+}
+
+.cvViewerJourneyLine--shown {
+  visibility: visible;
+}
+
+.cvViewerJourneyPath {
+  color: var(--accent);
+}
+
 .cvViewerType {
   color: var(--accent-strong);
 }
