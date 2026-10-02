@@ -950,9 +950,21 @@ body.is-window-dragging * {
   background: var(--bg-surface);
 }
 
-/* Lignes de code des articles lus : la trame de commentaires du
-   pager ne suffit pas à les distinguer du prose. */
-.readCode {
+/* Blocs de code des articles lus : encadré façon terminal, une
+   <div> par bloc avec white-space:pre — les retours à la ligne
+   extraits du flux sont préservés, les lignes longues défilent. */
+.readCodeBlock {
+  background: var(--bg-chrome);
+  border-left: 3px solid var(--accent-dim);
+  border-radius: 3px;
+  padding: 0.4rem 0.7rem;
+  margin: 0.15rem 0;
+  white-space: pre;
+  overflow-x: auto;
+}
+
+/* Code inline d'un paragraphe (extrait entre backticks) */
+.readInline {
   color: var(--accent-strong);
 }
 
