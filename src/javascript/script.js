@@ -311,17 +311,27 @@
     }
   };
 
-  /** Ouvre l'article #index du flux blog en mode lecture (pager). */
-  const enterReadMode = (index) => {
-    const feed = window.PORTFOLIO_BLOG_FEED;
+  /**
+   * Ouvre la page #index d'un flux en mode lecture (pager).
+   * source = viewer d'où vient la demande ('blog', 'docs') : le
+   * flux correspondant fournit la page et son rendu — les deux
+   * partagent le même moteur (blogFeed.js).
+   */
+  const enterReadMode = (source, index) => {
+    const feeds = {
+      blog: window.PORTFOLIO_BLOG_FEED,
+      docs: window.PORTFOLIO_DOCS_FEED
+    };
+    const feed = feeds[source] ?? window.PORTFOLIO_BLOG_FEED;
     const item = feed?.items?.[index];
     if (!item) return;
+    const render = feed.renderArticle ?? window.PORTFOLIO_BLOG_FEED.renderArticle;
     enterPager({
       title: item.title,
       label: 'Lecture',
       url: item.link,
       overlay: true,
-      html: feed.renderArticle(item)
+      html: render(item)
     });
   };
 
@@ -618,7 +628,7 @@
         // Liste d'articles : Entrée lit l'article sélectionné
         const selected = viewer.api.selectedRead?.(viewer.section);
         if (selected !== null && selected !== undefined) {
-          enterReadMode(selected);
+          enterReadMode(viewer.node.viewer, selected);
           return;
         }
         viewer.section = null;
@@ -634,7 +644,7 @@
         if (!link) return;
         // Lien « read » : l'article s'ouvre en mode lecture dans le
         // pager, pas dans un onglet
-        if (link.read !== undefined) enterReadMode(link.read);
+        if (link.read !== undefined) enterReadMode(viewer.node.viewer, link.read);
         else openViewerLink(link.href);
         return;
       }
@@ -1129,12 +1139,12 @@
     // Un clic dans cette fenêtre rend le focus à son input ; les
     // autres fenêtres gardent le leur (multi-shells)
     root.addEventListener('click', (e) => {
-      // Lien « read » d'un article du blog : mode lecture dans le
-      // pager, pas de navigation hors du shell
+      // Lien « read » d'un article du blog ou d'une page de la doc :
+      // mode lecture dans le pager, pas de navigation hors du shell
       const readAnchor = e.target.closest('a[data-read]');
       if (readAnchor) {
         e.preventDefault();
-        enterReadMode(Number(readAnchor.dataset.read));
+        enterReadMode(state.viewer?.node?.viewer, Number(readAnchor.dataset.read));
         return;
       }
       // Ne pas voler le focus si on clique sur un bouton ou lien
@@ -1413,7 +1423,7 @@
     window.PORTFOLIO_THEME.restore();
 
     try {
-      const response = await fetch('./src/JSON/elements.json?v=20261002.10');
+      const response = await fetch('./src/JSON/elements.json?v=20261002.11');
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
       portfolioData = await response.json();
     } catch (err) {

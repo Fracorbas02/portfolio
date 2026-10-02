@@ -871,6 +871,52 @@
     ]
   };
 
+  // ── Viewer « docs » (bastodoc) ────────────────────────────────
+  // La documentation technique : protocoles, systèmes, debug,
+  // hacking — navigable page à page depuis le shell.
+  // Raccourci : commande `docs` (équivalent à open docs/docs.html).
+  // Les rubriques de catégories sont reconstruites depuis la
+  // navigation du site (docsFeed.js / cmdDocs).
+  const DOCS = {
+    title: 'DOCUMENTATION',
+    subtitle: 'la doc — protocoles, systèmes, debug, hacking',
+    statusLabel: 'indexation de la doc',
+    ctrlLabel: 'le site de la doc',
+    logos: [LOGO_TERMINAL, LOGO_CISCO, LOGO_TUX],
+    platforms: PLATFORM_LINES,
+    typedPhrases: [
+      'protocoles réseau',
+      'systèmes et conteneurs',
+      'debug matériel',
+      'write-ups TryHackMe'
+    ],
+    readLabel: 'lire la page',
+    sections: [
+      {
+        id: 'apropos',
+        title: 'La doc dans le shell',
+        entries: [
+          {
+            heading: 'Toute la documentation bastodoc',
+            lines: [
+              'La documentation du site, lisible sans quitter',
+              'le shell : chaque catégorie du site y a sa',
+              'rubrique, chaque page s\'ouvre en mode lecture.',
+              'Articles et docs partagent le même moteur.'
+            ]
+          },
+          {
+            heading: 'Sur le site',
+            links: [
+              { label: 'La doc', value: 'docs.bastienbonora.fr', href: 'https://docs.bastienbonora.fr/' },
+              { label: 'Blog', value: 'articles & write-ups', href: 'https://docs.bastienbonora.fr/blog' }
+            ]
+          }
+        ]
+      }
+    ]
+  };
+
   const ORIENTATION = {
     title: 'ORIENTATION POST-BAC',
     subtitle: 'le plan de terminale · ce qui en est sorti',
@@ -1037,6 +1083,10 @@
   // reconstruit depuis le flux RSS (voir blogFeed.js / cmdBlog).
   window.PORTFOLIO_BLOG_BASE = BLOG;
 
+  // Idem pour le viewer docs, reconstruit depuis la navigation du
+  // site (voir docsFeed.js / cmdDocs).
+  window.PORTFOLIO_DOCS_BASE = DOCS;
+
   window.PORTFOLIO_VIEWERS = {
     cv: window.CV_VIEWER,
     profile: window.PORTFOLIO_DOC_VIEWER.create(PROFILE),
@@ -1044,6 +1094,7 @@
     cyber: window.PORTFOLIO_DOC_VIEWER.create(CYBER),
     dev: window.PORTFOLIO_DOC_VIEWER.create(DEV),
     blog: window.PORTFOLIO_DOC_VIEWER.create(BLOG),
+    docs: window.PORTFOLIO_DOC_VIEWER.create(DOCS),
     orientation: window.PORTFOLIO_DOC_VIEWER.create(ORIENTATION)
   };
 })();

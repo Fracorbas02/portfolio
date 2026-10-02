@@ -655,6 +655,31 @@
     }
 
     /**
+     * docs : raccourci vers le viewer de la documentation (bas-
+     * todoc), même comportement que `open docs/docs.html`. La
+     * navigation vient du site (docsFeed.js) — arbre des caté-
+     * gories et pages lisibles — avec repli sur l'instantané
+     * local si le site reste muet côté CORS.
+     */
+    async function cmdDocs() {
+      const node = lookUpTree('/root/docs/docs.html');
+      if (!node) return 'docs : viewer introuvable — essayez : open docs/docs.html';
+      if (!canReadFiles()) return 'docs : Permission non accordée';
+      const feed = window.PORTFOLIO_DOCS_FEED;
+      if (feed) {
+        try { await feed.load(); } catch { /* site muet : viewer statique */ }
+        if (feed.items.length > 0 && window.PORTFOLIO_DOCS_BASE) {
+          window.PORTFOLIO_VIEWERS.docs = window.PORTFOLIO_DOC_VIEWER.create(
+            feed.buildViewerConfig(window.PORTFOLIO_DOCS_BASE)
+          );
+        }
+      }
+      const error = spawnShell({ viewer: node, seedHistory: state.history.slice() });
+      if (error) return error;
+      return 'ouverture de la documentation dans une nouvelle fenêtre...';
+    }
+
+    /**
      * Easter egg sudo rm -rf / : le portfolio entier fond en trame
      * ░ du haut vers le bas, puis un message de restauration
      * s'affiche avant le rechargement de la page, comme si le
@@ -774,6 +799,7 @@
       unalias: cmdUnalias,
       sudo:   cmdSudo,
       blog:   cmdBlog,
+      docs:   cmdDocs,
       bash:   cmdBash,
       exit:   cmdExit,
       ...extra
