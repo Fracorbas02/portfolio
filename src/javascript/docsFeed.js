@@ -43,9 +43,11 @@
   // l'arbre complet. Une catégorie sans page d'index pointe vers
   // sa première fille — le href est alors partagé avec une page,
   // la fusion réconcilie les deux.
+  // theme-doc-sidebar-menu vit sur le <ul> (Docusaurus 3), pas sur
+  // le <nav> qui l'englobe — le sélecteur cible la classe seule.
   const sidebarFragment = (doc) => {
-    const nav = doc.querySelector('nav.theme-doc-sidebar-menu');
-    if (!nav) return [];
+    const menu = doc.querySelector('.theme-doc-sidebar-menu');
+    if (!menu) return [];
 
     const itemLabel = (li) => {
       const a = li.querySelector('a');
@@ -71,10 +73,10 @@
       return out;
     };
 
-    // nav.theme-doc-sidebar-menu porte aussi la classe menu__list :
+    // ul.theme-doc-sidebar-menu porte aussi la classe menu__list :
     // ses enfants sont des li directs
-    if (nav.querySelector(':scope > li')) return parseList(nav);
-    const sub = nav.querySelector(':scope > ul');
+    if (menu.querySelector(':scope > li')) return parseList(menu);
+    const sub = menu.querySelector(':scope > ul');
     return sub ? parseList(sub) : [];
   };
 
