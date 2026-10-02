@@ -808,7 +808,8 @@
     switch (command) {
       case 'open':
       case 'cd':
-      case 'cat': {
+      case 'cat':
+      case 'grep': {
         const dir = navigateTree(dirPart
           ? window.PORTFOLIO_FS.resolve(state.currentDir, dirPart)
           : state.currentDir);
@@ -818,11 +819,13 @@
         // même quand la commande les refuserait en argument final
         const wanted = command === 'cd'
           ? isDirectory
-          : command === 'cat'
-            ? (node) => isDirectory(node)
+          : command === 'open'
+            ? (node) => isDirectory(node) || isOpenable(node)
+            // cat / grep : fichiers texte (contenu brut ou viewer
+            // avec rendu toText)
+            : (node) => isDirectory(node)
               || typeof node === 'string'
-              || (node?.viewer && window.PORTFOLIO_VIEWERS?.[node.viewer]?.toText)
-            : (node) => isDirectory(node) || isOpenable(node);
+              || (node?.viewer && window.PORTFOLIO_VIEWERS?.[node.viewer]?.toText);
 
         dirNode = dir;
         pool = Object.keys(dir)
@@ -1187,7 +1190,7 @@
     window.PORTFOLIO_THEME.restore();
 
     try {
-      const response = await fetch('./src/JSON/elements.json?v=20261002.6');
+      const response = await fetch('./src/JSON/elements.json?v=20261002.7');
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
       portfolioData = await response.json();
     } catch (err) {
