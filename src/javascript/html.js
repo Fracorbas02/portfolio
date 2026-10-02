@@ -8,7 +8,8 @@
  * À charger AVANT les autres scripts : les modules y lisent leurs
  * helpers au chargement.
  *
- * Exposé via window.PORTFOLIO_HTML : { escapeHTML, isSafeHref }
+ * Exposé via window.PORTFOLIO_HTML : { escapeHTML, isSafeHref,
+ * htmlToText }
  */
 (() => {
   'use strict';

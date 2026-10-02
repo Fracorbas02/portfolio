@@ -337,6 +337,205 @@
     }
 
     /**
+     * find : recherche dans l'arborescence virtuelle, à la manière
+     * du vrai find — chemin de départ, motif -name (jokers * et ?)
+     * et filtre -type f|d. Les éléments masqués sont parcourus,
+     * comme dans le vrai find ; aucun résultat → sortie vide.
+     */
+    function cmdFind(args) {
+      // Le motif est souvent cité pour protéger ses jokers du
+      // découpage (« "*.pdf" ») : les guillemets entourant
+      // l'argument ne font pas partie du motif
+      const unquote = (value) => (value.length > 1
+        && ((value.startsWith("'") && value.endsWith("'"))
+          || (value.startsWith('"') && value.endsWith('"'))))
+        ? value.slice(1, -1)
+        : value;
+
+      let start = '.';
+      let pattern = null;
+      let typeFilter = null;
+
+      const rest = [...args];
+      if (rest.length > 0 && !rest[0].startsWith('-')) start = unquote(rest.shift());
+
+      while (rest.length > 0) {
+        const flag = rest.shift();
+        if (flag === '-name') pattern = unquote(rest.shift() ?? '');
+        else if (flag === '-type') typeFilter = rest.shift();
+        else return `find : option « ${escapeHTML(flag)} » inconnue. Voir : man find`;
+      }
+      if (pattern === undefined) {
+        return 'find : -name attend un motif. Exemple : find . -name "*.pdf"';
+      }
+      if (typeFilter === undefined) {
+        return 'find : -type attend f (fichier) ou d (dossier)';
+      }
+      if (typeFilter !== null && !['f', 'd'].includes(typeFilter)) {
+        return 'find : -type attend f (fichier) ou d (dossier)';
+      }
+
+      const path = resolvePath(start);
+      const node = navigateTree(path);
+      if (node === null) return `find : ${escapeHTML(start)} : dossier introuvable`;
+      if (!isDirectory(node)) return `find : ${escapeHTML(start)} : n'est pas un dossier`;
+
+      // Jokers du motif : * → n'importe quelle suite, ? → un
+      // caractère ; le reste est pris littéralement
+      const matcher = pattern === null ? null : new RegExp(
+        `^${pattern
+          .replace(/[.+^${}()|[\]\\]/g, '\\$&')
+          .replace(/\*/g, '.*')
+          .replace(/\?/g, '.')}$`);
+
+      const results = [];
+      const startDisplay = start.replace(/\/+$/, '') || '/';
+      const startName = startDisplay.slice(startDisplay.lastIndexOf('/') + 1) || '/';
+
+      // Le point de départ lui-même, comme le vrai find
+      if ((matcher === null || matcher.test(startName))
+          && (typeFilter === null || typeFilter === 'd')) {
+        results.push(startDisplay);
+      }
+
+      const walk = (dirNode, displayPath) => {
+        for (const key of Object.keys(dirNode)) {
+          if (key === 'type') continue;
+          const child = dirNode[key];
+          const childPath = `${displayPath}/${key}`;
+          const isDir = isDirectory(child);
+          if ((matcher === null || matcher.test(key))
+              && (typeFilter === null || (typeFilter === 'd') === isDir)) {
+            results.push(childPath);
+          }
+          if (isDir) walk(child, childPath);
+        }
+      };
+      walk(node, startDisplay === '/' ? '' : startDisplay);
+
+      return results.map(escapeHTML).join('\n');
+    }
+
+    /**
+     * Adresse IP stable et fictive, dérivée du nom d'hôte (aucune
+     * requête DNS n'est faite) : même approche que lsSize pour la
+     * taille des fichiers distants — un hash déterministe du nom.
+     */
+    function fakeHostIp(host) {
+      let hash = 7;
+      for (const ch of host) hash = (hash * 31 + ch.charCodeAt(0)) % 0xFFFFFF;
+      const o3 = (hash >> 8) % 254 + 1;
+      const o4 = hash % 254 + 1;
+      return `51.75.${o3}.${o4}`;
+    }
+
+    /**
+     * ping : easter egg façon ICMP. Aucun paquet ne quitte le
+     * navigateur — les réponses sont simulées, ligne par ligne
+     * (une par paquet, un délai entre chaque, comme la sortie
+     * réelle). La boucle locale répond en moins d'une milliseconde,
+     * les hôtes distants en une dizaine.
+     */
+    async function cmdPing(args) {
+      let count = 4;
+      const rest = [];
+      for (let i = 0; i < args.length; i++) {
+        if (args[i] === '-c') {
+          count = Number(args[i + 1]);
+          i += 1;
+        } else {
+          rest.push(args[i]);
+        }
+      }
+      if (!Number.isInteger(count) || count < 1 || count > 64) count = 4;
+
+      const host = rest[0];
+      if (!host) return 'usage : ping [-c <nombre>] <hôte>. Exemple : ping bastienbonora.fr';
+
+      const local = /^(localhost|127\.0\.0\.1|::1)$/.test(host);
+      const ip = local ? '127.0.0.1' : fakeHostIp(host);
+
+      // Animation : une ligne par paquet, la sortie suit en direct
+      const header = document.createElement('div');
+      header.textContent = `PING ${host} (${ip}) 56(84) bytes of data.`;
+      output.appendChild(header);
+      output.scrollTop = output.scrollHeight;
+
+      const times = [];
+      for (let seq = 1; seq <= count; seq++) {
+        await delay(500 + Math.random() * 400);
+        const time = local ? Math.random().toFixed(1)
+          : (10 + Math.random() * 25).toFixed(1);
+        times.push(Number(time));
+        const line = document.createElement('div');
+        line.textContent = `64 bytes from ${host} (${ip}): icmp_seq=${seq}`
+          + ` ttl=${local ? 64 : 63} time=${time} ms`;
+        output.appendChild(line);
+        output.scrollTop = output.scrollHeight;
+      }
+
+      const min = Math.min(...times).toFixed(1);
+      const avg = (times.reduce((sum, t) => sum + t, 0) / times.length).toFixed(1);
+      const max = Math.max(...times).toFixed(1);
+      const stats = [
+        `--- ${host} ping statistics ---`,
+        `${count} packets transmitted, ${count} received, 0% packet loss,`
+          + ` time ${Math.max(0, (count - 1) * 1000)}ms`,
+        `rtt min/avg/max = ${min}/${avg}/${max} ms`
+      ];
+      // Easter egg : le domaine du portfolio se dévoile à la fin
+      if (/^bastienbonora\.fr$/.test(host) || host === 'portfolio') {
+        stats.push('', "note : ce ping n'a jamais quitté votre navigateur"
+          + ' — aucun paquet réseau n\'est parti.');
+      }
+      return stats.map(escapeHTML).join('\n');
+    }
+
+    /**
+     * dig : interroge le DNS du portfolio — en local, aucune
+     * requête réseau n'est émise. Le domaine du portfolio reçoit
+     * un enregistrement TXT easter egg, les autres domaines une
+     * réponse plausible et stable (même fakeHostIp que ping).
+     */
+    function cmdDig(args) {
+      const domain = args.find((arg) => !arg.startsWith('@') && !arg.startsWith('-'));
+      if (!domain) return 'usage : dig <domaine>. Exemple : dig bastienbonora.fr';
+
+      const isPortfolioDomain = /(^|\.)bastienbonora\.fr$/.test(domain)
+        || domain === 'portfolio';
+      const ip = domain === 'portfolio' ? '127.0.0.1' : fakeHostIp(domain);
+
+      const answers = [`${domain}.\t\t3600\tIN\tA\t${ip}`];
+      if (isPortfolioDomain) {
+        const txt = domain === 'portfolio'
+          ? 'le portfolio que vous consultez vit dans votre navigateur — aucune adresse ne sera résolue'
+          : 'héberge la documentation (bastodoc) et le blog — essayez : blog, docs';
+        answers.push(`${domain}.\t\t3600\tIN\tTXT\t"${txt}"`);
+      }
+
+      const now = new Date();
+      const out = [
+        `; <<>> DiG 9.18 <<>> ${domain}`,
+        ';; global options: +cmd',
+        ';; Got answer:',
+        `;; ->>HEADER<<- opcode: QUERY, status: NOERROR, id: 4242`,
+        `;; flags: qr rd ra; QUERY: 1, ANSWER: ${answers.length},`
+          + ' AUTHORITY: 0, ADDITIONAL: 0',
+        '',
+        ';; QUESTION SECTION:',
+        `;${domain}.\t\t\t\tIN\tA`,
+        '',
+        ';; ANSWER SECTION:',
+        ...answers.map((record) => `<span class="helpCommand">${escapeHTML(record)}</span>`),
+        '',
+        ';; Query time: 42 msec',
+        `;; WHEN: ${escapeHTML(now.toString())}`,
+        `;; MSG SIZE  rcvd: ${87 + answers.length * 61}`
+      ];
+      return out.join('\n');
+    }
+
+    /**
      * Valeur d'une variable d'environnement : USER et PWD sont
      * vivantes (lues depuis le prompt et le dossier courant), les
      * autres viennent de `export` (state.variables).
@@ -911,6 +1110,9 @@
       grep:   cmdGrep,
       wc:     cmdWc,
       tree:   cmdTree,
+      find:   cmdFind,
+      ping:   cmdPing,
+      dig:    cmdDig,
       echo:   cmdEcho,
       export: cmdExport,
       alias:  cmdAlias,
