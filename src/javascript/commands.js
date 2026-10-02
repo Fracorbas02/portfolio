@@ -493,7 +493,8 @@
         }
       }
 
-      return out;
+      // La page part en pager plein écran (script.js), façon less
+      return { __pager: true, title: `${target}(1)`, html: out };
     }
 
     function cmdSet(args) {

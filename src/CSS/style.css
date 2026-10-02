@@ -915,6 +915,23 @@ body.is-window-dragging * {
   padding-bottom: 3.4rem;
 }
 
+/* Pager des pages man : la page occupe tout l'espace du shell et
+   défile en interne, la barre de statut reste collée en bas.
+   flex-shrink est réactivé (les div de sortie l'annulent). */
+.shellOutput > .manPager {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  white-space: pre-wrap;
+}
+
+.manPagerContent {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+}
+
 .cvViewerBar {
   position: absolute;
   left: 0;
