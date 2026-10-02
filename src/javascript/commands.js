@@ -252,6 +252,54 @@
     }
 
     /**
+     * Valeur d'une variable d'environnement : USER et PWD sont
+     * vivantes (lues depuis le prompt et le dossier courant), les
+     * autres viennent de `export` (state.variables).
+     */
+    function variableValue(name) {
+      if (name === 'USER') return prompt.textContent.split('@')[0];
+      if (name === 'PWD') return state.currentDir;
+      return state.variables?.[name] ?? '';
+    }
+
+    /**
+     * echo : affiche ses arguments, en développant les variables
+     * $USER, $PWD et celles définies par `export` — n'importe où
+     * dans le mot, comme en bash.
+     */
+    function cmdEcho(args) {
+      const expanded = args.map((arg) =>
+        arg.replace(/\$([A-Za-z_][A-Za-z0-9_]*)/g, (_, name) => variableValue(name)));
+      return escapeHTML(expanded.join(' '));
+    }
+
+    /**
+     * export : définit des variables d'environnement visibles par
+     * echo ($NOM), ou les liste sans argument, à la manière de
+     * `export -p`.
+     */
+    function cmdExport(args) {
+      if (args.length === 0) {
+        const declared = Object.entries(state.variables ?? {})
+          .map(([key, value]) => `declare -x ${key}="${escapeHTML(value)}"`);
+        return [
+          `declare -x USER="${escapeHTML(variableValue('USER'))}"`,
+          `declare -x PWD="${escapeHTML(variableValue('PWD'))}"`,
+          ...declared
+        ].join('\n');
+      }
+
+      for (const arg of args) {
+        const match = /^([A-Za-z_][A-Za-z0-9_]*)=(.*)$/.exec(arg);
+        if (!match) {
+          return `export : ${escapeHTML(arg)} : identifiant invalide (attendu : NOM=valeur)`;
+        }
+        state.variables[match[1]] = match[2];
+      }
+      return null;
+    }
+
+    /**
      * Permissions façon ls -l : dossier, lien symbolique ou fichier.
      */
     function lsMode(key, node) {
@@ -597,6 +645,8 @@
       cat:    cmdCat,
       grep:   cmdGrep,
       wc:     cmdWc,
+      echo:   cmdEcho,
+      export: cmdExport,
       sudo:   cmdSudo,
       blog:   cmdBlog,
       bash:   cmdBash,
