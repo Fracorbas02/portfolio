@@ -757,8 +757,102 @@
   const unknownCommandMessage = commandsApi.unknown;
 
   /**
-   * Découpe la commande en `[name, ...args]`
-   * et délègue au handler approprié.
+   * Découpe la ligne en segments de pipeline : les « | » hors
+   * guillemets simples et doubles séparent les commandes — un
+   * motif cité ne coupe pas la ligne. Découpage volontairement
+   * naïf : pas de substitution ni de sous-shell. Renvoie
+   * { segments } ou { error }.
+   */
+  function parsePipeline(line) {
+    const segments = [];
+    let current = '';
+    let quote = null;
+
+    for (let i = 0; i < line.length; i++) {
+      const char = line[i];
+      if (quote) {
+        current += char;
+        if (char === quote) quote = null;
+        continue;
+      }
+      if (char === "'" || char === '"') {
+        quote = char;
+        current += char;
+        continue;
+      }
+      if (char === '|') {
+        const text = current.trim();
+        current = '';
+        if (text === '') return { error: '|' };
+        segments.push(text);
+        continue;
+      }
+      current += char;
+    }
+    if (quote !== null) return { error: 'guillemet non fermé' };
+    if (current.trim() === '') return { error: '|' };
+    segments.push(current.trim());
+    return { segments };
+  }
+
+  /**
+   * Développe l'alias du premier mot d'un segment, à la bash : la
+   * définition remplace le mot, le reste du segment suit. Une
+   * seule passe : pas de récursion possible.
+   */
+  const expandAlias = (segment) => {
+    const firstWord = segment.split(/\s+/)[0];
+    const aliasValue = state.aliases?.[firstWord];
+    return aliasValue !== undefined
+      ? `${aliasValue}${segment.slice(firstWord.length)}`
+      : segment;
+  };
+
+  /**
+   * Exécute un pipeline : chaque commande reçoit en entrée standard
+   * la sortie du précédent (le HTML du terminal redevient du
+   * texte brut pour traverser le tube). Seule la sortie du
+   * dernier segment est affichée ; une page man en fin de
+   * pipeline prend l'écran du pager.
+   */
+  const runPipeline = async (segments) => {
+    let stdin = null;
+    let result = null;
+
+    for (let i = 0; i < segments.length; i++) {
+      const effective = expandAlias(segments[i]);
+      const [rawName, ...args] = effective.split(/\s+/);
+      const name = rawName.toLowerCase();
+      const handler = handlers[name];
+
+      if (!handler) {
+        return { output: unknownCommandMessage(rawName) };
+      }
+      try {
+        result = await handler(args, stdin);
+      } catch (err) {
+        console.error(err);
+        result = '<span style="color:#f87171;">Une erreur est survenue lors de l\'exécution.</span>';
+      }
+
+      // Page man : dernière commande → pager ; au milieu du
+      // pipeline, son texte traverse le tube comme toute sortie
+      if (result && typeof result === 'object' && result.__pager) {
+        if (i === segments.length - 1) return { pager: result };
+        stdin = window.PORTFOLIO_HTML.htmlToText(result.html ?? '');
+        continue;
+      }
+      stdin = typeof result === 'string'
+        ? window.PORTFOLIO_HTML.htmlToText(result)
+        : null;
+    }
+
+    return { output: typeof result === 'string' ? result : null };
+  };
+
+  /**
+   * Exécute la ligne saisie : écho du prompt, puis pipeline dont
+   * seule la sortie finale s'affiche.
    */
   const executeCommand = async (rawCommand) => {
     const trimmed = rawCommand.trim();
@@ -771,38 +865,24 @@
     state.historyIndex = state.history.length;
     persistHistory();
 
-    // Développement de l'alias du premier mot, à la bash : la
-    // définition remplace le mot, le reste de la ligne suit. Une
-    // seule passe : pas de récursion possible.
-    const firstWord = trimmed.split(/\s+/)[0];
-    const aliasValue = state.aliases?.[firstWord];
-    const effective = aliasValue !== undefined
-      ? `${aliasValue}${trimmed.slice(firstWord.length)}`
-      : trimmed;
-    const [name, ...args] = effective.split(/\s+/);
-    const handler = handlers[name.toLowerCase()];
+    // Écho de la ligne avant l'exécution, comme un vrai shell :
+    // les sorties suivent l'écho, dans l'ordre des commandes
+    printOutput(`${escapeHTML(DEFAULT_BEGIN_SHELL.textContent)}${escapeHTML(trimmed)}`);
 
-    // Le prompt doit être capturé AVANT l'exécution : une commande
-    // comme cd le modifie, et l'écho doit montrer la ligne telle
-    // qu'elle était au moment de la saisie (comportement bash).
-    const promptBefore = DEFAULT_BEGIN_SHELL.textContent;
-
-    let output;
-    try {
-      output = handler ? await handler(args) : unknownCommandMessage(name);
-    } catch (err) {
-      console.error(err);
-      output = `<span style="color:#f87171;">Une erreur est survenue lors de l'exécution.</span>`;
-    }
-
-    // Page man : le pager plein écran remplace l'écho classique
-    if (output && typeof output === 'object' && output.__pager) {
-      enterPager(output);
+    const parsed = parsePipeline(trimmed);
+    if (parsed.error) {
+      printOutput(`bash : erreur de syntaxe près du symbole inattendu « ${escapeHTML(parsed.error)} »`);
       return;
     }
 
-    const promptHTML = `${escapeHTML(promptBefore)}${escapeHTML(trimmed)}`;
-    printOutput(output ? `${promptHTML}<br>${output}` : promptHTML);
+    const { output, pager } = await runPipeline(parsed.segments);
+    if (pager) {
+      enterPager(pager);
+      return;
+    }
+    if (typeof output === 'string' && output !== '') {
+      printOutput(output);
+    }
   };
 
   // ──────────────────────────────────────────────────────────────
@@ -1428,7 +1508,7 @@
     window.PORTFOLIO_THEME.restore();
 
     try {
-      const response = await fetch('./src/JSON/elements.json?v=20261002.11');
+      const response = await fetch('./src/JSON/elements.json?v=20261002.12');
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
       portfolioData = await response.json();
     } catch (err) {
