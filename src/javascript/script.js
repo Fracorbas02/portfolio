@@ -78,20 +78,25 @@
     input.value = '';
     input.style.width = '0ch';
 
-    // Position en cascade, décalée à chaque nouvelle fenêtre
+    // Position en cascade, décalée à chaque nouvelle fenêtre —
+    // seulement au-dessus du seuil mobile du window manager : en
+    // dessous, aucune géométrie inline (elle gagnerait contre le
+    // plein-écran du média query), le CSS prend le relais
     shellCount += 1;
-    const offset = shellCount * 36;
-    const vw = window.innerWidth;
-    const vh = window.innerHeight;
-    const width = Math.min(vw * 0.8, 1100);
-    const height = Math.min(vh * 0.8, 800);
-    Object.assign(clone.style, {
-      transform: 'none',
-      left: `${Math.max(0, (vw - width) / 2 + offset)}px`,
-      top: `${Math.max(0, vh * 0.08 + offset)}px`,
-      width: `${width}px`,
-      height: `${height}px`
-    });
+    if (window.innerWidth >= 768) {
+      const offset = shellCount * 36;
+      const vw = window.innerWidth;
+      const vh = window.innerHeight;
+      const width = Math.min(vw * 0.8, 1100);
+      const height = Math.min(vh * 0.8, 800);
+      Object.assign(clone.style, {
+        transform: 'none',
+        left: `${Math.max(0, (vw - width) / 2 + offset)}px`,
+        top: `${Math.max(0, vh * 0.08 + offset)}px`,
+        width: `${width}px`,
+        height: `${height}px`
+      });
+    }
 
     document.body.appendChild(clone);
     bringToFront(clone);

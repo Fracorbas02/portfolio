@@ -696,12 +696,16 @@ body.is-window-dragging * {
 
   .shellContainer {
     /* Le windowManager est désactivé en mobile : on rend la main
-       au CSS pour un layout plein-écran simple */
+       au CSS pour un layout plein-écran simple. dvh suit la barre
+       d'URL (100vh garde la hauteur maximale), et la zone du home
+       indicator iOS est rendue : la ligne de saisie reste au-
+       dessus. */
     top: 1rem;
     left: 1rem;
     transform: none;
     width: calc(100vw - 2rem);
     height: calc(100vh - 2rem);
+    height: calc(100dvh - 2rem - env(safe-area-inset-bottom, 0px));
     border-radius: 8px;
   }
 
@@ -709,8 +713,41 @@ body.is-window-dragging * {
     cursor: default;
   }
 
+  /* Le hamburger quitte le coin haut-gauche (il y recouvrirait
+     les pastilles de la fenêtre) et prend place sur le chrome, à
+     droite : la zone y est libre (le titre est pointer-events:
+     none et tronqué). Hauteur fixe et barres centrées — la
+     line-box résiduelle d'un <button> le ferait déborder de la
+     barre de 38px. */
+  .hamburgerMenu {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    height: 2rem;
+    top: calc(1rem + 0.3rem);
+    left: auto;
+    right: 0.85rem;
+  }
+
+  /* Pastilles un peu plus généreuses au doigt */
+  .shell__chrome__dots {
+    gap: 10px;
+  }
+
+  .shell__chrome__dot {
+    width: 14px;
+    height: 14px;
+  }
+
   .shell__chrome__title {
+    /* Deux lignes d'échappement : ni les pastilles (gauche) ni le
+       hamburger (droite) ; l'excès se termine en ellipses. */
+    left: 3rem;
+    right: 3.5rem;
     font-size: 0.7rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   /* Poignées de resize masquées sur mobile */
@@ -726,11 +763,6 @@ body.is-window-dragging * {
 
   .currentShellLine {
     flex-wrap: wrap;
-  }
-
-  .hamburgerMenu {
-    top: 1rem;
-    left: 1rem;
   }
 }
 /* ──────────────────────────────────────────────────────────────
@@ -1230,4 +1262,76 @@ body.is-window-dragging * {
 
 .cvViewerKeySep {
   color: var(--text-muted);
+}
+
+/* ─── Responsive : composants du shell ────────────────────────── */
+/* Ce bloc vit volontairement après les règles des composants : le
+   CSS des viewers est écrit pour le desktop, à spécificité égale
+   la dernière règle gagne — il n'a pas à connaître le mobile.
+   Sur petit écran, les rendus ASCII en chasse fixe (CV, neofetch)
+   gardent leurs cadres : police réduite et défilement horizontal
+   sur place plutôt qu'un contenu coupé au bord de la fenêtre. */
+@media (max-width: 768px) {
+  .cvViewer,
+  .neofetchArt {
+    font-size: 0.72rem;
+    line-height: 1.35;
+  }
+
+  .cvViewer {
+    overflow-x: auto;
+  }
+
+  /* Le panneau latéral (Tux, badges) : masqué au doigt — il ne
+     réapparaît pas même si la classe cvViewerWide traîne d'une
+     session desktop repliée en mobile */
+  .cvViewerWide .cvViewerSide {
+    display: none;
+  }
+
+  /* Barre de raccourcis : plus dense, défilement au doigt */
+  .cvViewerBar {
+    padding: 0.35rem 1rem;
+    gap: 0.9rem;
+    font-size: 0.72rem;
+  }
+
+  /* Overlays plein écran (lecture d'article, sommaire, nano) :
+     marges resserrées pour lire plus de texte par écran */
+  .manPagerOverlay .manPagerContent,
+  .readToc {
+    padding: 1rem;
+  }
+
+  .nanoHeader {
+    padding: 0.45rem 1rem;
+  }
+
+  .nanoTextarea {
+    padding: 1rem;
+  }
+
+  .shellContainer.viewerMode .shellOutput {
+    padding-bottom: 3.1rem;
+  }
+
+  /* Ligne de saisie dégagée du home indicator (l'inset a déjà été
+     soustrait de la hauteur du shell, la marge reste au clavier) */
+  .currentShellLine {
+    padding-bottom: 1rem;
+  }
+}
+
+/* Très petits écrans : le texte du shell lui-même resserre un
+   cran, les ASCII un peu plus pour garder des lignes entières */
+@media (max-width: 480px) {
+  .shellOutput,
+  .currentShellLine {
+    font-size: 0.82rem;
+  }
+
+  .cvViewer,
+  .neofetchArt {
+    font-size: 0.62rem;
+  }
 }
