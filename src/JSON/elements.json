@@ -220,7 +220,7 @@
         ]
       },
       "echo": {
-        "description": "Affiche ses arguments sur une ligne, en développant les variables d'environnement : $USER (nom d'utilisateur du prompt), $PWD (dossier courant) et celles définies avec export.",
+        "description": "Affiche ses arguments sur une ligne, en développant les variables d'environnement : $USER (nom d'utilisateur du prompt), $PWD (dossier courant), celles définies avec export, et les substitutions de commande $(cmd) hors guillemets.",
         "options": [
           {
             "name": "none",
@@ -229,7 +229,7 @@
         ],
         "examples": [
           { "cmd": "echo Bonjour le monde", "desc": "affiche le texte tel quel" },
-          { "cmd": "echo $USER est dans $PWD", "desc": "affiche le nom d'utilisateur et le dossier courant" }
+          { "cmd": "echo $USER est dans $PWD", "desc": "affiche le nom d'utilisateur et le dossier courant" }, { "cmd": "echo dossier : $(pwd)", "desc": "substitution de commande : la sortie de pwd remplace le motif" }
         ]
       },
       "export": {
