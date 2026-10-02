@@ -790,6 +790,87 @@
     }
   ];
 
+  // ── Viewer « blog » (bastodoc) ────────────────────────────────
+  // Le blog technique : articles, write-ups de CTF et documentation.
+  // Raccourci : commande `blog` (équivalent à open blog/blog.html).
+  // Les liens locaux pointent vers les write-ups hébergés ici, les
+  // externes vers docs.bastienbonora.fr.
+  const BLOG = {
+    title: 'BASTODOC',
+    subtitle: 'le blog — articles, write-ups, documentation',
+    statusLabel: 'lecture des flux',
+    ctrlLabel: 'le site du blog',
+    logos: [LOGO_TERMINAL, LOGO_ROOTME, LOGO_TUX],
+    platforms: PLATFORM_LINES,
+    typedPhrases: [
+      'articles techniques',
+      'write-ups de CTF',
+      'documentation',
+      'archives de veille'
+    ],
+    sections: [
+      {
+        id: 'articles',
+        title: 'Les derniers articles',
+        entries: [
+          {
+            heading: 'Ce que je publie',
+            lines: [
+              'Des articles techniques, nés de ce que je démonte',
+              'au travail ou dans le home-lab : réseau, sécurité,',
+              'systèmes — expliqués couche par couche.'
+            ]
+          },
+          {
+            heading: 'À lire sur bastodoc',
+            links: [
+              { label: 'Blog', value: 'tous les articles', href: 'https://docs.bastienbonora.fr/' },
+              { label: 'Portfolio', value: 'bastienbonora.fr', href: 'https://bastienbonora.fr/' }
+            ]
+          }
+        ]
+      },
+      {
+        id: 'writeups',
+        title: 'Les write-ups',
+        entries: [
+          {
+            heading: 'CTF TryHackMe — rooms complètes',
+            lines: [
+              { text: 'Brute It', href: './root/CTF/Brute%20It.html' },
+              { text: 'Archangel', href: './root/CTF/Archangel.html' },
+              { text: 'Mustacchio', href: './root/CTF/Mustacchio.html' },
+              { text: 'Break Out The Cage', href: './root/CTF/Break%20Out%20The%20Cage.html' }
+            ]
+          },
+          {
+            heading: 'Pourquoi les écrire',
+            lines: [
+              'Un CTF non écrit est un CTF oublié : le write-up',
+              'force à comprendre chaque étape, et sert de doc',
+              'à qui le relit — moi le premier.'
+            ]
+          }
+        ]
+      },
+      {
+        id: 'plateforme',
+        title: 'La plateforme',
+        entries: [
+          {
+            heading: 'bastodoc, c\u2019est quoi ?',
+            lines: [
+              'Mon espace de documentation : articles, notes de',
+              'veille et write-ups, écrits pour durer.',
+              'Ce que j\u2019apprends, je l\u2019écris — pour les autres',
+              'et pour moi, six mois plus tard.'
+            ]
+          }
+        ]
+      }
+    ]
+  };
+
   const ORIENTATION = {
     title: 'ORIENTATION POST-BAC',
     subtitle: 'le plan de terminale · ce qui en est sorti',
@@ -958,6 +1039,7 @@
     reseaux: window.PORTFOLIO_DOC_VIEWER.create(RESEAUX),
     cyber: window.PORTFOLIO_DOC_VIEWER.create(CYBER),
     dev: window.PORTFOLIO_DOC_VIEWER.create(DEV),
+    blog: window.PORTFOLIO_DOC_VIEWER.create(BLOG),
     orientation: window.PORTFOLIO_DOC_VIEWER.create(ORIENTATION)
   };
 })();
