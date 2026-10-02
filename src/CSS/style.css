@@ -950,6 +950,13 @@ body.is-window-dragging * {
   background: var(--bg-surface);
 }
 
+/* Contre .shellOutput > div (margin-bottom: 0.4rem) : même en
+   absolute, cette marge rogne la hauteur résolue par inset:0 et
+   la barre ne touche plus le bas de la fenêtre */
+.shellOutput > .manPagerOverlay {
+  margin: 0;
+}
+
 /* Blocs de code des articles lus : encadré façon terminal, une
    <div> par bloc avec white-space:pre — les retours à la ligne
    extraits du flux sont préservés, les lignes longues défilent. */
