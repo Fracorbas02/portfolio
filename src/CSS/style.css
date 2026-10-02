@@ -1026,21 +1026,25 @@ body.is-window-dragging * {
 .readDiagramBox   { color: var(--text-muted); }
 .readDiagramArrow { color: var(--accent); }
 
-/* Image d'un article (capture, schéma) : sans art pré-calculé,
-   un espace signale sa place et son contenu. */
+/* Image d'un article (capture, schéma) : sans URL connue, un
+   espace signale sa place et son contenu. */
 .readImg {
   color: var(--text-muted);
   font-style: italic;
 }
 
-/* Images pré-calculées en demi-blocs colorés : chaque caractère
-   vaut deux lignes de pixels (▄ : haut en fond, bas en couleur) —
-   le pager n'affiche jamais un <img>, tout vit en texte. */
-.readImgArtBlock {
-  white-space: pre;
-  overflow-x: auto;
-  margin: 0.15rem 0;
-  line-height: 1.05;
+/* La vraie image, chargée à la volée depuis le site d'origine au
+   moment de la lecture (l'affichage <img> ignore le CORS) —
+   bornée à la largeur de la zone de lecture, cadre atténué. */
+.readImgFigure {
+  margin: 0.4rem 0;
+}
+
+.readImgReal {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  border: 1px solid var(--text-muted);
 }
 
 /* Message de restauration après le melt de sudo rm -rf / : la
