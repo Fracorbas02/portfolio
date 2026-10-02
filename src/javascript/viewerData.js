@@ -154,10 +154,11 @@
           {
             heading: 'Qui je suis',
             lines: [
-              'Bastien, 22 ans, étudiant en BUT Réseaux & Télécoms',
-              "(parcours cybersécurité) à l'IUT d'Annecy, en alternance.",
-              'Côté pro : technicien systèmes & réseaux au service',
-              'informatique de l\u2019EPSM La Roche-sur-Foron.',
+              'Bastien, 22 ans, diplômé du BUT Réseaux & Télécoms',
+              '(parcours cybersécurité) de l\u2019IUT d\u2019Annecy.',
+              'Aujourd\u2019hui : admin systèmes & réseaux chez Alpes',
+              'Networks, un opérateur internet de petite taille —',
+              'petite structure, donc on touche à tout.',
               'Côté perso : un curieux qui démonte tout ce qui tourne,',
               'du kernel Linux au pare-feu du home-lab.'
             ]
@@ -215,6 +216,16 @@
             lines: [
               'Insomni\u2019hack — Lausanne, Suisse.',
               '36e au CTF en équipe (FeelTheBit).'
+            ]
+          },
+          {
+            heading: '2025 — Diplômé, et en poste',
+            sub: 'admin systèmes & réseaux',
+            lines: [
+              'BUT R&T validé — Bac+3, le schéma de terminale se',
+              'redessine autrement (la suite : Alpes Networks,',
+              'un opérateur internet des Alpes).',
+              'La cyber reste en fil rouge : CTF, home-lab, write-ups.'
             ]
           }
         ]
