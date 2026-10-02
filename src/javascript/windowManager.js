@@ -163,6 +163,11 @@
       // Ignorer le clic droit / molette
       if (event.button !== 0) return;
 
+      // Passage sous le seuil mobile après l'init desktop : les
+      // listeners restent branchés, un geste ne doit pas reposer
+      // de géométrie inline contre le plein-écran du média query
+      if (window.innerWidth < disableUnder) return;
+
       // Ne pas démarrer un drag depuis un élément interactif imbriqué
       if (mode === 'move' && event.target.closest('button, a, input, select, textarea')) {
         return;
@@ -343,6 +348,9 @@
       if (event.button !== 0) return;
       if (event.target.closest('button, a, input, select, textarea')) return;
       if (target.classList.contains('minimized')) return;
+      // Même garde que le drag : pas de plein écran sous le seuil
+      // mobile, le CSS occupe déjà tout
+      if (window.innerWidth < disableUnder) return;
       takeControl();
       if (maximized) {
         unsnap();
@@ -375,13 +383,10 @@
         window.removeEventListener('resize', onWindowResize);
         return;
       }
-      if (!hasTakenControl) return;
-      const rect = target.getBoundingClientRect();
-      const vw = window.innerWidth;
-      const vh = window.innerHeight;
-
-      // Si on est passé sous le seuil mobile, on rend la main au CSS
-      if (vw < disableUnder) {
+      // Passage sous le seuil mobile : on rend la main au CSS —
+      // y compris pour une géométrie posée par spawnShell, que
+      // takeControl n'a pas posée (hasTakenControl reste false)
+      if (window.innerWidth < disableUnder) {
         target.style.left      = '';
         target.style.top       = '';
         target.style.width     = '';
@@ -390,6 +395,10 @@
         hasTakenControl = false;
         return;
       }
+      if (!hasTakenControl) return;
+      const rect = target.getBoundingClientRect();
+      const vw = window.innerWidth;
+      const vh = window.innerHeight;
 
       const clampedLeft = clamp(rect.left, 0, Math.max(0, vw - rect.width));
       const clampedTop  = clamp(rect.top,  0, Math.max(0, vh - rect.height));
