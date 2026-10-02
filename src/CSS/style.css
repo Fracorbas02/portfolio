@@ -932,6 +932,30 @@ body.is-window-dragging * {
   overflow-y: auto;
 }
 
+/* Mode lecture d'un article du blog : le pager se superpose au
+   viewer ouvert. Son DOM n'est pas détruit, la lecture le recouvre
+   simplement, et la barre nano du viewer laisse place au statut. */
+.shellContainer.reading .shellOutput {
+  position: relative;
+}
+
+.shellContainer.reading .cvViewerBar:not(.manPagerStatus) {
+  display: none;
+}
+
+.manPagerOverlay {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  background: var(--bg-surface);
+}
+
+/* Lignes de code des articles lus : la trame de commentaires du
+   pager ne suffit pas à les distinguer du prose. */
+.readCode {
+  color: var(--accent-strong);
+}
+
 /* Message de restauration après le melt de sudo rm -rf / : la
    trame ░ a déjà tout recouvert, il ne reste que ce message. */
 .meltOverlay {
