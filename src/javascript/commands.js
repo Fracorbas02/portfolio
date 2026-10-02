@@ -644,11 +644,59 @@
     }
 
     /**
-     * Easter egg : on ne devient pas root sur ce portfolio.
-     * Refus systématique, à la manière du vrai sudo.
+     * Easter egg sudo rm -rf / : le portfolio entier fond en trame
+     * ░ du haut vers le bas, puis un message de restauration
+     * s'affiche avant le rechargement de la page, comme si le
+     * système venait d'être réinstallé.
      */
-    function cmdSudo() {
+    async function meltEverything() {
+      // Tous les noeuds texte visibles, triés du haut vers le bas
+      const nodes = [];
+      const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT, {
+        acceptNode: (node) => {
+          const tag = node.parentElement?.tagName;
+          if (tag === 'SCRIPT' || tag === 'STYLE') return NodeFilter.FILTER_REJECT;
+          return node.textContent.trim().length > 0
+            ? NodeFilter.FILTER_ACCEPT
+            : NodeFilter.FILTER_REJECT;
+        }
+      });
+      let current = walker.nextNode();
+      while (current) {
+        const top = current.parentElement?.getBoundingClientRect().top ?? Infinity;
+        nodes.push({ node: current, top });
+        current = walker.nextNode();
+      }
+      nodes.sort((a, b) => a.top - b.top);
+
+      // La trame descend par petits lots, au rythme aléatoire
+      for (let i = 0; i < nodes.length; i += 3) {
+        for (const { node } of nodes.slice(i, i + 3)) {
+          node.textContent = '░'.repeat(node.textContent.length);
+        }
+        await delay(35 + Math.random() * 45);
+      }
+
+      await delay(700);
+      const overlay = document.createElement('div');
+      overlay.className = 'meltOverlay';
+      overlay.textContent = 'réinitialisation du portfolio en cours...';
+      document.body.appendChild(overlay);
+      await delay(1400);
+      window.location.reload();
+    }
+
+    /**
+     * Easter egg : on ne devient pas root sur ce portfolio.
+     * Refus systématique, à la manière du vrai sudo — sauf pour
+     * la fameuse commande interdite, qui a un effet spécial.
+     */
+    function cmdSudo(args) {
       const username = prompt.textContent.split('@')[0];
+      if (args.join(' ') === 'rm -rf /') {
+        meltEverything();
+        return null;
+      }
       return `<span style="color:var(--warning);">sudo :</span> ${escapeHTML(username)} n'est pas dans le fichier sudoers. Cet incident sera signalé.`;
     }
 
