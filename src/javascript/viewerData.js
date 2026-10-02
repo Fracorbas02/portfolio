@@ -705,6 +705,7 @@
   const ORIENTATION_ERAS = [
     {
       period: '2021 — 2022',
+      year: '2021', chip: 'lycée',
       title: 'LYCÉE GUILLAUME FICHET',
       lines: [
         'Terminale à Bonneville (74). Spécialités',
@@ -719,6 +720,7 @@
     },
     {
       period: '2022 — 2023',
+      year: '2022', chip: 'BUT R&T',
       title: 'IUT D\u2019ANNECY — BUT R&T, 1re ANNÉE',
       lines: [
         'La voie B, en alternance : formation certifiée',
@@ -732,6 +734,7 @@
     },
     {
       period: '2023 — 2025',
+      year: '2023', chip: 'alternance',
       title: 'ALTERNANCE EPSM LA ROCHE-SUR-FORON',
       lines: [
         'Trois ans au service informatique, en',
@@ -748,6 +751,7 @@
     },
     {
       period: '2025',
+      year: '2025', chip: 'diplômé',
       title: 'DIPLÔMÉ — BAC+3, BUT R&T VALIDÉ',
       lines: [
         'BUT Réseaux & Télécoms en poche, parcours',
@@ -760,6 +764,7 @@
     },
     {
       period: 'AUJOURD\u2019HUI',
+      year: '∞', chip: 'aujourd\u2019hui',
       title: 'ALPES NETWORKS',
       lines: [
         'Admin systèmes & réseaux chez un opérateur',

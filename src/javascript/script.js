@@ -322,6 +322,18 @@
       } else {
         view.innerHTML = api.render(state.viewer);
       }
+      // Panneau latéral remplacé uniquement quand sa nature change
+      // (frise chronologique des rubriques « ères » ↔ logos/ticker)
+      if (typeof api.renderSide === 'function') {
+        const side = view.querySelector('.cvViewerSide');
+        if (side) {
+          const html = api.renderSide(state.viewer, view);
+          const isChrono = side.querySelector('.cvViewerChrono') !== null;
+          if (isChrono !== html.includes('cvViewerChrono')) {
+            side.innerHTML = html;
+          }
+        }
+      }
     }
     // Panneau de logos seulement sur les fenêtres assez larges
     view.classList.toggle('cvViewerWide', SHELL_OUTPUT.clientWidth >= 760);
@@ -424,14 +436,16 @@
         return;
       }
     } else {
-      // Rubrique : ↑↓ défilent, Entrée/Échap retournent au menu,
-      // un chiffre ouvre le lien correspondant (contacts, écrits…)
-      if (event.key === 'ArrowDown') {
-        SHELL_OUTPUT.scrollTop += 40;
-        return;
-      }
-      if (event.key === 'ArrowUp') {
-        SHELL_OUTPUT.scrollTop -= 40;
+      // Rubrique : ↑↓ défilent — sauf rubrique « ères », où elles
+      // naviguent entre les étapes. Entrée/Échap retournent au
+      // menu, un chiffre ouvre le lien correspondant.
+      if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+        const view = SHELL_OUTPUT.querySelector('.cvViewer');
+        if (viewer.api.navEra && viewer.api.navEra(
+          view, viewer.section, event.key === 'ArrowDown' ? 1 : -1)) {
+          return;
+        }
+        SHELL_OUTPUT.scrollTop += event.key === 'ArrowDown' ? 40 : -40;
         return;
       }
       if (event.key === 'Enter' || event.key === 'Escape') {
