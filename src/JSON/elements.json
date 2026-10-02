@@ -53,6 +53,10 @@
         "description": "Permet d'afficher le contenu d'un fichier. Exemple : cat README.md."
       },
       {
+        "name": "grep",
+        "description": "Recherche un motif dans un fichier texte. Exemple : grep -n Bastien README.md."
+      },
+      {
         "name": "neofetch",
         "description": "Affiche les informations du portfolio et ses compétences, à la manière de la commande neofetch."
       },
@@ -70,6 +74,23 @@
       }
     ],
     "manCommands": {
+      "grep": {
+        "description": "Recherche les lignes d'un fichier texte contenant un motif, à la manière de la commande grep. Le motif est pris tel quel (sans expression régulière) ; les options -i et -n sont combinables.",
+        "options": [
+          {
+            "name": "-i",
+            "usage": "ignore la casse du motif. Exemple : grep -i readme README.md"
+          },
+          {
+            "name": "-n",
+            "usage": "préfixe chaque correspondance de son numéro de ligne. Exemple : grep -n Bastien README.md"
+          }
+        ],
+        "examples": [
+          { "cmd": "grep portfolio README.md", "desc": "affiche les lignes du README contenant « portfolio »" },
+          { "cmd": "grep -in bash README.md", "desc": "recherche « bash » sans tenir compte de la casse, avec les numéros de ligne" }
+        ]
+      },
       "blog": {
         "description": "Ouvre le blog bastodoc dans un viewer interactif : derniers articles, write-ups de CTF et présentation de la plateforme. Équivalent à open blog/blog.html depuis n'importe quel dossier.",
         "options": [

@@ -135,6 +135,19 @@
       return username === 'bastien' || username === 'anonymous';
     }
 
+    /**
+     * Texte affichable d'un fichier : contenu brut, ou rendu texte
+     * du viewer pour les fichiers interactifs (partagé cat/grep).
+     * Renvoie null pour un fichier binaire.
+     */
+    function fileText(node) {
+      if (node.viewer && window.PORTFOLIO_VIEWERS?.[node.viewer]?.toText) {
+        return window.PORTFOLIO_VIEWERS[node.viewer].toText();
+      }
+      if (typeof node === 'string') return node;
+      return null;
+    }
+
     function cmdCat(args) {
       if (args.length === 0) return 'cat : veuillez donner un argument';
 
@@ -150,15 +163,57 @@
       if (!canReadFiles()) {
         return `cat : ${escapeHTML(target)} : Permission non accordée`;
       }
-      // Fichier viewer (CV.html, reseaux.html…) : rendu texte brut
-      // des mêmes données que `open`, sans le rendu interactif.
-      if (node.viewer && window.PORTFOLIO_VIEWERS?.[node.viewer]?.toText) {
-        return escapeHTML(window.PORTFOLIO_VIEWERS[node.viewer].toText());
-      }
-      if (typeof node !== 'string') {
+      const text = fileText(node);
+      if (text === null) {
         return `cat : ${escapeHTML(target)} : fichier binaire (non affichable). Essayez : open`;
       }
-      return escapeHTML(node);
+      return escapeHTML(text);
+    }
+
+    /**
+     * grep : recherche un motif dans un fichier texte, avec les
+     * options combinables -i (insensible à la casse) et -n
+     * (numéros de ligne). Aucune correspondance → sortie vide,
+     * comme le vrai grep.
+     */
+    function cmdGrep(args) {
+      // Options combinables en tête de ligne : -i, -n, -in, -ni...
+      let flags = '';
+      while (args.length > 0 && /^-[in]+$/.test(args[0])) {
+        flags += args.shift().slice(1);
+      }
+      if (args.length < 2) return 'usage : grep [-i] [-n] <motif> <fichier>';
+
+      const pattern = args[0];
+      const target = args[1];
+      const node = lookUpTree(target);
+
+      if (node === null) return `grep : ${escapeHTML(target)} : fichier introuvable`;
+      if (isDirectory(node)) return `grep : ${escapeHTML(target)} : est un dossier`;
+      if (!canReadFiles()) {
+        return `grep : ${escapeHTML(target)} : Permission non accordée`;
+      }
+
+      const text = fileText(node);
+      if (text === null) {
+        return `grep : ${escapeHTML(target)} : fichier binaire (non analysable)`;
+      }
+
+      const insensitive = flags.includes('i');
+      const showLineNumbers = flags.includes('n');
+      const needle = insensitive ? pattern.toLowerCase() : pattern;
+
+      const matches = [];
+      text.split('\n').forEach((line, index) => {
+        const haystack = insensitive ? line.toLowerCase() : line;
+        if (haystack.includes(needle)) {
+          const number = showLineNumbers
+            ? `<span style="color:var(--text-muted);">${index + 1}:</span> `
+            : '';
+          matches.push(number + escapeHTML(line));
+        }
+      });
+      return matches.join('\n');
     }
 
     /**
@@ -505,6 +560,7 @@
       history: cmdHistory,
       cd:     cmdCd,
       cat:    cmdCat,
+      grep:   cmdGrep,
       sudo:   cmdSudo,
       blog:   cmdBlog,
       bash:   cmdBash,
