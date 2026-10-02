@@ -1178,7 +1178,8 @@
       case 'cd':
       case 'cat':
       case 'grep':
-      case 'wc': {
+      case 'wc':
+      case 'tree': {
         const dir = navigateTree(dirPart
           ? window.PORTFOLIO_FS.resolve(state.currentDir, dirPart)
           : state.currentDir);
@@ -1186,7 +1187,7 @@
 
         // Les dossiers sont complétés aussi : étapes du chemin,
         // même quand la commande les refuserait en argument final
-        const wanted = command === 'cd'
+        const wanted = command === 'cd' || command === 'tree'
           ? isDirectory
           : command === 'open'
             ? (node) => isDirectory(node) || isOpenable(node)

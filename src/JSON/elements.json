@@ -95,6 +95,10 @@
       {
         "name": "exit",
         "description": "Ferme la fenêtre de shell courante (sauf la fenêtre principale)."
+      },
+      {
+        "name": "tree",
+        "description": "Affiche l'arborescence complète depuis un dossier, branches comprises. Exemple : tree, tree -a."
       }
     ],
     "manCommands": {
@@ -127,6 +131,33 @@
         "examples": [
           { "cmd": "wc -l README.md", "desc": "affiche le nombre de lignes du README" },
           { "cmd": "wc blog/blog.html", "desc": "affiche lignes, mots et octets d'un fichier viewer (texte brut)" }
+        ]
+      },
+      "tree": {
+        "description": "Affiche l'arborescence complète du dossier courant ou d'un dossier donné, avec les branches de dessin canoniques. Les éléments masqués n'apparaissent qu'avec -a, comme avec ls.",
+        "options": [
+          {
+            "name": "-a",
+            "usage": "affiche aussi les éléments masqués. Exemple : tree -a"
+          },
+          {
+            "name": "dossier",
+            "usage": "chemin relatif ou absolu du dossier à explorer. Exemple : tree competences/ctf"
+          }
+        ],
+        "examples": [
+          {
+            "cmd": "tree",
+            "desc": "arborescence du dossier courant"
+          },
+          {
+            "cmd": "tree -a",
+            "desc": "avec les fichiers masqués"
+          },
+          {
+            "cmd": "tree | grep ctf",
+            "desc": "ne garde que les branches contenant « ctf »"
+          }
         ]
       },
       "echo": {
@@ -523,7 +554,7 @@
         "currentDir": "/root",
         "tree": {
             "root": {
-              "README.md": "Bienvenue sur le portfolio de Bastien BONORA !\n\nCe terminal simule un shell bash : tapez 'help' pour la liste des commandes,\n'cd' pour naviguer dans l'arborescence, 'cat' pour lire un fichier texte,\n'open' pour ouvrir un fichier ou un lien dans un nouvel onglet.\n\nLes pipes sont là : cat README.md | grep -i bash | wc -l\n\nPour découvrir mon parcours, commencez par : cd competences\nPour me découvrir en quelques lignes : open presentation/qui_suis_je.html\n\nBonne visite !",
+              "README.md": "Bienvenue sur le portfolio de Bastien BONORA !\n\nCe terminal simule un shell bash : tapez 'help' pour la liste des commandes,\n'cd' pour naviguer dans l'arborescence, 'cat' pour lire un fichier texte,\n'open' pour ouvrir un fichier ou un lien dans un nouvel onglet.\n\nD'un coup d'œil : tree affiche l'arborescence complète, et les pipes\nsont là — cat README.md | grep -i bash | wc -l\n\nPour découvrir mon parcours, commencez par : cd competences\nPour me découvrir en quelques lignes : open presentation/qui_suis_je.html\n\nBonne visite !",
               "presentation": {
                 "type": "directory",
                 "CV.pdf": { "type": "file", "url": "./root/presentation/CV/CV_Bastien_BONORA_2025.pdf", "viewer": "cv" },
