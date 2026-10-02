@@ -231,6 +231,18 @@ body {
 .shell__resize--sw { bottom: -4px; left: -4px;   width: 18px; height: 18px; cursor: nesw-resize; }
 .shell__resize--se { bottom: -4px; right: -4px;  width: 18px; height: 18px; cursor: nwse-resize; }
 
+/* Fenêtres viewer : la barre de statut (.cvViewerBar, z-index 6)
+   est ancrée en bas et recouvre les poignées du bas — il ne res-
+   terait que les 4 px qui dépassent de la fenêtre, impossible à
+   saisir. Les poignées du bas passent au-dessus d'elle ; celles du
+   haut restent sous le chrome (z-index 6) pour que le drag de la
+   barre de titre gagne aux coins hauts, comme prévu. */
+.shell__resize--s,
+.shell__resize--sw,
+.shell__resize--se {
+  z-index: 7;
+}
+
 /* Petit indicateur visuel sur le coin bas-droit pour suggérer
    à l'utilisateur que la fenêtre est redimensionnable */
 .shell__resize--se::after {
