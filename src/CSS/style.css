@@ -1047,6 +1047,39 @@ body.is-window-dragging * {
   border: 1px solid var(--text-muted);
 }
 
+/* Attente visible d'une commande qui requête le site en direct
+   (flux RSS du blog, sitemap+pages de la doc) : une ligne animée
+   apparaît sous l'historique après un court seuil puis s'efface.
+   Le tireur est un cadre braille à huit étapes, comme npm. */
+.cliLoading {
+  color: var(--text-muted);
+  margin: 0.15rem 0;
+}
+
+.cliLoadingSpinner {
+  display: inline-block;
+  width: 1ch;
+  margin-right: 0.35rem;
+}
+
+.cliLoadingSpinner::before {
+  display: inline-block;
+  content: "⠋";
+  animation: cliLoadingSpin 0.8s steps(1, end) infinite;
+}
+
+@keyframes cliLoadingSpin {
+  0%     { content: "⠋"; }
+  12.5%  { content: "⠙"; }
+  25%    { content: "⠹"; }
+  37.5%  { content: "⠸"; }
+  50%    { content: "⠼"; }
+  62.5%  { content: "⠴"; }
+  75%    { content: "⠦"; }
+  87.5%  { content: "⠧"; }
+  100%   { content: "⠇"; }
+}
+
 /* Message de restauration après le melt de sudo rm -rf / : la
    trame ░ a déjà tout recouvert, il ne reste que ce message. */
 .meltOverlay {
