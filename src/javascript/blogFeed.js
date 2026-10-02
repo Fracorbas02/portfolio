@@ -28,7 +28,7 @@
   'use strict';
 
   const FEED_URL     = 'https://docs.hexanibble.fr/blog/rss.xml';
-  const SNAPSHOT_URL = './src/JSON/articles.json?v=3';
+  const SNAPSHOT_URL = './src/JSON/articles.json?v=4';
 
   const escape = window.PORTFOLIO_HTML.escapeHTML;
   const isSafeHref = window.PORTFOLIO_HTML.isSafeHref;
@@ -151,11 +151,12 @@
         continue;
       }
 
-      // Image (capture, schéma) : le pager ne la télécharge pas —
-      // un espace la signale, le ^C ouvre l'article pour la voir
+      // Image (capture, schéma) : le pager garde son URL pour
+      // l'afficher à la lecture (imgHTML) — le snapshot aussi
       if (el.tagName === 'IMG') {
         const alt = (el.getAttribute('alt') || '').replace(/\s+/g, ' ').trim();
-        lines.push({ t: 'img', text: alt || 'image' });
+        lines.push({ t: 'img', text: alt || 'image',
+          src: el.getAttribute('src') || '' });
         continue;
       }
 
@@ -606,43 +607,31 @@
     return mermaidSourceHTML(src);
   };
 
-  // ── Images des articles : demi-blocs colorés ────────────────
-  // Le snapshot pré-calcule l'image en demi-blocs : chaque ▄
-  // porte son pixel bas en couleur de texte et son pixel haut en
-  // couleur de fond — deux lignes de pixels par ligne de texte,
-  // sans jamais charger l'image dans le navigateur. Sans art
-  // (flux live, image introuvable), l'espace indicatif reste.
-  const SAFE_COLOR = /^#[0-9a-f]{6}$/i;
-  const imgHTML = (line) => {
+  // ── Images des articles : la vraie image, à la volée ────────
+  // Le pager affiche l'image du site d'origine telle quelle : le
+  // navigateur la télécharge au moment de la lecture — afficher
+  // une image <img> n'est pas soumis au CORS, contrairement à la
+  // lecture de son contenu. Sans src connu (flux muet), l'espace
+  // indicatif [ image : alt ] reste.
+  const imgHTML = (line, baseUrl) => {
     const caption = `<span class="readImg">  [ image : ${escape(line.text)} ]</span>`;
-    const art = Array.isArray(line.art) ? line.art : null;
-    if (!art) return caption;
-    const rows = [];
-    for (const runs of art) {
-      if (!Array.isArray(runs)) return caption;
-      let row = '';
-      for (const run of runs) {
-        if (!Array.isArray(run) || !Number.isInteger(run[2]) || run[2] < 1) {
-          return caption;
-        }
-        const up = run[0], low = run[1];
-        if (!up && !low) {
-          row += ' '.repeat(run[2]);
-          continue;
-        }
-        if ((up && !SAFE_COLOR.test(up)) || (low && !SAFE_COLOR.test(low))) {
-          return caption;
-        }
-        const style = low
-          ? `color:${low}${up ? `;background-color:${up}` : ''}`
-          : `color:${up}`;
-        row += `<span class="readImgArt" style="${style}">`
-          + (low ? '▄' : '▀').repeat(run[2]) + '</span>';
-      }
-      rows.push(row);
+    const raw = typeof line.src === 'string' ? line.src.trim() : '';
+    let src = null;
+    if (/^data:image\/(?:png|jpe?g|gif|webp);base64,[A-Za-z0-9+/=]+$/.test(raw)) {
+      // Image inline du flux : le base64 est sûr dans un attribut
+      // src de <img> (jamais dans un href cliquable).
+      src = raw;
+    } else if (window.PORTFOLIO_HTML.isSafeHref(raw)) {
+      try {
+        const abs = new URL(raw, baseUrl ?? location.href).href;
+        if (/^https?:/.test(abs)) src = abs;
+      } catch { /* flux muet : espace indicatif */ }
     }
-    if (rows.length === 0) return caption;
-    return `<div class="readImgArtBlock">${rows.join('\n')}</div>\n${caption}`;
+    if (!src) return caption;
+    return `<div class="readImgFigure">`
+      + `<img class="readImgReal" src="${escape(src)}"`
+      + ` alt="${escape(line.text)}" loading="lazy"></div>`
+      + `\n${caption}`;
   };
 
   function renderArticle(item) {
@@ -679,7 +668,7 @@
         } else if (line.t === 'mermaid') {
           out.push(mermaidHTML(line.text));
         } else if (line.t === 'img') {
-          out.push(imgHTML(line));
+          out.push(imgHTML(line, item.link));
         } else {
           out.push(inlineHTML(line.text));
         }

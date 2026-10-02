@@ -28,7 +28,7 @@
 
   const BASE_URL     = 'https://docs.bastienbonora.fr';
   const SITEMAP_URL  = BASE_URL + '/sitemap.xml';
-  const SNAPSHOT_URL = './src/JSON/docs.json?v=2';
+  const SNAPSHOT_URL = './src/JSON/docs.json?v=3';
 
   const extractLines = window.PORTFOLIO_BLOG_FEED.extractLines;
 
