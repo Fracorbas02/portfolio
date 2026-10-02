@@ -1042,7 +1042,13 @@ body.is-window-dragging * {
   display: none;
 }
 
-.manPagerOverlay {
+/* L'overlay porte aussi la classe .manPager : le sélecteur
+   .shellOutput > .manPager (position: relative, flex) est plus
+   spécifique et l'écraserait — l'article s'afficherait en bande
+   de 12 px sous le viewer au lieu de le recouvrir. La double
+   classe rétablit l'égalité de spécificité, et l'ordre source
+   fait gagner l'absolute. */
+.manPager.manPagerOverlay {
   position: absolute;
   inset: 0;
   z-index: 5;
