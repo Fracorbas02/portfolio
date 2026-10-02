@@ -57,6 +57,10 @@
         "description": "Recherche un motif dans un fichier texte. Exemple : grep -n Bastien README.md."
       },
       {
+        "name": "wc",
+        "description": "Compte les lignes d'un fichier. Exemple : wc -l README.md."
+      },
+      {
         "name": "neofetch",
         "description": "Affiche les informations du portfolio et ses compétences, à la manière de la commande neofetch."
       },
@@ -89,6 +93,19 @@
         "examples": [
           { "cmd": "grep portfolio README.md", "desc": "affiche les lignes du README contenant « portfolio »" },
           { "cmd": "grep -in bash README.md", "desc": "recherche « bash » sans tenir compte de la casse, avec les numéros de ligne" }
+        ]
+      },
+      "wc": {
+        "description": "Compte les lignes, les mots et les octets d'un fichier texte, à la manière de la commande wc. Sans option, affiche les trois compteurs.",
+        "options": [
+          {
+            "name": "-l",
+            "usage": "n'affiche que le nombre de lignes. Exemple : wc -l README.md"
+          }
+        ],
+        "examples": [
+          { "cmd": "wc -l README.md", "desc": "affiche le nombre de lignes du README" },
+          { "cmd": "wc blog/blog.html", "desc": "affiche lignes, mots et octets d'un fichier viewer (texte brut)" }
         ]
       },
       "blog": {

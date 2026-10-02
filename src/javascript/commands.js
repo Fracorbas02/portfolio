@@ -217,6 +217,41 @@
     }
 
     /**
+     * wc : compte les lignes (-l) d'un fichier texte, ou par
+     * défaut lignes/mots/octets comme le vrai wc.
+     */
+    function cmdWc(args) {
+      let linesOnly = false;
+      if (args[0] === '-l') {
+        linesOnly = true;
+        args.shift();
+      }
+      if (args.length === 0) return 'usage : wc [-l] <fichier>';
+
+      const target = args[0];
+      const node = lookUpTree(target);
+
+      if (node === null) return `wc : ${escapeHTML(target)} : fichier introuvable`;
+      if (isDirectory(node)) return `wc : ${escapeHTML(target)} : est un dossier`;
+      if (!canReadFiles()) {
+        return `wc : ${escapeHTML(target)} : Permission non accordée`;
+      }
+
+      const text = fileText(node);
+      if (text === null) {
+        return `wc : ${escapeHTML(target)} : fichier binaire (non analysable)`;
+      }
+
+      // Comme le vrai wc : les lignes sont les caractères \n
+      const lines = (text.match(/\n/g) ?? []).length;
+      if (linesOnly) return `${lines} ${escapeHTML(target)}`;
+
+      const words = text.split(/\s+/).filter(Boolean).length;
+      const bytes = new TextEncoder().encode(text).length;
+      return `${lines} ${words} ${bytes} ${escapeHTML(target)}`;
+    }
+
+    /**
      * Permissions façon ls -l : dossier, lien symbolique ou fichier.
      */
     function lsMode(key, node) {
@@ -561,6 +596,7 @@
       cd:     cmdCd,
       cat:    cmdCat,
       grep:   cmdGrep,
+      wc:     cmdWc,
       sudo:   cmdSudo,
       blog:   cmdBlog,
       bash:   cmdBash,
