@@ -809,7 +809,8 @@
       case 'open':
       case 'cd':
       case 'cat':
-      case 'grep': {
+      case 'grep':
+      case 'wc': {
         const dir = navigateTree(dirPart
           ? window.PORTFOLIO_FS.resolve(state.currentDir, dirPart)
           : state.currentDir);
@@ -1190,7 +1191,7 @@
     window.PORTFOLIO_THEME.restore();
 
     try {
-      const response = await fetch('./src/JSON/elements.json?v=20261002.7');
+      const response = await fetch('./src/JSON/elements.json?v=20261002.8');
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
       portfolioData = await response.json();
     } catch (err) {
