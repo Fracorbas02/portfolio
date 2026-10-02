@@ -521,7 +521,7 @@
       return `set : argument inconnu « ${escapeHTML(key)} »`;
     }
 
-    function cmdOpen(args) {
+    async function cmdOpen(args) {
       if (args.length === 0) return 'open : veuillez donner un argument';
 
       const target = args[0];
@@ -550,6 +550,11 @@
       if (node.viewer) {
         if (!window.PORTFOLIO_VIEWERS?.[node.viewer]) {
           return `open : viewer « ${escapeHTML(node.viewer)} » inconnu`;
+        }
+        // Les viewers blog/docs vivent du flux du site : la même
+        // requête en direct est faite que par `blog`/`docs`.
+        if (node.viewer === 'blog' || node.viewer === 'docs') {
+          await ensureFeedViewer(node.viewer);
         }
         const error = spawnShell({ viewer: node, seedHistory: state.history.slice() });
         if (error) return error;
@@ -631,6 +636,49 @@
     }
 
     /**
+     * Attente visible : si la promesse dépasse le seuil, une ligne
+     * animée s'insère à la fin de l'historique — requête réseau en
+     * cours — puis disparaît dès la réponse. En dessous du seuil,
+     * rien ne s'affiche : la commande paraît instantanée.
+     */
+    const withLoading = (promise, label) => {
+      const line = document.createElement('div');
+      line.className = 'cliLoading';
+      line.innerHTML = `<span class="cliLoadingSpinner"></span>${escapeHTML(label)}`;
+      const timer = setTimeout(() => output.appendChild(line), 300);
+      return promise.finally(() => {
+        clearTimeout(timer);
+        line.remove();
+      });
+    };
+
+    /**
+     * Charge le flux d'un viewer (blog ou docs) depuis le site en
+     * direct — flux RSS ou sitemap+pages — puis reconstruit le
+     * viewer avec ce que le site a répondu. Le repli local
+     * (instantané JSON) reste géré par le flux lui-même.
+     */
+    const ensureFeedViewer = async (name) => {
+      const feed = name === 'docs'
+        ? window.PORTFOLIO_DOCS_FEED
+        : window.PORTFOLIO_BLOG_FEED;
+      const base = name === 'docs'
+        ? window.PORTFOLIO_DOCS_BASE
+        : window.PORTFOLIO_BLOG_BASE;
+      const label = name === 'docs'
+        ? 'requête de la documentation en direct…'
+        : 'requête du flux du blog en direct…';
+      if (!feed) return;
+      try { await withLoading(feed.load(), label); }
+      catch { /* site muet : viewer statique */ }
+      if (feed.items.length > 0 && base) {
+        window.PORTFOLIO_VIEWERS[name] = window.PORTFOLIO_DOC_VIEWER.create(
+          feed.buildViewerConfig(base)
+        );
+      }
+    };
+
+    /**
      * blog : raccourci vers le viewer du blog (bastodoc), même
      * comportement que `open blog/blog.html` depuis n'importe où.
      * Les articles viennent du flux RSS du site (blogFeed.js),
@@ -640,15 +688,7 @@
       const node = lookUpTree('/root/blog/blog.html');
       if (!node) return 'blog : viewer introuvable — essayez : open blog/blog.html';
       if (!canReadFiles()) return 'blog : Permission non accordée';
-      const feed = window.PORTFOLIO_BLOG_FEED;
-      if (feed) {
-        try { await feed.load(); } catch { /* flux muet : viewer statique */ }
-        if (feed.items.length > 0 && window.PORTFOLIO_BLOG_BASE) {
-          window.PORTFOLIO_VIEWERS.blog = window.PORTFOLIO_DOC_VIEWER.create(
-            feed.buildViewerConfig(window.PORTFOLIO_BLOG_BASE)
-          );
-        }
-      }
+      await ensureFeedViewer('blog');
       const error = spawnShell({ viewer: node, seedHistory: state.history.slice() });
       if (error) return error;
       return 'ouverture du blog dans une nouvelle fenêtre...';
@@ -665,15 +705,7 @@
       const node = lookUpTree('/root/docs/docs.html');
       if (!node) return 'docs : viewer introuvable — essayez : open docs/docs.html';
       if (!canReadFiles()) return 'docs : Permission non accordée';
-      const feed = window.PORTFOLIO_DOCS_FEED;
-      if (feed) {
-        try { await feed.load(); } catch { /* site muet : viewer statique */ }
-        if (feed.items.length > 0 && window.PORTFOLIO_DOCS_BASE) {
-          window.PORTFOLIO_VIEWERS.docs = window.PORTFOLIO_DOC_VIEWER.create(
-            feed.buildViewerConfig(window.PORTFOLIO_DOCS_BASE)
-          );
-        }
-      }
+      await ensureFeedViewer('docs');
       const error = spawnShell({ viewer: node, seedHistory: state.history.slice() });
       if (error) return error;
       return 'ouverture de la documentation dans une nouvelle fenêtre...';
