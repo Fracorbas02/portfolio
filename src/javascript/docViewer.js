@@ -259,7 +259,7 @@
         '.cvViewerJourneyLine:not(.cvViewerJourneyLine--shown):not(.cvViewerJourneyLine--wiped)';
       const animateJourney = (scope) => {
         const secEl = scope.querySelector('.cvViewerSection[data-eras]');
-        if (!secEl || secEl.dataset.manual === '1') return;
+        if (!secEl || secEl.dataset.manual === '1' || secEl.dataset.done === '1') return;
         const era = scope.querySelector('.cvViewerEra--active');
         if (!era) return;
 
@@ -273,8 +273,15 @@
           return;
         }
 
-        // Dernière ère : l'écran reste affiché, l'histoire est finie
-        if (!era.nextElementSibling) return;
+        // Dernière ère : l'écran reste affiché, l'histoire est finie.
+        // La machine cesse de chercher du travail à chaque tick (le
+        // timer continue de vivre pour les autres panneaux : logos
+        // et ticker du menu au retour) ; ré-afficher la rubrique
+        // régénère le DOM et rejoue tout.
+        if (!era.nextElementSibling) {
+          secEl.dataset.done = '1';
+          return;
+        }
 
         // 2. Pause avant le nettoyage, proportionnelle au contenu
         if (era.dataset.hold === undefined) {
@@ -336,6 +343,18 @@
           logoState.phase = 'hold';
           logoState.ticks = LOGO_HOLD_TICKS;
         }
+      };
+
+      // Nature du panneau latéral : frise chronologique des rubriques
+      // « ères », ou logos/ticker/statut. Exposée comme marqueur
+      // data-side dédié — script.js ne devine plus la nature depuis
+      // le HTML rendu (une rubrique pourrait contenir le même
+      // mot-clé dans son texte).
+      const sideNature = (viewerState) => {
+        const section = viewerState?.section
+          ? sections.find((s) => s.id === viewerState.section)
+          : null;
+        return section?.eras ? 'chrono' : 'default';
       };
 
       const renderSide = (viewerState = null, container = null) => {
@@ -501,7 +520,7 @@
       const render = (viewerState) => {
         if (!viewerState) return '';
         return `<div class="cvViewerMain">${renderMain(viewerState)}</div>`
-             + `<div class="cvViewerSide">${renderSide(viewerState)}</div>`;
+             + `<div class="cvViewerSide" data-side="${sideNature(viewerState)}">${renderSide(viewerState)}</div>`;
       };
 
       const links = (sectionId) => {
@@ -587,6 +606,7 @@
         render,
         renderMain,
         renderSide,
+        sideNature,
         bar: barHTML,
         links,
         navEra,

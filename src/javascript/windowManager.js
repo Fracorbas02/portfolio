@@ -156,7 +156,6 @@
       target.style.height = `${preSnap.height}px`;
       target.style.left = `${clamp(parseFloat(target.style.left), 0, Math.max(0, vw - preSnap.width))}px`;
       target.style.top  = `${clamp(parseFloat(target.style.top), 0, Math.max(0, vh - preSnap.height))}px`;
-      snapped = false;
     }
 
     // ── 3. Démarrage d'un drag ou d'un resize ───────────────────
@@ -206,8 +205,11 @@
       const captureEl = event.currentTarget;
       captureEl.setPointerCapture(event.pointerId);
       captureEl.addEventListener('pointermove', onPointerMove);
-      captureEl.addEventListener('pointerup', onPointerUp, { once: true });
-      captureEl.addEventListener('pointercancel', onPointerUp, { once: true });
+      // up et cancel sont retirés ensemble dans onPointerUp : un
+      // { once } résiduel s'exécuterait au prochain clic sur la
+      // poignée si l'autre terminait l'interaction.
+      captureEl.addEventListener('pointerup', onPointerUp);
+      captureEl.addEventListener('pointercancel', onPointerUp);
     }
 
     // ── 4. Déplacement / redimensionnement en temps réel ────────
@@ -292,9 +294,15 @@
      * courte transition (classe .is-snapping), puis rend la
      * main pour drag/resize normaux.
      */
-    function applySnap(rect) {
-      const before = target.getBoundingClientRect();
-      preSnap = { width: before.width, height: before.height };
+    function applySnap(rect, keepPreSnap = false) {
+      // Atterrissage draggé : on mémorise la taille d'avant pour la
+      // rendre à l'unsnap. Plein écran sur une fenêtre déjà snappée
+      // (double-clic) : on garde la taille d'origine mémorisée, un
+      // vrai gestionnaire de fenêtres ne l'écrase pas.
+      if (!keepPreSnap) {
+        const before = target.getBoundingClientRect();
+        preSnap = { width: before.width, height: before.height };
+      }
       snapped = true;
       maximized = false; // un atterrissage draggé n'est pas un plein écran
       target.classList.add('is-snapping');
@@ -321,6 +329,8 @@
         'is-window-resizing'
       );
       event.currentTarget.removeEventListener('pointermove', onPointerMove);
+      event.currentTarget.removeEventListener('pointerup', onPointerUp);
+      event.currentTarget.removeEventListener('pointercancel', onPointerUp);
     }
 
     // ── 6. Branchement des handlers ─────────────────────────────
@@ -337,11 +347,14 @@
       if (maximized) {
         unsnap();
       } else {
+        // Fenêtre déjà snappée : preSnap (taille d'origine) est
+        // préservé par applySnap, il ne capture pas la taille du
+        // snap en cours.
         applySnap({
           left: 0, top: 0,
           width: window.innerWidth,
           height: window.innerHeight
-        });
+        }, snapped);
         maximized = true;
       }
     });
