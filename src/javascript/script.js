@@ -1251,12 +1251,73 @@
    * dernier segment est affichée ; une page man en fin de
    * pipeline prend l'écran du pager.
    */
+  /**
+   * Redirection « > » / « >> » d'un segment : renvoie
+   * { command, target, append } — le texte de la commande sans la
+   * redirection, le fichier cible, et si la sortie s'ajoute au
+   * lieu d'écraser. Le « > » hors guillemets coupe le segment,
+   * comme les opérateurs de parseCommandLine.
+   */
+  function extractRedirection(segment) {
+    let quote = null;
+    for (let i = 0; i < segment.length; i++) {
+      const char = segment[i];
+      if (quote) {
+        if (char === quote) quote = null;
+        continue;
+      }
+      if (char === "'" || char === '"') {
+        quote = char;
+        continue;
+      }
+      if (char === '>') {
+        const append = segment[i + 1] === '>';
+        const end = append ? i + 2 : i + 1;
+        return {
+          command: segment.slice(0, i).trim(),
+          target: segment.slice(end).trim(),
+          append
+        };
+      }
+    }
+    return { command: segment, target: null, append: false };
+  }
+
+  /** Texte traversant un tube ou une redirection : le HTML du
+   * terminal redevient du texte brut, pages man comprises. */
+  const outputAsText = (result) => {
+    if (result && typeof result === 'object' && result.__pager) {
+      return window.PORTFOLIO_HTML.htmlToText(result.html ?? '');
+    }
+    return typeof result === 'string' ? window.PORTFOLIO_HTML.htmlToText(result) : '';
+  };
+
   const runPipeline = async (segments) => {
     let stdin = null;
     let result = null;
     let name = '';
 
+    // Redirection : elle vit sur un segment, seul le dernier peut
+    // en porter une (c'est lui qui reçoit la sortie finale) —
+    // « man ls > f.txt » part dans le fichier, pas dans le pager
+    const redirect = extractRedirection(segments[segments.length - 1]);
+    if (redirect.target !== null) {
+      if (redirect.target === '' || /\s/.test(redirect.target)) {
+        return { output: 'bash : erreur de syntaxe près du symbole inattendu « > »', ok: false };
+      }
+      if (redirect.command === '') {
+        return { output: `bash : erreur de syntaxe près du symbole inattendu « ${redirect.append ? '>>' : '>'} »`, ok: false };
+      }
+      segments = [...segments.slice(0, -1), redirect.command];
+    }
     for (let i = 0; i < segments.length; i++) {
+      // Une redirection au milieu du pipeline ne s'attache à
+      // rien : le vrai bash l'accepte, ici elle est refusée
+      const mid = extractRedirection(segments[i]);
+      if (i < segments.length - 1 && mid.target !== null) {
+        return { output: 'bash : les redirections ne sont prises qu\'en fin de pipeline', ok: false };
+      }
+
       const effective = expandAlias(segments[i]);
       const [rawName, ...args] = effective.split(/\s+/);
       name = rawName.toLowerCase();
@@ -1275,20 +1336,42 @@
       // Page man : dernière commande → pager ; au milieu du
       // pipeline, son texte traverse le tube comme toute sortie
       if (result && typeof result === 'object' && result.__pager) {
-        if (i === segments.length - 1) return { pager: result, ok: true };
+        if (i === segments.length - 1 && redirect.target === null) return { pager: result, ok: true };
         stdin = window.PORTFOLIO_HTML.htmlToText(result.html ?? '');
         continue;
       }
       // Éditeur nano : dernière commande → plein écran ; au milieu
       // du pipeline il refuse de s'insérer, rien n'arrive à le
-      // traverser en texte
+      // traverser en texte — et une redirection n'a pas de sens
       if (result && typeof result === 'object' && result.__editor) {
-        if (i === segments.length - 1) return { editor: result, ok: true };
+        if (i === segments.length - 1 && redirect.target === null) return { editor: result, ok: true };
         return { output: 'nano : ne peut pas s\'insérer dans un pipeline', ok: false };
       }
       stdin = typeof result === 'string'
         ? window.PORTFOLIO_HTML.htmlToText(result)
         : null;
+    }
+
+    // La sortie part dans le fichier de l'utilisateur : écriture
+    // (>) ou ajout (>>) via userfs.js — le portfolio reste en
+    // lecture seule
+    if (redirect.target !== null) {
+      const path = window.PORTFOLIO_FS.resolve(state.currentDir, redirect.target);
+      let content = outputAsText(result);
+      if (redirect.append) {
+        const existing = window.PORTFOLIO_USERFS.read(path);
+        if (existing !== null) content = `${existing}${content}`;
+      }
+      const writeResult = window.PORTFOLIO_USERFS.write(path, content);
+      if (writeResult !== true) {
+        const message = writeResult === 'missingParent'
+          ? `bash : ${redirect.target} : aucun fichier ou dossier de ce type`
+          : writeResult === 'tooLarge'
+            ? `bash : ${redirect.target} : fichier trop volumineux (100 Ko maximum)`
+            : `bash : ${redirect.target} : permission non accordée`;
+        return { output: message, ok: false };
+      }
+      return { output: null, ok: commandSucceeded(name, result) };
     }
 
     return {
@@ -2050,7 +2133,7 @@
     window.PORTFOLIO_THEME.restore();
 
     try {
-      const response = await fetch('./src/JSON/elements.json?v=20261002.14');
+      const response = await fetch('./src/JSON/elements.json?v=20261002.15');
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
       portfolioData = await response.json();
     } catch (err) {

@@ -642,7 +642,7 @@
         "currentDir": "/root",
         "tree": {
             "root": {
-              "README.md": "Bienvenue sur le portfolio de Bastien BONORA !\n\nCe terminal simule un shell bash : tapez 'help' pour la liste des commandes,\n'cd' pour naviguer dans l'arborescence, 'cat' pour lire un fichier texte,\n'open' pour ouvrir un fichier ou un lien dans un nouvel onglet.\n\nD'un coup d'œil : tree affiche l'arborescence complète, et les pipes\nsont là — cat README.md | grep -i bash | wc -l\n\nPour découvrir mon parcours, commencez par : cd competences\nPour me découvrir en quelques lignes : open presentation/qui_suis_je.html\n\nBonne visite !",
+              "README.md": "Bienvenue sur le portfolio de Bastien BONORA !\n\nCe terminal simule un shell bash : tapez 'help' pour la liste des commandes,\n'cd' pour naviguer dans l'arborescence, 'cat' pour lire un fichier texte,\n'open' pour ouvrir un fichier ou un lien dans un nouvel onglet.\n\nD'un coup d'œil : tree affiche l'arborescence complète, et les pipes\nsont là — cat README.md | grep -i bash | wc -l. Vos fichiers vous\nsuivent : nano notes.txt, echo idée >> notes.txt — tout reste dans\nvotre navigateur.\n\nPour découvrir mon parcours, commencez par : cd competences\nPour me découvrir en quelques lignes : open presentation/qui_suis_je.html\n\nBonne visite !",
               "presentation": {
                 "type": "directory",
                 "CV.pdf": { "type": "file", "url": "./root/presentation/CV/CV_Bastien_BONORA_2025.pdf", "viewer": "cv" },
