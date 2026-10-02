@@ -81,6 +81,18 @@
         "description": "Décale chaque lettre de 13 rangs (chiffre de César). Exemple : rot13 notes.txt."
       },
       {
+        "name": "du",
+        "description": "Taille d'un fichier ou d'un dossier, récursive. Exemple : du -h blog."
+      },
+      {
+        "name": "stat",
+        "description": "Fiche d'identité d'un fichier : taille, droits, inœud. Exemple : stat README.md."
+      },
+      {
+        "name": "file",
+        "description": "Donne le type d'un fichier en une ligne. Exemple : file presentation/CV.pdf."
+      },
+      {
         "name": "echo",
         "description": "Affiche un texte et développe les variables ($USER, $PWD, exports). Exemple : echo $USER."
       },
@@ -192,6 +204,47 @@
         "examples": [
           { "cmd": "rot13 notes.txt", "desc": "affiche le fichier avec ses lettres décalées de 13 rangs" },
           { "cmd": "echo Obawbhe | rot13", "desc": "retrouve « Bonjour » décalé de 13 rangs" }
+        ]
+      },
+      "du": {
+        "description": "Affiche la taille d'un fichier, ou la taille totale récursive d'un dossier (chaque dossier compte 4096 octets, comme dans ls -l). Sans argument : le dossier courant. La taille affichée est en octets, sauf avec -h.",
+        "options": [
+          {
+            "name": "-h",
+            "usage": "taille lisible : Ko, Mo, Go. Exemple : du -h presentation"
+          }
+        ],
+        "examples": [
+          { "cmd": "du", "desc": "taille totale du dossier courant" },
+          { "cmd": "du -h blog", "desc": "taille du blog en Ko/Mo lisibles" },
+          { "cmd": "du README.md", "desc": "taille du README en octets" }
+        ]
+      },
+      "stat": {
+        "description": "Affiche la fiche d'identité d'un fichier ou d'un dossier, à la manière de la commande stat : chemin résolu, taille, nombre de blocs, droits (mode octal et ls -l), propriétaire, et un numéro d'inœud stable dérivé du chemin.",
+        "options": [
+          {
+            "name": "sans option",
+            "usage": "cette commande ne possède pas d'option"
+          }
+        ],
+        "examples": [
+          { "cmd": "stat README.md", "desc": "fiche complète du message d'accueil" },
+          { "cmd": "stat presentation", "desc": "fiche du dossier presentation, taille récursive" }
+        ]
+      },
+      "file": {
+        "description": "Donne le type d'une entrée en une ligne, à la manière de la commande file : texte ASCII ou UTF-8, dossier, lien symbolique, ou format déduit de l'extension (PDF, image, HTML, clé OpenPGP...) pour les fichiers du portfolio. Plusieurs fichiers peuvent être interrogés d'un coup.",
+        "options": [
+          {
+            "name": "sans option",
+            "usage": "cette commande ne possède pas d'option"
+          }
+        ],
+        "examples": [
+          { "cmd": "file README.md", "desc": "reconnaît le texte du message d'accueil" },
+          { "cmd": "file presentation/CV.pdf", "desc": "reconnaît le document PDF du CV" },
+          { "cmd": "file *", "desc": "type de chaque entrée du dossier courant (joker)" }
         ]
       },
       "tree": {
