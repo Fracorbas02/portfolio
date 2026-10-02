@@ -39,10 +39,11 @@
 
   // ── Extraction : HTML docusaurus → lignes de texte ───────────
   // Types de lignes : 'h' (titre de section), 'p' (paragraphe),
-  // 'li' (puce), 'code' (ligne de bloc de code), 'row' (ligne de
-  // tableau, cellules jointes par ' | '). Le code inline d'un
-  // paragraphe est conservé entre backticks, le rendu du mode
-  // lecture le remet en forme (renderArticle).
+  // 'li' (puce), 'code' (ligne de bloc de code), 'table' (tableau
+  // complet, cellules par ligne), 'mermaid' (source d'un
+  // diagramme), 'img' (image, remplacée par son texte alternatif).
+  // Le code inline d'un paragraphe est conservé entre backticks,
+  // le rendu du mode lecture le remet en forme (renderArticle).
   const inlineText = (el) => {
     let out = '';
     const walk = (node) => {
@@ -94,6 +95,14 @@
       .map((text) => ({ text, tok: [] }));
   };
 
+  // Diagramme mermaid : selon le thème docusaurus, la source se
+  // présente en <pre class="mermaid"> (thème mermaid, rendu côté
+  // client) ou en bloc de code classique language-mermaid.
+  const isMermaid = (pre) =>
+    pre.classList.contains('mermaid')
+    || /(?:^|\s)language-mermaid(?:\s|$)/.test(pre.className)
+    || !!pre.querySelector('code.language-mermaid');
+
   function extractLines(html) {
     const doc = new DOMParser().parseFromString(html, 'text/html');
     const root = doc.querySelector('article') ?? doc.body;
@@ -101,12 +110,22 @@
       .forEach((n) => n.remove());
 
     const lines = [];
-    const nodes = root.querySelectorAll('h2, h3, h4, p, li, pre, blockquote, tr');
+    const nodes = root.querySelectorAll(
+      'h2, h3, h4, p, li, pre, blockquote, table, img');
     for (const el of nodes) {
-      // Pas de doublons : p imbriqué dans une puce, cellule déjà
-      // couverte par sa ligne de tableau
+      // Pas de doublons : p imbriqué dans une puce
       if (el.tagName === 'P' && el.closest('li')) continue;
       if (el.tagName !== 'PRE' && el.closest('pre')) continue;
+
+      // Diagramme mermaid : la source du bloc devient une ligne
+      // « mermaid » — le pager la dessine en ASCII (mermaidHTML).
+      if (el.tagName === 'PRE' && isMermaid(el)) {
+        lines.push({
+          t: 'mermaid',
+          text: codeLines(el).map((l) => l.text).join('\n')
+        });
+        continue;
+      }
 
       if (el.tagName === 'PRE') {
         for (const raw of codeLines(el)) {
@@ -117,11 +136,26 @@
         continue;
       }
 
-      if (el.tagName === 'TR') {
-        const cells = Array.from(el.children)
-          .map((c) => c.textContent.replace(/\s+/g, ' ').trim())
-          .filter(Boolean);
-        if (cells.length > 0) lines.push({ t: 'row', text: cells.join(' | ') });
+      // Tableau complet : les lignes gardent leurs cellules, le
+      // rendu aligne les colonnes et dessine les cadres
+      // (tableHTML). head = nombre de lignes d'en-tête (thead).
+      if (el.tagName === 'TABLE') {
+        const trs = el.querySelectorAll('tr');
+        if (trs.length === 0) continue;
+        const rows = Array.from(trs, (tr) =>
+          Array.from(tr.children, (c) =>
+            c.textContent.replace(/\s+/g, ' ').trim()));
+        if (rows.some((r) => r.some((c) => c !== ''))) {
+          lines.push({ t: 'table', head: el.querySelectorAll('thead tr').length, rows });
+        }
+        continue;
+      }
+
+      // Image (capture, schéma) : le pager ne la télécharge pas —
+      // un espace la signale, le ^C ouvre l'article pour la voir
+      if (el.tagName === 'IMG') {
+        const alt = (el.getAttribute('alt') || '').replace(/\s+/g, ' ').trim();
+        lines.push({ t: 'img', text: alt || 'image' });
         continue;
       }
 
@@ -174,10 +208,16 @@
 
   // ── Chargement : flux live, sinon instantané local ───────────
   // Une ligne du snapshot est gardée si son type est reconnu :
-  // un texte brut pour tout ce que le mode lecture sait rendre ;
-  // les tokens du code sont validés au rendu.
+  // les tableaux portent leurs cellules (rows), les autres types
+  // un texte brut ; les tokens du code sont validés au rendu.
   const validLine = (l) => {
     if (!l || typeof l.t !== 'string') return false;
+    if (l.t === 'table') {
+      return typeof l.head === 'number'
+        && Array.isArray(l.rows)
+        && l.rows.every((r) => Array.isArray(r)
+          && r.every((c) => typeof c === 'string'));
+    }
     return typeof l.text === 'string';
   };
 
@@ -328,6 +368,244 @@
     return html + escape(line.text.slice(pos));
   };
 
+  // ── Tableaux : cadres ASCII, colonnes alignées ───────────────
+  // Les cellules longues sont repliées (TABLE_COL_MAX) pour que
+  // le tableau reste lisible dans la fenêtre ; les lignes trop
+  // larges défilent à l'horizontale, comme les blocs de code.
+  const TABLE_COL_MAX = 38;
+
+  const wrapCell = (text, max) => {
+    const out = [];
+    let line = '';
+    for (const word of text.split(' ')) {
+      let w = word;
+      while (w.length > max) { // mot seul plus long : coupe dure
+        if (line !== '') { out.push(line); line = ''; }
+        out.push(w.slice(0, max));
+        w = w.slice(max);
+      }
+      if (w === '') continue;
+      if (line === '') line = w;
+      else if (line.length + 1 + w.length <= max) line += ' ' + w;
+      else { out.push(line); line = w; }
+    }
+    out.push(line);
+    return out;
+  };
+
+  const tableHTML = (table) => {
+    const rows = Array.isArray(table.rows)
+      ? table.rows.filter((r) => r.some((c) => c !== ''))
+      : [];
+    if (rows.length === 0) return '';
+    const cols = Math.max(...rows.map((r) => r.length));
+    const grid = rows.map((r) => Array.from({ length: cols }, (_, i) =>
+      wrapCell(typeof r[i] === 'string' ? r[i] : '', TABLE_COL_MAX)));
+    const widths = Array.from({ length: cols }, (_, i) =>
+      Math.max(...grid.map((cells) => Math.max(...cells[i].map((l) => l.length)))));
+
+    const border = (l, m, r) =>
+      `<span class="readTableBorder">${l}${widths.map((w) => '─'.repeat(w + 2)).join(m)}${r}</span>`;
+    const rowHTML = (cells, isHead) =>
+      `<span class="readTableBorder">│</span>${cells.map((cell, i) => {
+        const pad = ' '.repeat(widths[i] - cell.length);
+        const body = isHead
+          ? `<span class="readTableHead">${escape(cell)}</span>`
+          : escape(cell);
+        return ` ${body}${pad} <span class="readTableBorder">│</span>`;
+      }).join('')}`;
+
+    const out = [border('┌', '┬', '┐')];
+    rows.forEach((_, r) => {
+      const isHead = r < table.head;
+      const height = Math.max(...grid[r].map((c) => c.length));
+      for (let k = 0; k < height; k++) {
+        out.push(rowHTML(grid[r].map((c) => c[k] ?? ''), isHead));
+      }
+      // Séparateur sous la dernière ligne d'en-tête
+      if (isHead && r + 1 === table.head) out.push(border('├', '┼', '┤'));
+    });
+    out.push(border('└', '┴', '┘'));
+    return `<div class="readTable">${out.join('\n')}</div>`;
+  };
+
+  // ── Diagrammes mermaid : flowcharts en ASCII ────────────────
+  // Le pager ne dessine pas tout mermaid — il vise les usages
+  // courants des articles d'infra : une chaîne d'étapes (boîtes
+  // reliées par │ ▼ ou ──►) ou un arbre de dépendances (branches
+  // ├──►). Le reste retombe sur la source dans un bloc de code.
+  const MERMAID_ID = '[A-Za-z0-9_.-]+';
+  const MERMAID_SHAPE = String.raw`\[[^\]]*\]|\([^)]*\)|\{[^}]*\}`;
+  const labelOf = (shape) =>
+    shape.replace(/^[\[({]+/, '').replace(/[\])}]+$/, '').trim();
+
+  const parseFlow = (src) => {
+    const rows = src.split('\n').map((l) => l.trim()).filter(Boolean);
+    const dir = /^(?:flowchart|graph)\s+(TD|TB|BT|LR|RL)\b/i.exec(rows[0] ?? '');
+    if (!dir) return null;
+    const nodes = new Map();
+    const edges = [];
+    const shape = `(${MERMAID_SHAPE})?`;
+    const arrowRe = new RegExp(
+      `^(${MERMAID_ID})\\s*${shape}\\s*(?:-\\.->|-->|==>|===|---|--o|--x)` +
+      `\\s*(?:\\|([^|]*)\\|)?\\s*(${MERMAID_ID})\\s*${shape}$`);
+    const textRe = new RegExp(
+      `^(${MERMAID_ID})\\s*${shape}\\s*--\\s+(.+?)\\s+-->\\s*(${MERMAID_ID})\\s*${shape}$`);
+    const label = (id, sh) => nodes.set(id, sh ? labelOf(sh) || id : id);
+    for (const row of rows.slice(1)) {
+      if (/^(%%|style\s|classDef\s|class\s|click\s|subgraph\b|end\b)/.test(row)) continue;
+      let m = arrowRe.exec(row);
+      if (m) {
+        label(m[1], m[2]);
+        label(m[4], m[5]);
+        edges.push({ from: m[1], to: m[4], text: (m[3] ?? '').trim() });
+        continue;
+      }
+      m = textRe.exec(row);
+      if (m) {
+        label(m[1], m[2]);
+        label(m[4], m[5]);
+        edges.push({ from: m[1], to: m[4], text: m[3].trim() });
+        continue;
+      }
+      m = new RegExp(`^(${MERMAID_ID})\\s*(${MERMAID_SHAPE})$`).exec(row);
+      if (m) label(m[1], m[2]);
+    }
+    if (edges.length === 0 || nodes.size === 0) return null;
+    return { vertical: !/^(LR|RL)$/.test(dir[1].toUpperCase()), nodes, edges };
+  };
+
+  // Chaîne : chaque noeud a un seul suivant, un seul départ — la
+  // suite des boîtes se dessine reliée de bout en bout.
+  const findChain = (flow) => {
+    const { nodes, edges } = flow;
+    if (edges.length !== nodes.size - 1) return null;
+    const byFrom = new Map(edges.map((e) => [e.from, e]));
+    const starts = [...nodes.keys()].filter(
+      (id) => !edges.some((e) => e.to === id));
+    if (starts.length !== 1) return null;
+    const seq = [];
+    const seen = new Set();
+    let cur = starts[0];
+    while (cur !== undefined) {
+      if (seen.has(cur)) return null;
+      seen.add(cur);
+      seq.push(cur);
+      cur = byFrom.get(cur)?.to;
+    }
+    return seen.size === nodes.size ? { seq, byFrom } : null;
+  };
+
+  // Arbre : chaque noeud a au plus un parent, aucun cycle — les
+  // dépendances se dessinent en branches ├──► / └──►.
+  const findTree = (flow) => {
+    const { nodes, edges } = flow;
+    const children = new Map([...nodes.keys()].map((id) => [id, []]));
+    const parent = new Map();
+    for (const e of edges) {
+      if (parent.has(e.to)) return null;
+      parent.set(e.to, e);
+      children.get(e.from)?.push(e);
+    }
+    for (const id of nodes.keys()) {
+      const path = new Set();
+      let cur = id;
+      while (cur !== undefined) {
+        if (path.has(cur)) return null;
+        path.add(cur);
+        cur = parent.get(cur)?.from;
+      }
+    }
+    const roots = [...nodes.keys()].filter((id) => !parent.has(id));
+    return roots.length > 0 ? { children, roots } : null;
+  };
+
+  const mermaidSourceHTML = (src) =>
+    `<span class="cvViewerMuted">  diagramme mermaid — source :</span>\n`
+    + `<div class="readCodeBlock">${escape(src.replace(/\s+$/, ''))}</div>`;
+
+  const chainHTML = (flow, chain) => {
+    const label = (id) => flow.nodes.get(id) ?? id;
+    const inner = Math.max(...chain.seq.map((id) => label(id).length)) + 2;
+    const c = Math.floor(inner / 2); // colonne centrale, dans la boîte
+    const frames = chain.seq.map((id) => {
+      const t = label(id);
+      const left = Math.floor((inner - t.length) / 2);
+      const body = ' '.repeat(left) + t + ' '.repeat(inner - t.length - left);
+      return {
+        top: `┌${'─'.repeat(inner)}┐`,
+        mid: `│${body}│`,
+        // En vertical, le ┬ attache la flèche descendante ; en
+        // horizontal, rien ne part du bas — bord plein.
+        bot: flow.vertical
+          ? `└${'─'.repeat(c)}┬${'─'.repeat(inner - c - 1)}┘`
+          : `└${'─'.repeat(inner)}┘`
+      };
+    });
+    const B = (s) => `<span class="readDiagramBox">${s}</span>`;
+    const A = (s) => `<span class="readDiagramArrow">${s}</span>`;
+    const out = [];
+    if (flow.vertical) {
+      chain.seq.forEach((id, i) => {
+        out.push(B(frames[i].top), B(frames[i].mid), B(frames[i].bot));
+        if (i + 1 < chain.seq.length) {
+          const e = chain.byFrom.get(id);
+          const stem = `${' '.repeat(c + 1)}${A('│')}`
+            + (e.text ? ` ${escape(e.text)}` : '');
+          out.push(stem, `${' '.repeat(c + 1)}${A('▼')}`);
+        }
+      });
+    } else {
+      const tRow = [], mRow = [], bRow = [];
+      chain.seq.forEach((id, i) => {
+        tRow.push(B(frames[i].top));
+        mRow.push(B(frames[i].mid));
+        bRow.push(B(frames[i].bot));
+        if (i + 1 < chain.seq.length) {
+          const e = chain.byFrom.get(id);
+          const arrow = e.text ? `─ ${escape(e.text)} ─►` : '─────►';
+          const gap = ' '.repeat(arrow.length + 2);
+          mRow.push(` ${A(arrow)} `);
+          tRow.push(gap);
+          bRow.push(gap);
+        }
+      });
+      out.push(tRow.join(''), mRow.join(''), bRow.join(''));
+    }
+    return `<div class="readDiagram">${out.join('\n')}</div>`;
+  };
+
+  const treeHTML = (flow, tree) => {
+    const out = [];
+    const walk = (id, prefix, isLast, edge) => {
+      const label = flow.nodes.get(id) ?? id;
+      const head = edge === null
+        ? ''
+        : `${prefix}<span class="readDiagramArrow">${isLast ? '└──►' : '├──►'}</span> `;
+      const tail = edge?.text
+        ? ` <span class="readDiagramArrow">— ${escape(edge.text)} —</span>` : '';
+      out.push(`${head}${escape(label)}${tail}`);
+      const kids = tree.children.get(id) ?? [];
+      kids.forEach((e, i) => walk(
+        e.to,
+        prefix + (edge === null ? '' : (isLast ? '    ' : '│   ')),
+        i === kids.length - 1,
+        e));
+    };
+    for (const root of tree.roots) walk(root, '', true, null);
+    return `<div class="readDiagram">${out.join('\n')}</div>`;
+  };
+
+  const mermaidHTML = (src) => {
+    const flow = parseFlow(src);
+    if (!flow) return mermaidSourceHTML(src);
+    const chain = findChain(flow);
+    if (chain) return chainHTML(flow, chain);
+    const tree = findTree(flow);
+    if (tree) return treeHTML(flow, tree);
+    return mermaidSourceHTML(src);
+  };
+
   function renderArticle(item) {
     const out = [`<span class="cliSection">${escape(item.title)}</span>`];
     const date = longDate(item.pubDate);
@@ -356,8 +634,13 @@
           out.push(`<span class="cliSection">${escape(line.text)}</span>`);
         } else if (line.t === 'li') {
           out.push(`  • ${inlineHTML(line.text)}`);
-        } else if (line.t === 'row') {
-          out.push(`<span class="cvViewerMuted">  ${escape(line.text)}</span>`);
+        } else if (line.t === 'table') {
+          const html = tableHTML(line);
+          if (html) out.push(html);
+        } else if (line.t === 'mermaid') {
+          out.push(mermaidHTML(line.text));
+        } else if (line.t === 'img') {
+          out.push(`<span class="readImg">  [ image : ${escape(line.text)} ]</span>`);
         } else {
           out.push(inlineHTML(line.text));
         }

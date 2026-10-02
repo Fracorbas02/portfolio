@@ -999,6 +999,40 @@ body.is-window-dragging * {
 .readTok--num { color: var(--warning); }
 .readTok--var { color: var(--text-secondary); }
 
+/* Tableaux des articles lus : dessin ASCII à chasse fixe — pas de
+   repli, les lignes trop larges défilent à l'horizontale. Cadres
+   atténués, en-têtes en accent clair. */
+.readTable {
+  white-space: pre;
+  overflow-x: auto;
+  margin: 0.15rem 0;
+}
+
+.readTableBorder { color: var(--text-muted); }
+
+.readTableHead {
+  color: var(--accent-strong);
+  font-weight: 600;
+}
+
+/* Diagrammes mermaid des articles lus : boîtes et flèches ASCII.
+   Cadres atténués, flèches en accent, libellés par défaut. */
+.readDiagram {
+  white-space: pre;
+  overflow-x: auto;
+  margin: 0.15rem 0;
+}
+
+.readDiagramBox   { color: var(--text-muted); }
+.readDiagramArrow { color: var(--accent); }
+
+/* Image d'un article (capture, schéma) : le pager ne la charge
+   pas, un espace signale sa place et son contenu. */
+.readImg {
+  color: var(--text-muted);
+  font-style: italic;
+}
+
 /* Message de restauration après le melt de sudo rm -rf / : la
    trame ░ a déjà tout recouvert, il ne reste que ce message. */
 .meltOverlay {
