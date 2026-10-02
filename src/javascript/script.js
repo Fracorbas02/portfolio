@@ -1517,6 +1517,36 @@
   };
 
   /**
+   * Rejeu d'historique, comme dans bash : « !! » relance la
+   * dernière commande, « !n » celle du rang n affiché par
+   * history. Une ligne sans « ! » revient telle quelle ; un rang
+   * introuvable renvoie command null avec le label en cause. La
+   * profondeur de rejeu est bornée pour ne jamais boucler sur
+   * elle-même, même avec un historique farci de « ! ».
+   */
+  const replayHistory = (line, history) => {
+    let command = line;
+    for (let depth = 0; depth < 5; depth += 1) {
+      let label = null;
+      let entry;
+      if (command === '!!') {
+        label = '!!';
+        entry = history[history.length - 1];
+      } else {
+        const match = /^!(\d+)$/.exec(command);
+        if (match !== null) {
+          label = command;
+          entry = history[Number(match[1]) - 1];
+        }
+      }
+      if (label === null) break;
+      if (entry === undefined) return { command: null, label };
+      command = entry;
+    }
+    return { command, label: null };
+  };
+
+  /**
    * Exécute la ligne saisie : écho du prompt, puis jobs de
    * pipeline dans l'ordre, chaque sortie suivant la précédente.
    */
@@ -1527,18 +1557,28 @@
       return;
     }
 
-    state.history.push(trimmed);
+    // Rejeu d'historique : l'historique garde la ligne rejouée,
+    // jamais le « ! » qui y a mené
+    const replayed = replayHistory(trimmed, state.history);
+    if (replayed.command === null) {
+      printOutput(`${escapeHTML(DEFAULT_BEGIN_SHELL.textContent)}${escapeHTML(trimmed)}`);
+      printOutput(`bash : ${replayed.label} : substitution d'événement introuvable`);
+      return;
+    }
+    const command = replayed.command;
+
+    state.history.push(command);
     state.historyIndex = state.history.length;
     persistHistory();
 
     // Écho de la ligne avant l'exécution, comme un vrai shell :
     // les sorties suivent l'écho, dans l'ordre des commandes
-    printOutput(`${escapeHTML(DEFAULT_BEGIN_SHELL.textContent)}${escapeHTML(trimmed)}`);
+    printOutput(`${escapeHTML(DEFAULT_BEGIN_SHELL.textContent)}${escapeHTML(command)}`);
 
     // Substitutions « $(cmd) » : développées avant l'analyse, en
     // une seule passe — l'historique garde la ligne telle que
     // saisie, les substitutions ne s'imbriquent pas
-    const expanded = await expandSubstitutions(trimmed);
+    const expanded = await expandSubstitutions(command);
     if (expanded === null) return;
 
     const parsed = parseCommandLine(expanded);
@@ -2275,7 +2315,7 @@
     window.PORTFOLIO_THEME.restore();
 
     try {
-      const response = await fetch('./src/JSON/elements.json?v=20261002.17');
+      const response = await fetch('./src/JSON/elements.json?v=20261002.18');
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
       portfolioData = await response.json();
     } catch (err) {

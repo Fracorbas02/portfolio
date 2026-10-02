@@ -534,7 +534,7 @@
         ]
       },
       "history": {
-      "description": "Affiche l'historique des commandes saisies dans cette fenêtre. Chaque fenêtre de shell possède son propre historique : celle ouverte par bash hérite de l'historique de sa fenêtre parente. Raccourcis : flèches haut/bas pour la navigation, Ctrl+R pour la recherche inversée.",
+      "description": "Affiche l'historique des commandes saisies dans cette fenêtre. Chaque fenêtre de shell possède son propre historique : celle ouverte par bash hérite de l'historique de sa fenêtre parente. Raccourcis : flèches haut/bas pour la navigation, Ctrl+R pour la recherche inversée. Rejeu : « !! » relance la dernière commande, « !n » celle du rang n affiché dans la liste.",
       "options":         [
           {
             "name": "sans argument",
@@ -545,7 +545,9 @@
           {
             "cmd": "history",
             "desc": "liste numérotée des commandes de la fenêtre courante"
-          }
+          },
+          { "cmd": "!!", "desc": "relance la dernière commande saisie" },
+          { "cmd": "!3", "desc": "relance la commande n° 3 de la liste" }
         ]
       },
       "whoami": {
