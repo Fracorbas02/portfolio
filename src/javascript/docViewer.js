@@ -141,7 +141,7 @@
             const body = [timeline, title, '', ...rows].join('\n');
             return `<div class="cvViewerEra${active}">${body}</div>`;
           }).join('');
-          return `<div class="cvViewerSection">${boxTop}\n${erasHTML}</div>`;
+          return `<div class="cvViewerSection" data-eras="1">${boxTop}\n${erasHTML}</div>`;
         }
 
         const lines = [];
@@ -212,20 +212,59 @@
         rows.forEach((row, i) => { row.textContent = win[i]; });
       };
 
+      // ── Frise chronologique : le panneau droit des ères ────
+      // Vertical, une étape par ère : l'étape courante en accent,
+      // les étapes passées en clair, les futures en atténué.
+      const chronoHTML = (section, activeIdx) => {
+        const items = [];
+        section.eras.forEach((era, i) => {
+          const cls = i === activeIdx
+            ? 'cvViewerChronoItem cvViewerChronoItem--active'
+            : i < activeIdx
+              ? 'cvViewerChronoItem cvViewerChronoItem--past'
+              : 'cvViewerChronoItem';
+          items.push(
+            `<div class="${cls}">${escape(String(era.year).padStart(4))}  ${escape(era.chip)}</div>`);
+          if (i < section.eras.length - 1) {
+            items.push('<div class="cvViewerChronoLink">   │</div>');
+          }
+        });
+        return [
+          '<div class="cvViewerChronoTitle">LE PARCOURS</div>',
+          ...items,
+          '',
+          '<div class="cvViewerChronoHint">↑↓ les étapes, une fois</div>',
+          '<div class="cvViewerChronoHint">l\u2019histoire racontée</div>'
+        ].join('');
+      };
+
+      const setChronoActive = (scope, idx) => {
+        scope.querySelectorAll('.cvViewerChronoItem').forEach((el, i) => {
+          el.classList.toggle('cvViewerChronoItem--active', i === idx);
+          el.classList.toggle('cvViewerChronoItem--past', i < idx);
+        });
+      };
+
       // ── Ères : la caméra suit le chemin ─────────────────────
-      // Chaque tick fait avancer l'ère active d'un cran :
+      // Chaque action avance l'ère active d'un cran :
       //   1. révélation de bas en haut (le chemin se crée)
-      //   2. pause une fois l'écran complet
+      //   2. pause une fois l'écran complet — le temps de lire
       //   3. nettoyage : les lignes se dissolvent en trame ░,
       //      de bas en haut, puis l'ère suivante démarre
-      // Tout l'état vit dans le DOM : ré-afficher la rubrique
-      // rejoue l'animation depuis la première ère.
-      const ERA_HOLD_TICKS = 6;
+      // La frise chronologique suit, et les flèches ↑↓ prennent la
+      // main (navEra). Tout l'état vit dans le DOM : ré-afficher
+      // la rubrique rejoue l'animation depuis la première ère.
+      const ERA_STEP = 2; // une action toutes les 2 ticks (~220 ms)
       const HIDDEN_LINE =
         '.cvViewerJourneyLine:not(.cvViewerJourneyLine--shown):not(.cvViewerJourneyLine--wiped)';
       const animateJourney = (scope) => {
+        const secEl = scope.querySelector('.cvViewerSection[data-eras]');
+        if (!secEl || secEl.dataset.manual === '1') return;
         const era = scope.querySelector('.cvViewerEra--active');
         if (!era) return;
+
+        secEl.dataset.t = String((Number(secEl.dataset.t) || 0) + 1);
+        if (Number(secEl.dataset.t) % ERA_STEP !== 0) return;
 
         // 1. Le chemin se crée, de bas en haut
         const hidden = era.querySelectorAll(HIDDEN_LINE);
@@ -237,8 +276,11 @@
         // Dernière ère : l'écran reste affiché, l'histoire est finie
         if (!era.nextElementSibling) return;
 
-        // 2. Pause avant le nettoyage
-        if (era.dataset.hold === undefined) era.dataset.hold = String(ERA_HOLD_TICKS);
+        // 2. Pause avant le nettoyage, proportionnelle au contenu
+        if (era.dataset.hold === undefined) {
+          era.dataset.hold = String(
+            8 + era.querySelectorAll('.cvViewerJourneyLine').length);
+        }
         era.dataset.hold = String(Number(era.dataset.hold) - 1);
         if (Number(era.dataset.hold) > 0) return;
 
@@ -252,10 +294,12 @@
           return;
         }
 
-        // Écran vide : place à l'ère suivante
+        // Écran vide : place à l'ère suivante, la frise suit
+        const all = scope.querySelectorAll('.cvViewerEra');
         era.classList.remove('cvViewerEra--active');
         era.classList.add('cvViewerEra--done');
         era.nextElementSibling.classList.add('cvViewerEra--active');
+        setChronoActive(scope, Array.from(all).indexOf(era.nextElementSibling));
       };
 
       const animateLogo = (scope) => {
@@ -294,7 +338,22 @@
         }
       };
 
-      const renderSide = () => {
+      const renderSide = (viewerState = null, container = null) => {
+        // Rubrique « ères » : le panneau devient la frise du parcours
+        const section = viewerState?.section
+          ? sections.find((s) => s.id === viewerState.section)
+          : null;
+        if (section?.eras) {
+          let active = 0;
+          if (container) {
+            const act = container.querySelector('.cvViewerEra--active');
+            if (act) {
+              active = Array.from(container.querySelectorAll('.cvViewerEra')).indexOf(act);
+            }
+          }
+          return `<div class="cvViewerChrono">${chronoHTML(section, active)}</div>`;
+        }
+
         const parts = [];
 
         if (logos.length > 0) {
@@ -367,7 +426,9 @@
           tick += 1;
           const spin = scope.querySelector('.cvViewerSpin');
           const type = scope.querySelector('.cvViewerType');
-          if (!spin && !type && scope.querySelector('.cvViewerLogoRow') === null) {
+          if (!spin && !type
+              && scope.querySelector('.cvViewerLogoRow') === null
+              && scope.querySelector('.cvViewerJourneyLine') === null) {
             stopAnimations();
             return;
           }
@@ -402,6 +463,15 @@
           ].join(sep);
         }
         const section = sections.find((s) => s.id === viewerState.section);
+        // Rubrique « ères » : les flèches naviguent entre les étapes
+        if (section?.eras) {
+          return [
+            key('↑↓', 'les étapes'),
+            key('⏎/⎋', 'menu'),
+            key('^C', ctrlLabel),
+            key('q', 'quitter')
+          ].join(sep);
+        }
         const hasLinks = section?.entries?.some((entry) => entry.links?.length > 0);
         if (hasLinks) {
           return [
@@ -431,7 +501,7 @@
       const render = (viewerState) => {
         if (!viewerState) return '';
         return `<div class="cvViewerMain">${renderMain(viewerState)}</div>`
-             + `<div class="cvViewerSide">${renderSide()}</div>`;
+             + `<div class="cvViewerSide">${renderSide(viewerState)}</div>`;
       };
 
       const links = (sectionId) => {
@@ -442,6 +512,39 @@
           if (entry.links) result.push(...entry.links);
         }
         return result;
+      };
+
+      // Navigation manuelle entre les ères (flèches ↑↓) : prend la
+      // main sur la machine automatique, restaure le texte dissous
+      // en trame et met la frise à jour. Retourne false si la
+      // rubrique n'a pas d'ères ou si on est déjà au bord.
+      const navEra = (container, sectionId, delta) => {
+        const section = sections.find((s) => s.id === sectionId);
+        if (!section?.eras || !container) return false;
+        const secEl = container.querySelector('.cvViewerSection[data-eras]');
+        if (!secEl) return false;
+        const eraEls = Array.from(secEl.querySelectorAll('.cvViewerEra'));
+        if (eraEls.length === 0) return false;
+        const current = eraEls.findIndex((el) =>
+          el.classList.contains('cvViewerEra--active'));
+        const target = current + delta;
+        if (target < 0 || target >= eraEls.length) return false;
+
+        secEl.dataset.manual = '1';
+        eraEls.forEach((el, i) => {
+          el.classList.toggle('cvViewerEra--active', i === target);
+          el.classList.remove('cvViewerEra--done');
+          delete el.dataset.hold;
+          // Restaure les lignes d'origine : le nettoyage avait
+          // remplacé le texte par une trame ░
+          el.querySelectorAll('.cvViewerJourneyLine').forEach((span, li) => {
+            span.textContent = section.eras[i].lines[li] || '\u00a0';
+            span.classList.remove('cvViewerJourneyLine--wiped');
+            span.classList.add('cvViewerJourneyLine--shown');
+          });
+        });
+        setChronoActive(container, target);
+        return true;
       };
 
       // ── Version texte brut, pour `cat` ───────────────────────
@@ -483,8 +586,10 @@
         sections: () => sections.map(({ id, title: t }) => ({ id, title: t })),
         render,
         renderMain,
+        renderSide,
         bar: barHTML,
         links,
+        navEra,
         toText,
         startAnimations,
         stopAnimations

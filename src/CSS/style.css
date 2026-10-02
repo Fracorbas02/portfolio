@@ -856,6 +856,36 @@ body.is-window-dragging * {
   color: var(--accent);
 }
 
+/* Frise chronologique : le panneau droit des rubriques « ères ».
+   L'étape courante en accent, les passées en clair, les futures
+   en atténué */
+.cvViewerChronoTitle {
+  color: var(--accent-strong);
+  font-weight: 700;
+}
+
+.cvViewerChronoItem {
+  color: var(--text-muted);
+}
+
+.cvViewerChronoItem--past {
+  color: var(--text-secondary);
+}
+
+.cvViewerChronoItem--active {
+  color: var(--accent);
+  font-weight: 700;
+}
+
+.cvViewerChronoLink {
+  color: var(--accent);
+  opacity: 0.55;
+}
+
+.cvViewerChronoHint {
+  color: var(--text-muted);
+}
+
 .cvViewerTimeline {
   color: var(--accent-strong);
 }
