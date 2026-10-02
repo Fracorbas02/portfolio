@@ -1033,6 +1033,10 @@
     nastruire:   LOGO_NASTRUIRE
   };
 
+  // Config de base du viewer blog : servira de modèle au viewer
+  // reconstruit depuis le flux RSS (voir blogFeed.js / cmdBlog).
+  window.PORTFOLIO_BLOG_BASE = BLOG;
+
   window.PORTFOLIO_VIEWERS = {
     cv: window.CV_VIEWER,
     profile: window.PORTFOLIO_DOC_VIEWER.create(PROFILE),
