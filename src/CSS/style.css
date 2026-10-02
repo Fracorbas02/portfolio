@@ -1026,11 +1026,21 @@ body.is-window-dragging * {
 .readDiagramBox   { color: var(--text-muted); }
 .readDiagramArrow { color: var(--accent); }
 
-/* Image d'un article (capture, schéma) : le pager ne la charge
-   pas, un espace signale sa place et son contenu. */
+/* Image d'un article (capture, schéma) : sans art pré-calculé,
+   un espace signale sa place et son contenu. */
 .readImg {
   color: var(--text-muted);
   font-style: italic;
+}
+
+/* Images pré-calculées en demi-blocs colorés : chaque caractère
+   vaut deux lignes de pixels (▄ : haut en fond, bas en couleur) —
+   le pager n'affiche jamais un <img>, tout vit en texte. */
+.readImgArtBlock {
+  white-space: pre;
+  overflow-x: auto;
+  margin: 0.15rem 0;
+  line-height: 1.05;
 }
 
 /* Message de restauration après le melt de sudo rm -rf / : la

@@ -28,7 +28,7 @@
   'use strict';
 
   const FEED_URL     = 'https://docs.hexanibble.fr/blog/rss.xml';
-  const SNAPSHOT_URL = './src/JSON/articles.json?v=2';
+  const SNAPSHOT_URL = './src/JSON/articles.json?v=3';
 
   const escape = window.PORTFOLIO_HTML.escapeHTML;
   const isSafeHref = window.PORTFOLIO_HTML.isSafeHref;
@@ -606,6 +606,45 @@
     return mermaidSourceHTML(src);
   };
 
+  // ── Images des articles : demi-blocs colorés ────────────────
+  // Le snapshot pré-calcule l'image en demi-blocs : chaque ▄
+  // porte son pixel bas en couleur de texte et son pixel haut en
+  // couleur de fond — deux lignes de pixels par ligne de texte,
+  // sans jamais charger l'image dans le navigateur. Sans art
+  // (flux live, image introuvable), l'espace indicatif reste.
+  const SAFE_COLOR = /^#[0-9a-f]{6}$/i;
+  const imgHTML = (line) => {
+    const caption = `<span class="readImg">  [ image : ${escape(line.text)} ]</span>`;
+    const art = Array.isArray(line.art) ? line.art : null;
+    if (!art) return caption;
+    const rows = [];
+    for (const runs of art) {
+      if (!Array.isArray(runs)) return caption;
+      let row = '';
+      for (const run of runs) {
+        if (!Array.isArray(run) || !Number.isInteger(run[2]) || run[2] < 1) {
+          return caption;
+        }
+        const up = run[0], low = run[1];
+        if (!up && !low) {
+          row += ' '.repeat(run[2]);
+          continue;
+        }
+        if ((up && !SAFE_COLOR.test(up)) || (low && !SAFE_COLOR.test(low))) {
+          return caption;
+        }
+        const style = low
+          ? `color:${low}${up ? `;background-color:${up}` : ''}`
+          : `color:${up}`;
+        row += `<span class="readImgArt" style="${style}">`
+          + (low ? '▄' : '▀').repeat(run[2]) + '</span>';
+      }
+      rows.push(row);
+    }
+    if (rows.length === 0) return caption;
+    return `<div class="readImgArtBlock">${rows.join('\n')}</div>\n${caption}`;
+  };
+
   function renderArticle(item) {
     const out = [`<span class="cliSection">${escape(item.title)}</span>`];
     const date = longDate(item.pubDate);
@@ -640,7 +679,7 @@
         } else if (line.t === 'mermaid') {
           out.push(mermaidHTML(line.text));
         } else if (line.t === 'img') {
-          out.push(`<span class="readImg">  [ image : ${escape(line.text)} ]</span>`);
+          out.push(imgHTML(line));
         } else {
           out.push(inlineHTML(line.text));
         }
