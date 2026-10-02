@@ -30,6 +30,19 @@
   const SITEMAP_URL  = BASE_URL + '/sitemap.xml';
   const SNAPSHOT_URL = './src/JSON/docs.json?v=3';
 
+  // Délai maximal d'une requête (sitemap, page, instantané) : au-delà,
+  // l'AbortController coupe et le repli sur l'instantané local prend
+  // le relais au lieu de laisser le spinner tourner jusqu'au
+  // timeout du navigateur.
+  const FETCH_TIMEOUT_MS = 10_000;
+
+  const fetchWithTimeout = (url) => {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
+    return fetch(url, { signal: controller.signal })
+      .finally(() => clearTimeout(timer));
+  };
+
   const extractLines = window.PORTFOLIO_BLOG_FEED.extractLines;
 
   let pages = [];
@@ -145,7 +158,7 @@
       && (n.children === undefined || validTree(n.children)));
 
   async function fetchSnapshot() {
-    const res = await fetch(SNAPSHOT_URL);
+    const res = await fetchWithTimeout(SNAPSHOT_URL);
     if (!res.ok) throw new Error(`snapshot http ${res.status}`);
     const snap = await res.json();
     if (!validTree(snap?.tree)) throw new Error('snapshot sans navigation');
@@ -163,14 +176,14 @@
   }
 
   async function loadLive() {
-    const res = await fetch(SITEMAP_URL);
+    const res = await fetchWithTimeout(SITEMAP_URL);
     if (!res.ok) throw new Error(`sitemap http ${res.status}`);
     const urls = docURLs(await res.text());
     if (urls.length === 0) throw new Error('sitemap sans pages de doc');
 
     const docs = await Promise.all(urls.map(async (url) => {
       try {
-        const page = await fetch(url);
+        const page = await fetchWithTimeout(url);
         if (!page.ok) return null;
         return [url, await page.text()];
       } catch {
