@@ -324,13 +324,16 @@
       }
       // Panneau latéral remplacé uniquement quand sa nature change
       // (frise chronologique des rubriques « ères » ↔ logos/ticker)
-      if (typeof api.renderSide === 'function') {
+      if (typeof api.renderSide === 'function'
+          && typeof api.sideNature === 'function') {
         const side = view.querySelector('.cvViewerSide');
         if (side) {
-          const html = api.renderSide(state.viewer, view);
-          const isChrono = side.querySelector('.cvViewerChrono') !== null;
-          if (isChrono !== html.includes('cvViewerChrono')) {
-            side.innerHTML = html;
+          const nature = api.sideNature(state.viewer);
+          // Marqueur data-side dédié : la comparaison ne dépend plus
+          // du contenu rendu
+          if (side.dataset.side !== nature) {
+            side.dataset.side = nature;
+            side.innerHTML = api.renderSide(state.viewer, view);
           }
         }
       }

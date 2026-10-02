@@ -389,7 +389,7 @@
               "presentation": {
                 "type": "directory",
                 "CV.pdf": { "type": "file", "url": "./root/presentation/CV/CV_Bastien_BONORA_2025.pdf", "viewer": "cv" },
-				"qui_suis_je.html": { "type": "file", "url": "./src/HTML/presentation.html", "viewer": "profile" },
+                "qui_suis_je.html": { "type": "file", "url": "./src/HTML/presentation.html", "viewer": "profile" },
                 "releve_bac.pdf": { "type": "file", "url": "./root/presentation/Releve_Note_Bac.pdf" },
                 "projet_orientation.png": { "type": "file", "url": "./root/presentation/Projet_Orientation.png", "viewer": "orientation" },
                 "pubkey.asc": { "type": "file", "url": "./root/presentation/pubkey" }
