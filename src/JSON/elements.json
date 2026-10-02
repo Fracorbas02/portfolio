@@ -127,7 +127,7 @@
     ],
     "manCommands": {
       "grep": {
-        "description": "Recherche les lignes d'un fichier texte contenant un motif, à la manière de la commande grep. Le motif est pris tel quel (sans expression régulière) ; les options -i et -n sont combinables. Dans un pipeline, le motif s'applique à l'entrée standard : commande | grep motif.",
+        "description": "Recherche les lignes d'un fichier texte contenant un motif, à la manière de la commande grep. Le motif est pris tel quel (sans expression régulière) ; les options -i et -n sont combinables. Plusieurs fichiers peuvent être fouillés d'un coup (les jokers * et ? sont développés, et chaque correspondance est préfixée de son fichier). Dans un pipeline, le motif s'applique à l'entrée standard : commande | grep motif.",
         "options": [
           {
             "name": "-i",
@@ -141,6 +141,7 @@
         "examples": [
           { "cmd": "grep portfolio README.md", "desc": "affiche les lignes du README contenant « portfolio »" },
           { "cmd": "grep -in bash README.md", "desc": "recherche « bash » sans tenir compte de la casse, avec les numéros de ligne" },
+          { "cmd": "grep -n portfolio *.md", "desc": "cherche le motif dans tous les fichiers markdown du dossier courant" },
           { "cmd": "cat README.md | grep -i bash | wc -l", "desc": "compte les lignes du README contenant « bash » (pipeline)" }
         ]
       },
@@ -442,11 +443,11 @@
         ]
       },
       "cat": {
-      "description": "Affiche le contenu d'un fichier du dossier courant. Les fichiers texte s'affichent tels quels ; les fichiers viewer s'affichent en texte brut (même contenu que open, sans l'interface interactive) ; les fichiers binaires doivent être ouverts avec open. Lecture réservée à bastien et anonymous.",
+      "description": "Affiche le contenu d'un ou plusieurs fichiers du dossier courant. Les fichiers texte s'affichent tels quels ; les fichiers viewer s'affichent en texte brut (même contenu que open, sans l'interface interactive) ; les fichiers binaires doivent être ouverts avec open. Les jokers * et ? sont développés comme dans le shell. Lecture réservée à bastien et anonymous.",
       "options":         [
           {
-            "name": "fichier",
-            "usage": "chemin relatif ou absolu du fichier à lire. Exemple : cat README.md"
+            "name": "fichier...",
+            "usage": "chemins des fichiers à lire, séparés par des espaces. Exemple : cat README.md, ou cat notes*.md pour tous les fichiers commençant par « notes »"
           }
         ],
       "examples":         [
