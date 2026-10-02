@@ -295,6 +295,130 @@
     }
 
     /**
+     * Encodage et décodage Base64 maison (RFC 4648) : l'octet est
+     * le seul langage, via TextEncoder/TextDecoder — accents et
+     * emojis survivent à l'aller-retour.
+     */
+    const BASE64_ALPHABET =
+      'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
+
+    function base64Encode(text) {
+      const bytes = new TextEncoder().encode(text);
+      let out = '';
+      for (let i = 0; i < bytes.length; i += 3) {
+        const b1 = bytes[i + 1];
+        const b2 = bytes[i + 2];
+        const triplet = (bytes[i] << 16) | ((b1 ?? 0) << 8) | (b2 ?? 0);
+        out += BASE64_ALPHABET[(triplet >> 18) & 63];
+        out += BASE64_ALPHABET[(triplet >> 12) & 63];
+        out += b1 === undefined ? '=' : BASE64_ALPHABET[(triplet >> 6) & 63];
+        out += b2 === undefined ? '=' : BASE64_ALPHABET[triplet & 63];
+      }
+      return out;
+    }
+
+    function base64Decode(text) {
+      const clean = text.replace(/\s+/g, '');
+      const body = clean.replace(/=+$/, '');
+      if (clean.length % 4 !== 0 || clean.length - body.length > 2
+        || /[^A-Za-z0-9+/]/.test(body)) {
+        return null;
+      }
+      const bytes = [];
+      let buffer = 0;
+      let bits = 0;
+      for (const ch of body) {
+        buffer = (buffer << 6) | BASE64_ALPHABET.indexOf(ch);
+        bits += 6;
+        if (bits >= 8) {
+          bits -= 8;
+          bytes.push((buffer >> bits) & 0xff);
+        }
+      }
+      return new TextDecoder().decode(new Uint8Array(bytes));
+    }
+
+    /**
+     * base64 : encode des fichiers texte (ou l'entrée standard au
+     * bout d'un pipeline) en Base64 ; -d décode dans l'autre
+     * sens, comme le vrai base64.
+     */
+    function cmdBase64(args, stdin = null) {
+      const decode = args[0] === '-d';
+      const files = decode ? args.slice(1) : args;
+      if (files.some((f) => f.startsWith('-'))) {
+        return 'usage : base64 [-d] <fichier...>  (ou : commande | base64)';
+      }
+
+      let text;
+      if (files.length === 0) {
+        if (stdin === null) return 'usage : base64 [-d] <fichier...>  (ou : commande | base64)';
+        text = stdin;
+      } else {
+        const contents = [];
+        for (const target of files) {
+          const node = lookUpTree(target);
+          if (node === null) return `base64 : ${escapeHTML(target)} : fichier introuvable`;
+          if (isDirectory(node)) return `base64 : ${escapeHTML(target)} : est un dossier`;
+          if (!canReadFiles()) {
+            return `base64 : ${escapeHTML(target)} : Permission non accordée`;
+          }
+          const content = fileText(node);
+          if (content === null) {
+            return `base64 : ${escapeHTML(target)} : fichier binaire (non traitable)`;
+          }
+          contents.push(content);
+        }
+        text = decode
+          ? contents.map((c) => c.replace(/\s+/g, '')).join('')
+          : contents.join('');
+      }
+
+      if (!decode) return escapeHTML(base64Encode(text));
+      const decoded = base64Decode(text);
+      return decoded === null
+        ? 'base64 : entrée invalide (Base64 mal formé)'
+        : escapeHTML(decoded);
+    }
+
+    /**
+     * rot13 : chiffre de César — chaque lettre glisse de 13 rangs,
+     * le filtre tr « a-zA-Z n-za-mN-ZA-M » du vrai shell. Appliqué
+     * deux fois, il rend le texte d'origine.
+     */
+    function cmdRot13(args, stdin = null) {
+      if (args.some((f) => f.startsWith('-'))) {
+        return 'usage : rot13 <fichier...>  (ou : commande | rot13)';
+      }
+
+      let text;
+      if (args.length === 0) {
+        if (stdin === null) return 'usage : rot13 <fichier...>  (ou : commande | rot13)';
+        text = stdin;
+      } else {
+        const contents = [];
+        for (const target of args) {
+          const node = lookUpTree(target);
+          if (node === null) return `rot13 : ${escapeHTML(target)} : fichier introuvable`;
+          if (isDirectory(node)) return `rot13 : ${escapeHTML(target)} : est un dossier`;
+          if (!canReadFiles()) {
+            return `rot13 : ${escapeHTML(target)} : Permission non accordée`;
+          }
+          const content = fileText(node);
+          if (content === null) {
+            return `rot13 : ${escapeHTML(target)} : fichier binaire (non traitable)`;
+          }
+          contents.push(content);
+        }
+        text = contents.join('');
+      }
+
+      const shift = (from) => (ch) =>
+        String.fromCharCode((ch.charCodeAt(0) - from + 13) % 26 + from);
+      return escapeHTML(text.replace(/[a-z]/g, shift(97)).replace(/[A-Z]/g, shift(65)));
+    }
+
+    /**
      * tree : arborescence du dossier courant ou d'un chemin donné,
      * avec les branches ├── └── canoniques — l'arbre JSON rend
      * trivial le parcours récursif. Les éléments masqués (les
@@ -1249,6 +1373,8 @@
       cat:    cmdCat,
       grep:   cmdGrep,
       wc:     cmdWc,
+      base64: cmdBase64,
+      rot13:  cmdRot13,
       tree:   cmdTree,
       find:   cmdFind,
       ping:   cmdPing,

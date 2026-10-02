@@ -73,6 +73,14 @@
         "description": "Compte les lignes d'un fichier. Exemple : wc -l README.md."
       },
       {
+        "name": "base64",
+        "description": "Encode un fichier texte en Base64, ou le décode avec -d. Exemple : base64 notes.txt."
+      },
+      {
+        "name": "rot13",
+        "description": "Décale chaque lettre de 13 rangs (chiffre de César). Exemple : rot13 notes.txt."
+      },
+      {
         "name": "echo",
         "description": "Affiche un texte et développe les variables ($USER, $PWD, exports). Exemple : echo $USER."
       },
@@ -156,6 +164,34 @@
         "examples": [
           { "cmd": "wc -l README.md", "desc": "affiche le nombre de lignes du README" },
           { "cmd": "wc blog/blog.html", "desc": "affiche lignes, mots et octets d'un fichier viewer (texte brut)" }
+        ]
+      },
+      "base64": {
+        "description": "Encode des fichiers texte en Base64 (RFC 4648), ou les décode avec -d, à la manière de la commande base64. Dans un pipeline, l'entrée standard est traitée : commande | base64. Les accents et emojis survivent à l'aller-retour. Lecture réservée à bastien et anonymous.",
+        "options": [
+          {
+            "name": "-d",
+            "usage": "décode au lieu d'encoder. Exemple : base64 -d notes.b64"
+          }
+        ],
+        "examples": [
+          { "cmd": "base64 README.md", "desc": "affiche le README encodé en Base64" },
+          { "cmd": "cat notes.txt | base64", "desc": "encode la sortie d'une commande (pipeline)" },
+          { "cmd": "base64 -d notes.b64", "desc": "retrouve le texte d'origine" },
+          { "cmd": "echo QmFzdGllbg== | base64 -d", "desc": "décode une chaîne au vol" }
+        ]
+      },
+      "rot13": {
+        "description": "Fait glisser chaque lettre de 13 rangs dans l'alphabet, comme le filtre tr « a-zA-Z n-za-mN-ZA-M » : un texte encodé avec rot13 se décode en appliquant rot13 à nouveau. Dans un pipeline, l'entrée standard est traitée : commande | rot13. Lecture réservée à bastien et anonymous.",
+        "options": [
+          {
+            "name": "sans option",
+            "usage": "cette commande ne possède pas d'option — appliquer rot13 deux fois annule rot13"
+          }
+        ],
+        "examples": [
+          { "cmd": "rot13 notes.txt", "desc": "affiche le fichier avec ses lettres décalées de 13 rangs" },
+          { "cmd": "echo Obawbhe | rot13", "desc": "retrouve « Bonjour » décalé de 13 rangs" }
         ]
       },
       "tree": {
