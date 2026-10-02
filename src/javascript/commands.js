@@ -874,6 +874,129 @@
         .join('');
     }
 
+    /**
+     * Taille récursive d'un nœud : celle du fichier, ou la somme
+     * du contenu d'un dossier (chaque dossier vaut 4096, comme
+     * sa taille propre dans lsSize).
+     */
+    function deepSize(key, node) {
+      if (isDirectory(node)) {
+        return Object.entries(node)
+          .filter(([k]) => k !== 'type')
+          .reduce((sum, [k, child]) => sum + deepSize(k, child), lsSize(key, node));
+      }
+      return lsSize(key, node);
+    }
+
+    /**
+     * Taille lisible : octets, puis Ko/Mo/Go arrondis — virgule
+     * décimale française, comme le rendu de ls -lh.
+     */
+    function humanSize(bytes) {
+      if (bytes < 1024) return `${bytes} o`;
+      const [value, unit] = bytes < 1024 ** 2
+        ? [bytes / 1024, 'Ko']
+        : bytes < 1024 ** 3
+          ? [bytes / 1024 ** 2, 'Mo']
+          : [bytes / 1024 ** 3, 'Go'];
+      const rounded = value >= 10 ? Math.round(value) : value.toFixed(1).replace('.', ',');
+      return `${rounded} ${unit}`;
+    }
+
+    /**
+     * du : taille d'un fichier, ou taille totale récursive d'un
+     * dossier ; -h pour le format lisible, comme le vrai du.
+     */
+    function cmdDu(args) {
+      let human = false;
+      const rest = [];
+      for (const arg of args) {
+        if (arg === '-h') human = true;
+        else if (arg.startsWith('-')) {
+          return `du : option « ${escapeHTML(arg)} » inconnue. Voir : man du`;
+        } else {
+          rest.push(arg);
+        }
+      }
+      if (rest.length > 1) return 'du : un seul chemin attendu. Voir : man du';
+
+      const target = rest[0] ?? '.';
+      const node = lookUpTree(target);
+      if (node === null) return `du : ${escapeHTML(target)} : fichier introuvable`;
+      const path = resolvePath(target);
+      const size = deepSize(path.slice(path.lastIndexOf('/') + 1), node);
+      const label = human ? humanSize(size) : String(size);
+      return `${label}\t${escapeHTML(path)}`;
+    }
+
+    /**
+     * stat : fiche d'identité d'une entrée, à la manière du vrai
+     * stat — type, taille, droits et un numéro d'inœud stable
+     * dérivé du chemin.
+     */
+    function cmdStat(args) {
+      if (args.length === 0) return 'usage : stat <fichier>. Exemple : stat README.md';
+      if (args.length > 1) return 'stat : un seul fichier attendu. Voir : man stat';
+
+      const target = args[0];
+      const node = lookUpTree(target);
+      if (node === null) return `stat : ${escapeHTML(target)} : fichier introuvable`;
+
+      const path = resolvePath(target);
+      const name = path.slice(path.lastIndexOf('/') + 1);
+      const isDir = isDirectory(node);
+      const isLink = node?.type === 'link';
+      const size = deepSize(name, node);
+      const inode = [...path].reduce((acc, ch) => (acc * 31 + ch.charCodeAt(0)) % 999983, 7);
+      const kind = isDir ? 'dossier' : isLink ? 'lien symbolique' : 'fichier';
+      const octal = isDir ? '0755' : isLink ? '0777' : '0644';
+
+      const lines = [
+        `  Fichier : ${escapeHTML(path)}`,
+        `  Taille : ${size}\tBlocs : ${Math.ceil(size / 512)}\t${kind}`,
+        `  Mode : (${octal}/${lsMode(name, node)})\tUid : ( 1000/bastien)\tGid : ( 1000/bastien)`,
+        `  Inœud : ${inode}\tLiens : ${isDir ? 2 : 1}`
+      ];
+      return lines.join('\n');
+    }
+
+    /**
+     * file : le type d'une entrée en une ligne, à la manière du
+     * vrai file — texte, dossier, lien, ou le format déduit de
+     * l'extension pour les fichiers du portfolio.
+     */
+    const FILE_TYPES = {
+      '.md': 'texte Markdown',
+      '.html': 'document HTML',
+      '.pdf': 'document PDF',
+      '.png': 'image PNG',
+      '.asc': 'texte ASCII (clé publique OpenPGP)',
+      '.url': 'raccourci Internet'
+    };
+
+    function cmdFile(args) {
+      if (args.length === 0) return 'usage : file <fichier...>. Exemple : file README.md';
+      const lines = [];
+      for (const target of args) {
+        const node = lookUpTree(target);
+        if (node === null) return `file : ${escapeHTML(target)} : fichier introuvable`;
+
+        let kind;
+        if (isDirectory(node)) kind = 'dossier';
+        else if (node?.type === 'link') {
+          kind = `lien symbolique vers ${node.url ?? 'une cible inconnue'}`;
+        } else if (typeof node === 'string') {
+          kind = /[\u0080-\uFFFF]/.test(node) ? 'texte UTF-8' : 'texte ASCII';
+        } else {
+          const name = resolvePath(target).split('/').pop();
+          const ext = name.slice(name.lastIndexOf('.'));
+          kind = FILE_TYPES[ext] ?? `document du portfolio (${node.viewer ?? 'fichier distant'})`;
+        }
+        lines.push(`${escapeHTML(target)} : ${escapeHTML(kind)}`);
+      }
+      return lines.join('\n');
+    }
+
     function cmdMan(args) {
       if (args.length === 0) return 'man : veuillez donner au moins un argument';
 
@@ -1375,6 +1498,9 @@
       wc:     cmdWc,
       base64: cmdBase64,
       rot13:  cmdRot13,
+      du:     cmdDu,
+      stat:   cmdStat,
+      file:   cmdFile,
       tree:   cmdTree,
       find:   cmdFind,
       ping:   cmdPing,
