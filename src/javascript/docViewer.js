@@ -121,18 +121,27 @@
         const boxTop =
           `┌─${escape(header)}─${'─'.repeat(Math.max(0, WIDTH - header.length - 3))}┐`;
 
-        // ── Rubrique « chemin » : frise ASCII révélée ligne par
-        // ligne (une par tick d'animation, voir animateJourney).
-        // Les connecteurs (│ ▼) prennent la couleur d'accent.
-        if (section.journey) {
-          const rows = section.journey.map((line) => {
-            const cls = /^[ │▼╰╮└┐┌┤├]/.test(line)
-              ? 'cvViewerJourneyLine cvViewerJourneyPath'
-              : 'cvViewerJourneyLine';
-            return `<span class="${cls}">${escape(line) || '&nbsp;'}</span>`;
-          });
-          const body = [boxTop, '', ...rows.map((r) => `  ${r}`)].join('\n');
-          return `<div class="cvViewerSection">${body}</div>`;
+        // ── Rubrique « ères » : une période à la fois, façon caméra.
+        // Chaque ère affiche sa période (timeline, en haut à gauche)
+        // puis son contenu se construit de bas en haut (le chemin se
+        // crée sous nos yeux), se dissout en trame ░, et l'ère
+        // suivante prend le relais. Machine d'états : animateJourney.
+        if (section.eras) {
+          const erasHTML = section.eras.map((era, i) => {
+            const pad = '─'.repeat(Math.max(0, 46 - era.period.length));
+            const timeline = `<span class="cvViewerTimeline">── ${escape(era.period)} ${pad}</span>`;
+            const title = `<span class="cvViewerEraTitle">${escape(era.title)}</span>`;
+            const rows = era.lines.map((line) => {
+              const cls = /^[ │▼╰╮└┐┌┤├═]/.test(line)
+                ? 'cvViewerJourneyLine cvViewerJourneyPath'
+                : 'cvViewerJourneyLine';
+              return `  <span class="${cls}">${escape(line) || '&nbsp;'}</span>`;
+            });
+            const active = i === 0 ? ' cvViewerEra--active' : '';
+            const body = [timeline, title, '', ...rows].join('\n');
+            return `<div class="cvViewerEra${active}">${body}</div>`;
+          }).join('');
+          return `<div class="cvViewerSection">${boxTop}\n${erasHTML}</div>`;
         }
 
         const lines = [];
@@ -203,13 +212,50 @@
         rows.forEach((row, i) => { row.textContent = win[i]; });
       };
 
-      // Chemin animé : chaque tick dévoile la ligne suivante.
-      // L'état vit dans le DOM (classe --shown) : ré-afficher la
-      // rubrique rejoue l'animation depuis le début.
+      // ── Ères : la caméra suit le chemin ─────────────────────
+      // Chaque tick fait avancer l'ère active d'un cran :
+      //   1. révélation de bas en haut (le chemin se crée)
+      //   2. pause une fois l'écran complet
+      //   3. nettoyage : les lignes se dissolvent en trame ░,
+      //      de bas en haut, puis l'ère suivante démarre
+      // Tout l'état vit dans le DOM : ré-afficher la rubrique
+      // rejoue l'animation depuis la première ère.
+      const ERA_HOLD_TICKS = 6;
+      const HIDDEN_LINE =
+        '.cvViewerJourneyLine:not(.cvViewerJourneyLine--shown):not(.cvViewerJourneyLine--wiped)';
       const animateJourney = (scope) => {
-        const next = scope.querySelector(
-          '.cvViewerJourneyLine:not(.cvViewerJourneyLine--shown)');
-        if (next) next.classList.add('cvViewerJourneyLine--shown');
+        const era = scope.querySelector('.cvViewerEra--active');
+        if (!era) return;
+
+        // 1. Le chemin se crée, de bas en haut
+        const hidden = era.querySelectorAll(HIDDEN_LINE);
+        if (hidden.length > 0) {
+          hidden[hidden.length - 1].classList.add('cvViewerJourneyLine--shown');
+          return;
+        }
+
+        // Dernière ère : l'écran reste affiché, l'histoire est finie
+        if (!era.nextElementSibling) return;
+
+        // 2. Pause avant le nettoyage
+        if (era.dataset.hold === undefined) era.dataset.hold = String(ERA_HOLD_TICKS);
+        era.dataset.hold = String(Number(era.dataset.hold) - 1);
+        if (Number(era.dataset.hold) > 0) return;
+
+        // 3. Nettoyage : dissolution en trame, de bas en haut
+        const shown = era.querySelectorAll('.cvViewerJourneyLine--shown');
+        if (shown.length > 0) {
+          const line = shown[shown.length - 1];
+          line.textContent = '░'.repeat(line.textContent.length || 1);
+          line.classList.remove('cvViewerJourneyLine--shown');
+          line.classList.add('cvViewerJourneyLine--wiped');
+          return;
+        }
+
+        // Écran vide : place à l'ère suivante
+        era.classList.remove('cvViewerEra--active');
+        era.classList.add('cvViewerEra--done');
+        era.nextElementSibling.classList.add('cvViewerEra--active');
       };
 
       const animateLogo = (scope) => {
@@ -405,8 +451,11 @@
         const out = [title.toUpperCase(), subtitle, ''];
         for (const section of sections) {
           out.push(`== ${section.title} ==`);
-          if (section.journey) {
-            out.push('', ...section.journey.map((l) => `  ${l}`));
+          if (section.eras) {
+            for (const era of section.eras) {
+              out.push('', `-- ${era.period} : ${era.title} --`);
+              for (const line of era.lines) out.push(`  ${line}`);
+            }
             continue;
           }
           for (const entry of section.entries ?? []) {

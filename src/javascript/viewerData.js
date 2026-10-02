@@ -696,34 +696,82 @@
   // passé. Ouvre via `open projet_orientation.png` depuis
   // /root/presentation.
 
-  // Frise « toute l'histoire » : du lycée à aujourd'hui, révélée
-  // ligne par ligne par docViewer.js (section `journey`). Les
-  // connecteurs (│ ▼) sont colorés par le viewer, les lignes de
-  // détail ne doivent pas commencer par un espace pour rester
-  // en couleur de texte normale. 54 caractères max par ligne.
-  const stepLine = (year, label) =>
-    `${year} ══ ${label} `.padEnd(54, '═');
-  const journeyPath = ' '.repeat(24);
-  const ORIENTATION_JOURNEY = [
-    stepLine('2021', 'Lycée Guillaume Fichet'),
-    'Maths & NSI · maths expertes · Euro anglais B2',
-    journeyPath + '│',
-    journeyPath + '▼',
-    stepLine('2022', 'BUT R&T — IUT d\u2019Annecy, voie B'),
-    'SecNumEdu ANSSI · parcours cybersécurité',
-    journeyPath + '│',
-    journeyPath + '▼',
-    stepLine('2022\u20132025', 'Alternance EPSM'),
-    'bastion ELK · MPLS · pare-feu Stormshield',
-    journeyPath + '│',
-    journeyPath + '▼',
-    stepLine('2025', 'DIPLÔMÉ BAC+3 — BUT R&T'),
-    'CCNA · CSNA/CSNE · THM & Root-Me · home-lab',
-    journeyPath + '│',
-    journeyPath + '▼',
-    stepLine('AUJOURD\u2019HUI', 'Alpes Networks'),
-    'admin sys & réseaux chez un opérateur',
-    'bastodoc : articles, write-ups, documentation'
+  // Frise « toute l'histoire » : une ère par période, façon caméra.
+  // docViewer.js révèle chaque ère de bas en haut (le chemin se
+  // crée), la nettoie en trame ░ puis passe à la suivante ; la
+  // période s'affiche en haut à gauche. Lignes ≤ 54 caractères,
+  // la route (`═`) ferme chaque ère et prend la couleur d'accent.
+  const eraRoad = '═'.repeat(44);
+  const ORIENTATION_ERAS = [
+    {
+      period: '2021 — 2022',
+      title: 'LYCÉE GUILLAUME FICHET',
+      lines: [
+        'Terminale à Bonneville (74). Spécialités',
+        'Mathématiques et NSI, option maths expertes,',
+        'section Euro — anglais certifié B2.',
+        'L\u2019année du grand schéma d\u2019orientation :',
+        'toutes les voies post-bac dessinées, prépa',
+        'intégrée, BUT, licences, BTS. Déjà un cap :',
+        'les réseaux, et la cybersécurité.',
+        eraRoad
+      ]
+    },
+    {
+      period: '2022 — 2023',
+      title: 'IUT D\u2019ANNECY — BUT R&T, 1re ANNÉE',
+      lines: [
+        'La voie B, en alternance : formation certifiée',
+        'SecNumEdu par l\u2019ANSSI.',
+        'Les fondations : TCP/IP, routage, switching,',
+        'VLAN, télécoms, systèmes GNU/Linux.',
+        'Puis le choix assumé du parcours cybersécurité',
+        'dès la 2e année.',
+        eraRoad
+      ]
+    },
+    {
+      period: '2023 — 2025',
+      title: 'ALTERNANCE EPSM LA ROCHE-SUR-FORON',
+      lines: [
+        'Trois ans au service informatique, en',
+        'alternance du BUT : du concret, du réseau',
+        'et de la sécurité en production.',
+        'Bastion supervisé avec la stack ELK,',
+        'migration de sites externes dans un MPLS,',
+        'pare-feu Stormshield : VPN, NAT, filtrage.',
+        'CCNA 1 & 2, CSNA/CSNE Stormshield.',
+        'En parallèle : TryHackMe [0xA] Wizard, Root-Me,',
+        'write-ups et un home-lab qui grandit.',
+        eraRoad
+      ]
+    },
+    {
+      period: '2025',
+      title: 'DIPLÔMÉ — BAC+3, BUT R&T VALIDÉ',
+      lines: [
+        'BUT Réseaux & Télécoms en poche, parcours',
+        'cybersécurité. Bac+3, et pas plus : le schéma',
+        'de terminale se redessine autrement.',
+        'Le portfolio et bastodoc prennent forme :',
+        'documenter devient une habitude.',
+        eraRoad
+      ]
+    },
+    {
+      period: 'AUJOURD\u2019HUI',
+      title: 'ALPES NETWORKS',
+      lines: [
+        'Admin systèmes & réseaux chez un opérateur',
+        'internet de petite taille : petite structure,',
+        'donc on touche à tout, au plus près de la',
+        'production.',
+        'Toujours en apprentissage : articles et doc',
+        'sur bastodoc, write-ups, CTF, home-lab.',
+        'La défense en retrait, mais pas abandonnée.',
+        eraRoad
+      ]
+    }
   ];
 
   const ORIENTATION = {
@@ -871,7 +919,7 @@
       {
         id: 'histoire',
         title: 'Toute l\u2019histoire',
-        journey: ORIENTATION_JOURNEY
+        eras: ORIENTATION_ERAS
       }
     ]
   };
