@@ -633,11 +633,22 @@
     /**
      * blog : raccourci vers le viewer du blog (bastodoc), même
      * comportement que `open blog/blog.html` depuis n'importe où.
+     * Les articles viennent du flux RSS du site (blogFeed.js),
+     * avec repli sur l'instantané local si le flux est muet.
      */
-    function cmdBlog() {
+    async function cmdBlog() {
       const node = lookUpTree('/root/blog/blog.html');
       if (!node) return 'blog : viewer introuvable — essayez : open blog/blog.html';
       if (!canReadFiles()) return 'blog : Permission non accordée';
+      const feed = window.PORTFOLIO_BLOG_FEED;
+      if (feed) {
+        try { await feed.load(); } catch { /* flux muet : viewer statique */ }
+        if (feed.items.length > 0 && window.PORTFOLIO_BLOG_BASE) {
+          window.PORTFOLIO_VIEWERS.blog = window.PORTFOLIO_DOC_VIEWER.create(
+            feed.buildViewerConfig(window.PORTFOLIO_BLOG_BASE)
+          );
+        }
+      }
       const error = spawnShell({ viewer: node, seedHistory: state.history.slice() });
       if (error) return error;
       return 'ouverture du blog dans une nouvelle fenêtre...';
