@@ -143,6 +143,18 @@
       {
         "name": "dig",
         "description": "Interroge le DNS du portfolio (simulation locale). Exemple : dig bastienbonora.fr."
+      },
+      {
+        "name": "nmap",
+        "description": "Balaye les ports d'un hôte (simulation locale). Exemple : nmap bastienbonora.fr."
+      },
+      {
+        "name": "traceroute",
+        "description": "La route vers un hôte, saut par saut (simulation locale). Exemple : traceroute bastienbonora.fr."
+      },
+      {
+        "name": "whois",
+        "description": "La fiche whois d'un domaine (simulation locale). Exemple : whois bastienbonora.fr."
       }
     ],
     "manCommands": {
@@ -307,6 +319,45 @@
         "examples": [
           { "cmd": "dig bastienbonora.fr", "desc": "résout le domaine du portfolio (avec son enregistrement TXT)" },
           { "cmd": "dig docs.bastienbonora.fr", "desc": "résout le domaine de la documentation" }
+        ]
+      },
+      "nmap": {
+        "description": "Balaye les ports d'un hôte, à la manière de la commande nmap : la sonde démarre en direct, puis la table des ports ouverts. Le balayage est entièrement local — aucune sonde ne quitte le navigateur. Les ports du portfolio indiquent le chemin à suivre ; les autres hôtes reçoivent des ports plausibles et stables.",
+        "options": [
+          {
+            "name": "hôte",
+            "usage": "nom d'hôte ou adresse IP à balayer. Exemple : nmap bastienbonora.fr"
+          }
+        ],
+        "examples": [
+          { "cmd": "nmap bastienbonora.fr", "desc": "balaye le domaine du portfolio et ses services" },
+          { "cmd": "nmap localhost", "desc": "balaye la boucle locale" }
+        ]
+      },
+      "traceroute": {
+        "description": "Affiche le chemin vers un hôte saut par saut, à la manière de la commande traceroute : la passerelle locale, quelques relais, puis la destination, chaque saut arrivant en direct avec ses trois temps de sonde. La route est simulée localement — aucun paquet ne quitte le navigateur.",
+        "options": [
+          {
+            "name": "hôte",
+            "usage": "nom d'hôte ou adresse IP à joindre. Exemple : traceroute bastienbonora.fr"
+          }
+        ],
+        "examples": [
+          { "cmd": "traceroute bastienbonora.fr", "desc": "la route complète vers le domaine du portfolio" },
+          { "cmd": "traceroute localhost", "desc": "un seul saut : la boucle locale" }
+        ]
+      },
+      "whois": {
+        "description": "Interroge la base whois d'un domaine, à la manière de la commande whois : propriétaire, registrar, statut, date d'expiration. L'interrogation est entièrement locale — seule la famille bastienbonora.fr a un dossier dans la base, les autres noms renvoient « No entries found ».",
+        "options": [
+          {
+            "name": "domaine",
+            "usage": "nom de domaine à interroger. Exemple : whois bastienbonora.fr"
+          }
+        ],
+        "examples": [
+          { "cmd": "whois bastienbonora.fr", "desc": "la fiche d'identité du domaine du portfolio" },
+          { "cmd": "whois exemple.fr", "desc": "un domaine inconnu de la base locale" }
         ]
       },
       "echo": {

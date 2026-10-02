@@ -673,6 +673,157 @@
     }
 
     /**
+     * nmap : balayage de ports simulé — aucune sonde ne part, le
+     * navigateur reste muet. Les ports du portfolio dessinent le
+     * plan du contenu ; les autres hôtes reçoivent des ports
+     * plausibles et stables (même hash déterministe que ping).
+     */
+    async function cmdNmap(args) {
+      const option = args.find((arg) => arg.startsWith('-'));
+      if (option) return `nmap : option « ${escapeHTML(option)} » inconnue. Voir : man nmap`;
+      const host = args[0];
+      if (!host) return 'usage : nmap <hôte>. Exemple : nmap bastienbonora.fr';
+
+      const isPortfolio = /(^|\.)bastienbonora\.fr$/.test(host) || host === 'portfolio';
+      const ip = host === 'portfolio' ? '127.0.0.1' : fakeHostIp(host);
+
+      // Ports ouverts : service et, pour le portfolio, le chemin
+      // à suivre ; pour les autres hôtes, un plan stable du nom
+      let ports;
+      if (isPortfolio) {
+        ports = [
+          [22, 'ssh', 'essayez : ssh bastien@portfolio'],
+          [80, 'http', 'le site vit dans votre navigateur'],
+          [443, 'https', 'docs.bastienbonora.fr — essayez : docs'],
+          [1337, 'ctf', 'un flag se cache quelque part...']
+        ];
+      } else {
+        let hash = 7;
+        for (const ch of host) hash = (hash * 31 + ch.charCodeAt(0)) % 0xFFFFFF;
+        const services = [[22, 'ssh'], [80, 'http'], [443, 'https'],
+          [3306, 'mysql'], [8080, 'http-proxy']];
+        ports = services.filter((_, i) => (hash >> i) % 2 === 0);
+        if (ports.length === 0) ports = [[80, 'http']];
+      }
+
+      // Animation : le scan démarre, puis les résultats suivent
+      const start = document.createElement('div');
+      start.textContent = `Starting Nmap 7.94 ( https://nmap.org ) at ${new Date().toISOString()}`;
+      output.appendChild(start);
+      const scanning = document.createElement('div');
+      scanning.textContent = `Scanning ${host} ...`;
+      output.appendChild(scanning);
+      output.scrollTop = output.scrollHeight;
+      await delay(1200 + Math.random() * 800);
+      scanning.textContent = `Nmap scan report for ${host} (${ip})`
+        + `\nHost is up (0.0${Math.floor(10 + Math.random() * 80)}s latency).`;
+      output.scrollTop = output.scrollHeight;
+
+      const rows = ports.map(([port, service, hint]) =>
+        `${String(port).padStart(5)}/tcp  <span class="helpCommand">open</span>  ${escapeHTML(service)}`
+        + (hint ? `   <span style="color:var(--text-muted);">${escapeHTML(hint)}</span>` : ''));
+      const footer = [
+        '',
+        `Nmap done: 1 IP address (1 host up) scanned in ${(2 + Math.random() * 3).toFixed(2)} seconds`,
+        ...(isPortfolio ? ['', 'note : ce scan n\'a jamais quitté votre navigateur — aucune sonde n\'est partie.'] : [])
+      ].map(escapeHTML);
+      return ['PORT      STATE SERVICE', ...rows, ...footer].join('\n');
+    }
+
+    /**
+     * traceroute : le chemin vers l'hôte, saut par saut, animé
+     * comme la vraie commande — là encore, rien ne sort du
+     * navigateur. Les relais intermédiaires sont des adresses
+     * stables dérivées du nom d'hôte.
+     */
+    async function cmdTraceroute(args) {
+      if (args.some((arg) => arg.startsWith('-'))) {
+        return 'usage : traceroute <hôte>. Exemple : traceroute bastienbonora.fr';
+      }
+      const host = args[0];
+      if (!host) return 'usage : traceroute <hôte>. Exemple : traceroute bastienbonora.fr';
+
+      const local = /^(localhost|127\.0\.0\.1|::1)$/.test(host);
+      const ip = local ? '127.0.0.1' : fakeHostIp(host);
+
+      // Sauts : la passerelle locale, quelques relais opérateur,
+      // puis l'hôte ; en local, un seul saut suffit
+      let hash = 7;
+      for (const ch of host) hash = (hash * 31 + ch.charCodeAt(0)) % 0xFFFFFF;
+      const hops = local
+        ? [[host, ip]]
+        : [['_gateway', '192.168.1.1'],
+          ...[0, 1, 2, 3].map((i) => [`relay-${i + 1}.isp.net`,
+            `${51 + ((hash >> (i * 3)) % 8)}.${(hash >> i) % 200}`
+              + `.${(hash >> (i + 2)) % 254}.${((hash >> (i + 4)) % 254) + 1}`]),
+          [host, ip]];
+
+      const header = document.createElement('div');
+      header.textContent = `traceroute to ${host} (${ip}), 30 hops max, 60 byte packets`;
+      output.appendChild(header);
+      output.scrollTop = output.scrollHeight;
+
+      let n = 0;
+      for (const [name, hopIp] of hops) {
+        n += 1;
+        await delay(350 + Math.random() * 450);
+        const probes = [0, 1, 2].map((p) =>
+          (1 + n * 2 + p + Math.random() * 6).toFixed(3)).join(' ms  ');
+        const line = document.createElement('div');
+        line.textContent = ` ${String(n).padStart(2)}  ${name} (${hopIp})  ${probes} ms`;
+        output.appendChild(line);
+        output.scrollTop = output.scrollHeight;
+      }
+
+      if (local || /(^|\.)bastienbonora\.fr$/.test(host) || host === 'portfolio') {
+        return escapeHTML("note : ce traceroute n'a jamais quitté votre navigateur"
+          + ' — aucun paquet n\'est parti.');
+      }
+      return '';
+    }
+
+    /**
+     * whois : la fiche d'identité d'un domaine — interrogation
+     * locale, comme toujours. Seul le domaine du portfolio a un
+     * dossier dans la base ; les autres noms sont inconnus, comme
+     * dans un whois qui ne connaîtrait que Bastien.
+     */
+    function cmdWhois(args) {
+      const domain = args.find((arg) => !arg.startsWith('-'));
+      if (!domain) return 'usage : whois <domaine>. Exemple : whois bastienbonora.fr';
+
+      if (!/(^|\.)bastienbonora\.fr$/.test(domain) && domain !== 'portfolio') {
+        return [
+          '%%',
+          '%% No entries found in the AFNIC Database.',
+          '%%',
+          '',
+          `whois : seul bastienbonora.fr a un dossier ici — essayez : whois bastienbonora.fr`
+        ].map(escapeHTML).join('\n');
+      }
+
+      const record = [
+        '%%',
+        '%% This is the AFNIC Whois server.',
+        '%%',
+        '',
+        `domain:                        ${domain}`,
+        'status:                        ACTIVE',
+        'eppstatus:                     active',
+        'hold:                          NO',
+        'holder-c:                      BNO42',
+        'fnh:                           BONORA Bastien',
+        'registrar:                     SCALEWAY',
+        'created:                       2024',
+        'Expiry Date:                   2099-12-31',
+        'source:                        FRNIC',
+        '',
+        `remarks:  héberge le portfolio que vous consultez — essayez : dig ${domain}`
+      ];
+      return record.map(escapeHTML).join('\n');
+    }
+
+    /**
      * Valeur d'une variable d'environnement : USER et PWD sont
      * vivantes (lues depuis le prompt et le dossier courant), les
      * autres viennent de `export` (state.variables).
@@ -1505,6 +1656,9 @@
       find:   cmdFind,
       ping:   cmdPing,
       dig:    cmdDig,
+      nmap:   cmdNmap,
+      traceroute: cmdTraceroute,
+      whois:  cmdWhois,
       echo:   cmdEcho,
       export: cmdExport,
       alias:  cmdAlias,
