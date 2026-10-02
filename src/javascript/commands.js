@@ -420,6 +420,11 @@
     function cmdWhoami() {
       const text = prompt.textContent;
       const username = text.split('@')[0];
+      // Easter egg : sous sa vraie identité, le propriétaire du
+      // shell se présente tout seul.
+      if (username === 'bastien') {
+        return `${escapeHTML(username)} — admin systèmes &amp; réseaux @ Alpes Networks`;
+      }
       return escapeHTML(username);
     }
 
