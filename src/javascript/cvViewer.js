@@ -126,8 +126,7 @@
         {
           heading: 'Baccalauréat',
           lines: [
-            'Relevé de notes disponible :',
-            'presentation/releve_bac.pdf'
+            'Spécialité NSI — lauréat des Trophées NSI (Auvergne-Rhône-Alpes).'
           ]
         }
       ]
