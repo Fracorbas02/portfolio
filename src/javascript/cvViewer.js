@@ -229,8 +229,8 @@
           heading: 'Certifications',
           lines: [
             { text: 'Stormshield CSNA & CSNE', href: './root/certif/Certification_CSNA.pdf' },
-            { text: 'Cisco CCNA 1 & 2', href: './root/certif/Certification_Cambridge.pdf' },
-            { text: 'TOEIC & Cambridge', href: './root/certif/Certification_TOEIC.pdf' }
+            { text: 'Cambridge — anglais B2', href: './root/certif/Certification_Cambridge.pdf' },
+            { text: 'TOEIC', href: './root/certif/Certification_TOEIC.pdf' }
           ]
         },
         {
